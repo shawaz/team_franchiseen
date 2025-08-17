@@ -83,12 +83,12 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
     } else {
       setBalance(0);
     }
-  }, [connected, publicKey]);
+  }, [connected, publicKey, refreshBalance]);
 
   // Load price when currency changes
   useEffect(() => {
     refreshPrice();
-  }, [localCurrency]);
+  }, [localCurrency, refreshPrice]);
 
   // Handle airdrop
   const handleAirdrop = async () => {

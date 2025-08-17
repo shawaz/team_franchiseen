@@ -78,7 +78,7 @@ const SOLPaymentModal = ({ onClose, franchiseData }: SOLPaymentModalProps) => {
   // Load price when currency changes
   useEffect(() => {
     refreshPrice();
-  }, [localCurrency]);
+  }, [localCurrency, refreshPrice]);
 
   // Load SOL balance when modal opens
   useEffect(() => {
