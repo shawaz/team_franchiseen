@@ -40,8 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Ignored for the template, you probably want to remove it:
-package-lock.json
+# Bun lockfile (use npm for deployment compatibility)
+bun.lockb
 
 # clerk configuration (can include secrets)
 /.clerk/
