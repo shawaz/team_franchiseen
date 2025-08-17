@@ -53,6 +53,7 @@ export default defineSchema({
   franchise: defineTable({
     businessId: v.id("businesses"),
     owner_id: v.id("users"),
+    slug: v.optional(v.string()),
     locationAddress: v.string(),
     building: v.string(),
     carpetArea: v.number(),

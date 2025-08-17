@@ -1,8 +1,12 @@
 "use client";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
-import { CurrencyProvider } from "@/contexts/CurrencyContext";
+// Removed CurrencyProvider - now using SolOnlyProvider
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import SolanaWalletProvider from "@/components/providers/SolanaWalletProvider";
+import { ModalProvider } from "@/contexts/ModalContext";
+import ModalManager from "@/components/modals/ModalManager";
+import { SolOnlyProvider } from "@/contexts/SolOnlyContext";
 import FullScreenLoader from '@/components/ui/FullScreenLoader';
 import { Suspense } from 'react';
 
@@ -10,14 +14,20 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
-        <CurrencyProvider>
-          <ConvexClientProvider>
-            <Suspense fallback={<FullScreenLoader />}>
-              {children}
-            </Suspense>
-          </ConvexClientProvider>
-        </CurrencyProvider>
+        <SolanaWalletProvider>
+          <SolOnlyProvider>
+            <ModalProvider>
+              <ConvexClientProvider>
+                <Suspense fallback={<FullScreenLoader />}>
+                  {children}
+                </Suspense>
+                {/* Centralized Modal Manager */}
+                <ModalManager />
+              </ConvexClientProvider>
+            </ModalProvider>
+          </SolOnlyProvider>
+        </SolanaWalletProvider>
       </ClerkProvider>
     </ThemeProvider>
   );
-} 
+}

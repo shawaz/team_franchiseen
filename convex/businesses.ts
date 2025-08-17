@@ -3,6 +3,16 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 
+// Helper function to generate slug from name
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .trim();
+}
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -17,6 +27,7 @@ export const create = mutation({
   },
   returns: v.object({
     businessId: v.id("businesses"),
+    slug: v.string(),
   }),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -46,15 +57,33 @@ export const create = mutation({
       userId = user._id;
     }
 
+    // Generate slug if not provided
+    let slug = args.slug || generateSlug(args.name);
+
+    // Ensure slug is unique
+    let counter = 1;
+    let originalSlug = slug;
+    while (true) {
+      const existingBusiness = await ctx.db
+        .query("businesses")
+        .filter((q) => q.eq(q.field("slug"), slug))
+        .unique();
+
+      if (!existingBusiness) break;
+
+      slug = `${originalSlug}-${counter}`;
+      counter++;
+    }
+
     const now = Date.now();
     const businessData: any = {
       name: args.name,
+      slug: slug,
       logoUrl: args.logoUrl,
       owner_id: userId,
       createdAt: now,
       updatedAt: now,
     };
-    if (args.slug) businessData.slug = args.slug;
     if (args.industry_id) businessData.industry_id = args.industry_id;
     if (args.category_id) businessData.category_id = args.category_id;
     if (args.costPerArea !== undefined) businessData.costPerArea = args.costPerArea;
@@ -64,7 +93,7 @@ export const create = mutation({
 
     const businessId = await ctx.db.insert("businesses", businessData);
 
-    return { businessId };
+    return { businessId, slug };
   },
 });
 
@@ -84,6 +113,38 @@ export const getById = query({
   handler: async (ctx, args) => {
     const business = await ctx.db.get(args.businessId);
     if (!business) return null;
+    let industry = null;
+    let category = null;
+    if (business.industry_id) {
+      industry = await ctx.db
+        .query("industries")
+        .filter((q) => q.eq(q.field("_id"), business.industry_id))
+        .unique();
+    }
+    if (business.category_id) {
+      category = await ctx.db
+        .query("categories")
+        .filter((q) => q.eq(q.field("_id"), business.category_id))
+        .unique();
+    }
+    return {
+      ...business,
+      industry,
+      category,
+    };
+  },
+});
+
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const business = await ctx.db
+      .query("businesses")
+      .filter((q) => q.eq(q.field("slug"), args.slug))
+      .unique();
+
+    if (!business) return null;
+
     let industry = null;
     let category = null;
     if (business.industry_id) {

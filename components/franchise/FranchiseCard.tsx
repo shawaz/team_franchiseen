@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCurrency } from '@/contexts/CurrencyContext'
+import { useSolOnly } from '@/contexts/SolOnlyContext'
 
 type Status = 'Fundraising' | 'Launching' | 'Live' | 'Closed';
 
@@ -31,7 +31,7 @@ const statusColors: Record<Status, string> = {
 };
 
 const FranchiseCard: React.FC<FranchiseCardProps> = ({ franchise }) => {
-  const { formatAmount } = useCurrency();
+  const { formatSol } = useSolOnly();
 
   return (
     <Link href={`/franchise/${franchise.id}`} className="block">
@@ -76,14 +76,14 @@ const FranchiseCard: React.FC<FranchiseCardProps> = ({ franchise }) => {
           {/* Investment and Area */}
           <div className="mb-4">
             <div className="text-sm dark:text-gray-400  text-gray-600">
-              Budget: {formatAmount(franchise.totalInvestment)} • {franchise.carpetArea} sq.ft
+              Budget: {formatSol(franchise.totalInvestment)} • {franchise.carpetArea} sq.ft
             </div>
           </div>
 
           <div className="flex items-center justify-between align-middle gap-3">
             {/* Cost per Share */}
             <div className="text-sm dark:text-gray-100 text-gray-600 font-bold">
-              {formatAmount(franchise.costPerShare)} / Share
+              {formatSol(franchise.costPerShare)} / Share
             </div>
 
             {/* Status */}

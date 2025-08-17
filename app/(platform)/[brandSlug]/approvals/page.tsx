@@ -10,7 +10,7 @@ import type { Franchise, FranchiseStatus } from '@/types/api';
 import FranchiseApprovalModal from '@/components/franchise/FranchiseApprovalModal';
 import FullScreenLoader from '@/components/ui/FullScreenLoader';
 import { ErrorBoundary, ErrorComponent } from '@/components/error';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useSolOnly } from '@/contexts/SolOnlyContext';
 
 
 // Loading component for suspense fallback
@@ -36,7 +36,7 @@ function ApprovalsPageContent() {
   const { businessId } = useParams<{ businessId: string }>();
   const { user } = useUser();
   const router = useRouter();
-  const { formatAmount } = useCurrency();
+  const { formatSol } = useSolOnly();
   const convexUser = useQuery(api.myFunctions.getUserByEmail, {
     email: user?.emailAddresses?.[0]?.emailAddress || ''
   });
@@ -164,7 +164,7 @@ function ApprovalsPageContent() {
                           <span className="text-sm dark:text-gray-400 text-gray-500">•</span>
                           <span className="text-sm dark:text-gray-400 text-gray-500">Investment:</span>
                           <span className="text-sm font-semibold dark:text-gray-100 text-gray-900">
-                            {formatAmount(franchise.totalInvestment)}
+                            {formatSol(Number(franchise.totalInvestment))}
                           </span>
                         </div>
                       </div>

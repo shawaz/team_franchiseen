@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, Tab } from '@headlessui/react';
 // import ProfileCreationModal from './ProfileCreationModal';
 import { useSignUp, useSignIn } from '@clerk/nextjs';
-import { useCurrency } from '../contexts/CurrencyContext';
+import { useSolOnly } from '../contexts/SolOnlyContext';
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 
@@ -21,7 +21,7 @@ interface EmailVerificationModalProps {
 }
 
 const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { currency } = useCurrency();
+  const { currency } = useSolOnly();
   const { isLoaded: signUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
   const { isLoaded: signInLoaded, signIn, setActive: setSignInActive } = useSignIn();
   const upsertProfile = useMutation(api.myFunctions.upsertUserProfile);

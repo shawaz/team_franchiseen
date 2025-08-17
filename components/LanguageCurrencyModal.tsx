@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
-import { useCurrency, currencies_list, type Currency } from '../contexts/CurrencyContext';
+import { useSolOnly } from '../contexts/SolOnlyContext';
 
 interface LanguageCurrencyModalProps {
   isOpen: boolean;
@@ -22,20 +22,20 @@ const languages: Language[] = [
 ];
 
 export default function LanguageCurrencyModal({ isOpen, type, onClose }: LanguageCurrencyModalProps) {
-  const { currency, setCurrency } = useCurrency();
-  const options = type === 'language' ? languages : currencies_list;
+  const { currency } = useSolOnly();
+  const solCurrencies = [currency]; // Only SOL available
+  const options = type === 'language' ? languages : solCurrencies;
   const title = type === 'language' ? 'Select Language' : 'Select Currency';
 
-  const handleSelect = (opt: Language | Currency) => {
+  const handleSelect = () => {
     if (type === 'currency') {
-      setCurrency(opt as Currency);
-      // Save to localStorage
-      localStorage.setItem('selectedCurrency', JSON.stringify(opt));
+      // SOL is the only currency, no need to change
+      console.log('SOL is the only supported currency');
     }
     onClose();
   };
 
-  const isCurrency = (opt: Language | Currency): opt is Currency => {
+  const isCurrency = (opt: Language | typeof currency): opt is typeof currency => {
     return 'symbol' in opt;
   };
 
@@ -83,7 +83,7 @@ export default function LanguageCurrencyModal({ isOpen, type, onClose }: Languag
                           ? 'bg-primary/10 text-primary border-primary'
                           : 'bg-stone-50 dark:bg-stone-700 hover:bg-yellow-100 dark:hover:bg-yellow-900'
                         } text-left`}
-                      onClick={() => handleSelect(opt)}
+                      onClick={() => handleSelect()}
                     >
                       {type === 'currency' && isCurrency(opt) ? (
                         <span>{opt.symbol} {opt.label}</span>

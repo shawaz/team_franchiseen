@@ -3,6 +3,17 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { api } from "./_generated/api";
 
+// Helper function to generate slug from building name and location
+function generateFranchiseSlug(building: string, locationAddress: string): string {
+  const combined = `${building} ${locationAddress}`;
+  return combined
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .trim();
+}
+
 export const create = mutation({
   args: {
     businessId: v.id("businesses"),
@@ -13,7 +24,12 @@ export const create = mutation({
     totalInvestment: v.number(),
     totalShares: v.number(),
     selectedShares: v.number(),
+    slug: v.optional(v.string()),
   },
+  returns: v.object({
+    franchiseId: v.id("franchise"),
+    slug: v.string(),
+  }),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -34,8 +50,27 @@ export const create = mutation({
       throw new Error("User not found");
     }
 
+    // Generate slug if not provided
+    let slug = args.slug || generateFranchiseSlug(args.building, args.locationAddress);
+
+    // Ensure slug is unique
+    let counter = 1;
+    let originalSlug = slug;
+    while (true) {
+      const existingFranchise = await ctx.db
+        .query("franchise")
+        .filter((q) => q.eq(q.field("slug"), slug))
+        .unique();
+
+      if (!existingFranchise) break;
+
+      slug = `${originalSlug}-${counter}`;
+      counter++;
+    }
+
     const franchiseId = await ctx.db.insert("franchise", {
       ...args,
+      slug: slug,
       selectedShares: 0,
       owner_id: user._id,
       createdAt: Date.now(),
@@ -44,7 +79,36 @@ export const create = mutation({
 
     // Remove automatic share allocation here. Shares will be allocated after payment.
 
-    return franchiseId;
+    return { franchiseId, slug };
+  },
+});
+
+export const getBySlug = query({
+  args: {
+    businessSlug: v.string(),
+    franchiseSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // First get business by slug
+    const business = await ctx.db
+      .query("businesses")
+      .filter((q) => q.eq(q.field("slug"), args.businessSlug))
+      .unique();
+
+    if (!business) return null;
+
+    // Then get franchise by slug within that business
+    const franchise = await ctx.db
+      .query("franchise")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("businessId"), business._id),
+          q.eq(q.field("slug"), args.franchiseSlug)
+        )
+      )
+      .unique();
+
+    return franchise;
   },
 });
 

@@ -6,9 +6,9 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import NewPaymentModal from "@/components/franchise/NewPaymentModal";
+import { useModal } from "@/contexts/ModalContext";
 import EmailVerificationModal from "@/components/EmailVerificationModal";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSolOnly } from "@/contexts/SolOnlyContext";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 
@@ -37,10 +37,10 @@ export default function BusinessPageClient({
 }) {
   const router = useRouter();
   const { isSignedIn } = useUser();
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] =
     React.useState(false);
-  const { formatAmount } = useCurrency();
+  const { formatSol } = useSolOnly();
+  const { openSOLPaymentModal } = useModal();
   const business = useQuery(api.businesses.getById, {
     businessId: businessId as Id<"businesses">,
   });
@@ -113,11 +113,7 @@ export default function BusinessPageClient({
     }
   };
 
-  React.useEffect(() => {
-    if (!isSignedIn && isPaymentModalOpen) {
-      setIsPaymentModalOpen(false);
-    }
-  }, [isSignedIn, isPaymentModalOpen]);
+  // Removed payment modal state management - now handled by centralized modal system
 
   const statusCounts = useQuery(
     api.franchise.getStatusCountsByBusiness,
@@ -176,7 +172,17 @@ export default function BusinessPageClient({
               if (!isSignedIn) {
                 setIsEmailVerificationOpen(true);
               } else {
-                setIsPaymentModalOpen(true);
+                openSOLPaymentModal({
+                  franchiseData: {
+                    name: business?.name || "",
+                    logo: business?.logoUrl || "/logo/logo-2.svg",
+                    address: "",
+                    totalShares: 0,
+                    soldShares: 0,
+                    costPerShare: business?.costPerArea || 0,
+                    franchiseId: businessId as string,
+                  }
+                });
               }
             }}
             className="px-4 py-2 border-t w-full rounded-full bg-stone-900 text-white dark:bg-white dark:text-stone-900 hover:bg-stone-700 dark:hover:bg-stone-300 transition-colors"
@@ -213,7 +219,17 @@ export default function BusinessPageClient({
                   if (!isSignedIn) {
                     setIsEmailVerificationOpen(true);
                   } else {
-                    setIsPaymentModalOpen(true);
+                    openSOLPaymentModal({
+                      franchiseData: {
+                        name: business?.name || "",
+                        logo: business?.logoUrl || "/logo/logo-2.svg",
+                        address: "",
+                        totalShares: 0,
+                        soldShares: 0,
+                        costPerShare: business?.costPerArea || 0,
+                        franchiseId: businessId as string,
+                      }
+                    });
                   }
                 }}
                 className="flex items-center justify-center w-full dark:bg-white dark:text-stone-800 text-sm font-semibold dark:hover:bg-stone-300 bg-stone-900 hover:bg-stone-700 cursor-pointer text-white py-1.5 px-4 transition-colors"
@@ -320,7 +336,7 @@ export default function BusinessPageClient({
                                     <div className="hidden md:flex items-center space-x-2">
                                       <div className="text-sm dark:text-gray-400 text-gray-500">
                                         Share Price:{" "}
-                                        {formatAmount(franchise.costPerShare)}
+                                        {formatSol(franchise.costPerShare)}
                                       </div>
                                       {/* <div className="text-sm font-semibold dark:text-gray-100 text-gray-900"></div> */}
                                       <div className="text-sm hidden md:block dark:text-gray-400 text-gray-500">
@@ -335,7 +351,7 @@ export default function BusinessPageClient({
                                       </div>
                                       <div className="text-sm dark:text-gray-400 text-gray-500">
                                         Investment:{" "}
-                                        {formatAmount(
+                                        {formatSol(
                                           franchise.totalInvestment,
                                         )}
                                       </div>
@@ -357,11 +373,11 @@ export default function BusinessPageClient({
                                         (franchise.selectedShares || 0) * 500;
                                       return (
                                         <div className="flex items-center justify-between">
-                                          Invested: {formatAmount(invested)}{" "}
+                                          Invested: {formatSol(invested)}{" "}
                                           <span className="font-bold">
                                             {" "}
                                             Goal:{" "}
-                                            {formatAmount(
+                                            {formatSol(
                                               franchise.totalInvestment,
                                             )}
                                           </span>
@@ -427,21 +443,7 @@ export default function BusinessPageClient({
             })()}
           </div>
         </Card>
-        {isSignedIn && (
-          <NewPaymentModal
-            isOpen={isPaymentModalOpen}
-            onClose={() => setIsPaymentModalOpen(false)}
-            businessId={businessId as Id<"businesses">}
-            franchiseData={{
-              name: business?.name || "",
-              logo: business?.logoUrl || "/logo/logo-2.svg",
-              address: "",
-              totalShares: 0,
-              soldShares: 0,
-              costPerShare: business?.costPerArea || 0,
-            }}
-          />
-        )}
+        {/* SOL Payment Modal is now handled by centralized ModalManager */}
         <EmailVerificationModal
           isOpen={isEmailVerificationOpen}
           onClose={() => setIsEmailVerificationOpen(false)}

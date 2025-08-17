@@ -12,8 +12,8 @@ import TableRow from "@/components/ui/table/TableRow";
 import TableCell from "@/components/ui/table/TableCell";
 import TableHeaderCell from "@/components/ui/table/TableHeaderCell";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
-import WalletCard from "@/components/wallet/WalletCard";
-import { useUser } from "@clerk/nextjs";
+import SolanaWalletWithLocalCurrency from "@/components/wallet/SolanaWalletWithLocalCurrency";
+// Removed useUser import - not needed for BZC wallet
 import FooterMobile from "@/components/FooterMobile";
 
 function formatDate(timestamp: number) {
@@ -23,12 +23,7 @@ function formatDate(timestamp: number) {
 
 export default function TransactionsPage() {
   const params = useParams();
-  const { user } = useUser();
-  const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
-  const convexUser = useQuery(
-    api.myFunctions.getUserByEmail,
-    userEmail ? { email: userEmail } : "skip",
-  ) as Doc<"users"> | null | undefined;
+  // Removed user queries - not needed for BZC wallet
   const businessId = params?.businessId as Id<"businesses">;
   const invoices = useQuery(
     api.franchise.listInvoicesByBusiness,
@@ -39,11 +34,7 @@ export default function TransactionsPage() {
     | undefined;
   // const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
-  // Calculate wallet balance (sum of all invoice totalAmount)
-  const balance = React.useMemo(() => {
-    if (!invoices) return 0;
-    return invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-  }, [invoices]);
+  // Remove virtual wallet balance - now using only SOL
 
   // Map franchiseId to franchise name/building
   const franchiseMap = React.useMemo(() => {
@@ -57,34 +48,16 @@ export default function TransactionsPage() {
     );
   }, [franchises]);
 
-  // Placeholder handlers
-  const handleAddMoney = React.useCallback(() => {
-    // TODO: Implement add money logic/modal
-    alert("Add Money clicked!");
+  // Solana wallet handlers
+  const handleAddSol = React.useCallback(() => {
+    alert("Add SOL clicked! You can get devnet SOL from the airdrop button or Solana faucet.");
   }, []);
-  const handleWithdraw = React.useCallback(() => {
-    // TODO: Implement withdraw logic/modal
-    alert("Withdraw clicked!");
-  }, []);
-
-  // if (convexUser && (!convexUser.stripeCardholderId || !convexUser.isActivated)) {
-  //   return (
-  //     <StripeCardholderForm />
-  //   );
-  // }
 
   return (
     <div className="pt-[78px] min-h-screen ">
       <div className=" w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <WalletCard
-          balance={balance}
-          userName={
-            convexUser && (convexUser.first_name || convexUser.family_name)
-              ? `${convexUser.first_name || ""} ${convexUser.family_name || ""}`.trim()
-              : user?.fullName || user?.firstName || "Username"
-          }
-          onAddMoney={handleAddMoney}
-          onWithdraw={handleWithdraw}
+        <SolanaWalletWithLocalCurrency
+          onAddMoney={handleAddSol}
           className="w-full"
         />
       </div>

@@ -12,7 +12,7 @@ import TableRow from '@/components/ui/table/TableRow';
 import TableCell from '@/components/ui/table/TableCell';
 import TableHeaderCell from '@/components/ui/table/TableHeaderCell';
 import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
-import WalletCard from '@/components/wallet/WalletCard';
+import SolanaWalletWithLocalCurrency from '@/components/wallet/SolanaWalletWithLocalCurrency';
 
 function formatDate(timestamp: number) {
   const date = new Date(timestamp);
@@ -24,13 +24,9 @@ export default function TransactionsPage() {
   const businessId = params?.businessId as Id<'businesses'>;
   const invoices = useQuery(api.franchise.listInvoicesByBusiness, businessId ? { businessId } : 'skip') as Doc<'invoice'>[] | undefined;
   const franchises = useQuery(api.franchise.list, {}) as Doc<'franchise'>[] | undefined;
-  const business = useQuery(api.businesses.getById, businessId ? { businessId } : 'skip');
+  // Removed business query - not needed for BZC wallet
 
-  // Calculate wallet balance (sum of all invoice totalAmount)
-  const balance = React.useMemo(() => {
-    if (!invoices) return 0;
-    return invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-  }, [invoices]);
+  // Remove virtual wallet balance - now using only SOL
 
   // Map franchiseId to franchise name/building
   const franchiseMap = React.useMemo(() => {
@@ -41,23 +37,15 @@ export default function TransactionsPage() {
     }, {} as Record<string, string>);
   }, [franchises]);
 
-  // Placeholder handlers
-  const handleAddMoney = React.useCallback(() => {
-    // TODO: Implement add money logic/modal
-    alert('Add Money clicked!');
-  }, []);
-  const handleWithdraw = React.useCallback(() => {
-    // TODO: Implement withdraw logic/modal
-    alert('Withdraw clicked!');
+  // SOL wallet handlers
+  const handleAddSOL = React.useCallback(() => {
+    alert('Add SOL clicked! You can get devnet SOL from the airdrop button or Solana faucet.');
   }, []);
 
   return (<div>
     <div className=" w-full">
-      <WalletCard
-        balance={balance}
-        userName={business?.name || 'Business'}
-        onAddMoney={handleAddMoney}
-        onWithdraw={handleWithdraw}
+      <SolanaWalletWithLocalCurrency
+        onAddMoney={handleAddSOL}
         className="w-full"
       />
     </div>

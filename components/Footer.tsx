@@ -6,12 +6,12 @@ import { Instagram, Facebook, Youtube } from 'iconsax-reactjs';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import LanguageCurrencyModal from './LanguageCurrencyModal';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { useSolOnly } from '@/contexts/SolOnlyContext';
 
 export default function Footer() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'language' | 'currency' | null>(null);
-  const { currency } = useCurrency();
+  const { currency } = useSolOnly();
 
   const handleOpenModal = (type: 'language' | 'currency') => {
     setModalType(type);

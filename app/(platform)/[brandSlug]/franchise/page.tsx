@@ -6,24 +6,26 @@ import { Doc } from '@/convex/_generated/dataModel';
 
 interface BusinessPageProps {
   params: Promise<{
-    businessId: string;
+    brandSlug: string;
   }>;
 }
 
 export default async function BusinessPage({ params }: BusinessPageProps) {
-  const resolvedParams = await params;  
-  const businessId = resolvedParams.businessId;
-  
+  const resolvedParams = await params;
+  const brandSlug = resolvedParams.brandSlug;
+
+  // Get business by slug
+  const business = await fetchQuery(api.businesses.getBySlug, { slug: brandSlug });
+  if (!business) return notFound();
+
   // Fetch all franchises for this business
   const allFranchises = await fetchQuery(api.franchise.list, {});
   // Filter by businessId
-  const franchises = (allFranchises as Doc<"franchise">[]).filter(f => f.businessId === businessId);
-
-  if (!businessId) return notFound();
+  const franchises = (allFranchises as Doc<"franchise">[]).filter(f => f.businessId === business._id);
 
   return (
     <BusinessPageClient 
-      businessId={businessId} 
+      businessId={business._id}
       franchises={franchises.map(f => ({
         _id: f._id,
         building: f.building,

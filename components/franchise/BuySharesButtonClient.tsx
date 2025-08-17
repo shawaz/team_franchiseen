@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import PaymentModal from "./PaymentModal";
+import { useModal } from "@/contexts/ModalContext";
 import EmailVerificationModal from "../EmailVerificationModal";
 import { useUser } from "@clerk/nextjs";
 
@@ -16,27 +16,28 @@ interface FranchiseData {
 }
 
 export default function BuySharesButtonClient({ franchiseData }: { franchiseData: FranchiseData }) {
-  const [showModal, setShowModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const { isSignedIn } = useUser();
+  const { openSOLPaymentModal } = useModal();
 
   return (
     <>
       <button
         className="flex-1 bg-primary text-white dark:bg-stone-100 dark:text-stone-900 py-3 rounded-lg font-medium hover:bg-primary/90 dark:hover:bg-stone-200 transition-colors"
-        onClick={() => setShowModal(true)}
+        onClick={() => {
+          if (isSignedIn) {
+            openSOLPaymentModal({ franchiseData });
+          } else {
+            setShowEmailModal(true);
+          }
+        }}
       >
         Buy Shares
       </button>
-      {isSignedIn ? (
-        <PaymentModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          franchiseData={franchiseData}
-        />
-      ) : (
+      {!isSignedIn && (
         <EmailVerificationModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
+          isOpen={showEmailModal}
+          onClose={() => setShowEmailModal(false)}
         />
       )}
       {/* <PhoneVerificationModal

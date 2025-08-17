@@ -485,12 +485,13 @@ function Header() {
                               (business: {
                                 _id: string;
                                 name: string;
+                                slug?: string;
                                 logoUrl?: string;
                                 industry?: { name: string };
                               }) => (
                                 <Link
                                   key={business._id}
-                                  href={`/business/${business._id}/franchise`}
+                                  href={business.slug ? `/${business.slug}/franchise` : `/business/${business._id}/franchise`}
                                   className="flex items-center gap-3 px-5 py-2 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors"
                                 >
                                   <div className="relative h-8 w-8 flex-shrink-0 z-0">

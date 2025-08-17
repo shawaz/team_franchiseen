@@ -9,11 +9,9 @@ export type Currency = {
 };
 
 const currencies: Currency[] = [
-  { code: 'USD', label: 'US Dollar', symbol: '$' },
-  { code: 'INR', label: 'Indian Rupee', symbol: '₹' },
-  { code: 'EUR', label: 'Euro', symbol: '€' },
-  { code: 'CAD', label: 'Canadian Dollar', symbol: 'CA$' },
+  { code: 'SOL', label: 'Solana', symbol: 'SOL' },
   { code: 'AED', label: 'UAE Dirham', symbol: 'AED' },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
 ];
 
 type CurrencyContextType = {
@@ -25,8 +23,8 @@ type CurrencyContextType = {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrency] = useState<Currency>(currencies[0]);
-  const [rates, setRates] = useState<{ [code: string]: number }>({ INR: 1 });
+  const [currency, setCurrency] = useState<Currency>(currencies[0]); // Default to SOL
+  const [rates, setRates] = useState<{ [code: string]: number }>({ SOL: 1, AED: 20, USD: 5.5 }); // 1 SOL = 20 AED = 5.5 USD
 
   useEffect(() => {
     // Load saved currency preference from localStorage
@@ -41,28 +39,28 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Fetch exchange rates (base INR)
-    async function fetchRates() {
-      try {
-        const res = await fetch('https://api.exchangerate-api.com/v4/latest/INR');
-        const data = await res.json();
-        setRates(data.rates);
-      } catch (e) {
-        // fallback: keep INR as 1, others as 1 (no conversion)
-        setRates({ INR: 1 });
-      }
-    }
-    fetchRates();
+    // Set fixed exchange rates for SOL-based system
+    // In a real implementation, you might fetch live SOL prices
+    setRates({
+      SOL: 1,      // Base currency
+      AED: 20,     // 1 SOL = 20 AED
+      USD: 5.5,    // 1 SOL = 5.5 USD (approximate)
+    });
   }, []);
 
   const formatAmount = (amount: number | string) => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     const rate = rates[currency.code] || 1;
-    const converted = currency.code === 'INR' ? numAmount : numAmount * rate;
+    const converted = currency.code === 'SOL' ? numAmount : numAmount * rate;
+
+    if (currency.code === 'SOL') {
+      return `${converted.toFixed(4)} SOL`;
+    }
+
     return new Intl.NumberFormat('en', {
       style: 'currency',
       currency: currency.code,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: currency.code === 'AED' ? 0 : 2,
     }).format(converted);
   };
 

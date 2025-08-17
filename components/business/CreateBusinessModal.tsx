@@ -10,7 +10,7 @@ import { useMutation, useAction, useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import Select, { MultiValue, StylesConfig, SingleValue } from 'react-select'
 import countryList from 'react-select-country-list'
-import { useCurrency } from '@/contexts/CurrencyContext'
+import { useSolOnly } from '@/contexts/SolOnlyContext'
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from 'next/navigation'
 
@@ -39,6 +39,7 @@ interface CategoryOption { label: string; value: string; industry_id: string; }
 
 interface FormData {
   name: string;
+  slug: string;
   logoUrl: string;
   industry_id: string;
   category_id: string;
@@ -116,7 +117,7 @@ const selectStylesCategory = makeSelectStyles<CategoryOption, false>();
 
 export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessModalProps) {
   const { isSignedIn } = useUser()
-  const { currency } = useCurrency()
+  const { currency, formatSol } = useSolOnly()
   const createBusiness = useMutation(api.businesses.create)
   const getUploadSignature = useAction(api.uploadcare.getUploadSignature)
   const [selectedIndustry, setSelectedIndustry] = React.useState('')
@@ -130,6 +131,7 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
   const [isLoading, setIsLoading] = React.useState(false)
   const [formData, setFormData] = React.useState<FormData>({
     name: '',
+    slug: '',
     logoUrl: '',
     industry_id: '',
     category_id: '',
@@ -180,7 +182,7 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
   }, []);
 
   const resetForm = () => {
-    setFormData({ name: '', logoUrl: '', industry_id: '', category_id: '', costPerArea: 0, min_area: 0, serviceable_countries: [], currency: currency.code })
+    setFormData({ name: '', slug: '', logoUrl: '', industry_id: '', category_id: '', costPerArea: 0, min_area: 0, serviceable_countries: [], currency: currency.code })
     setLogoFile(null)
     setLogoPreview(null)
     if (fileInputRef.current) {
@@ -190,6 +192,7 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
   
   const isFormValid =
     formData.name.trim() &&
+    formData.slug.trim() &&
     formData.industry_id &&
     formData.category_id &&
     formData.costPerArea > 0 &&
@@ -208,6 +211,14 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
     // Validate all fields
     if (!formData.name.trim()) {
       toast.error('Business name is required')
+      return
+    }
+    if (!formData.slug.trim()) {
+      toast.error('Business URL slug is required')
+      return
+    }
+    if (!/^[a-z0-9-]+$/.test(formData.slug)) {
+      toast.error('URL slug can only contain lowercase letters, numbers, and hyphens')
       return
     }
     if (!logoFile) {
@@ -279,6 +290,7 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
 
       const result = await createBusiness({
         name: formData.name,
+        slug: formData.slug,
         logoUrl,
         industry_id: formData.industry_id,
         category_id: formData.category_id,
@@ -287,12 +299,12 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
         serviceable_countries: formData.serviceable_countries,
         currency: currency.code,
       })
-      
+
       toast.success('Business created successfully!')
       resetForm()
       onClose()
-      // Redirect to (platform)/business/{businessId}/franchise
-      router.push(`/business/${result.businessId}/franchise`)
+      // Redirect to new slug-based URL
+      router.push(`/${result.slug}/franchise`)
     } catch (err) {
       // Improved error logging and reporting
       console.error('Form submission error:', err, typeof err, JSON.stringify(err));
@@ -310,12 +322,30 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
     }
   }
 
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .trim();
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value,
+      };
+
+      // Auto-generate slug when business name changes (only if slug is empty or was auto-generated)
+      if (name === 'name' && (!prev.slug || prev.slug === generateSlug(prev.name))) {
+        newData.slug = generateSlug(value);
+      }
+
+      return newData;
+    });
   }
 
   const handleCountryChange = (selected: MultiValue<CountryOption>) => {
@@ -450,7 +480,7 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
 
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Business Name
+                      Business Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -462,6 +492,32 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
                       placeholder="Enter business name"
                       required
                     />
+                  </div>
+
+                  <div>
+                    <label htmlFor="slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Business URL Slug <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm">
+                        /{' '}
+                      </span>
+                      <input
+                        type="text"
+                        id="slug"
+                        name="slug"
+                        value={formData.slug}
+                        onChange={handleInputChange}
+                        className="w-full h-11 pl-8 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                        placeholder="business-name-slug"
+                        required
+                        pattern="[a-z0-9-]+"
+                        title="Only lowercase letters, numbers, and hyphens allowed"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      This will be your business URL: /{formData.slug || 'business-name-slug'}
+                    </p>
                   </div>
 
                   {/* Row 2: Industry and Category */}
@@ -556,11 +612,11 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
                     </div>
                     <div>
                       <label htmlFor="costPerArea" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Cost Per Area ({currency.code}) <span className="text-red-500">*</span>
+                        Cost Per Area (SOL) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                          {currency.symbol}
+                          SOL
                         </span>
                         <input
                           type="number"
@@ -568,10 +624,11 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
                           name="costPerArea"
                           value={formData.costPerArea}
                           onChange={handleInputChange}
-                          className="w-full h-11 pl-8 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                          placeholder="Enter cost per area"
+                          className="w-full h-11 pl-12 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                          placeholder="Enter cost per area in SOL"
                           required
-                          min={1}
+                          min={0.0001}
+                          step={0.0001}
                         />
                       </div>
                     </div>
@@ -579,13 +636,20 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
                   </div>
                   {/* Min Total Investment Display */}
                   {(formData.costPerArea > 0 && formData.min_area > 0) && (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded mb-4">
-                      <div className="text-md font-semibold text-yellow-700 dark:text-yellow-200">
-                        Minimum Total Investment: {currency.symbol}{' '}
-                        {(formData.costPerArea * formData.min_area).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                      </div>
-                      <div className="text-xs text-yellow-700 dark:text-yellow-200 mt-1">
-                        This includes working capital up to 3 years, rent, salary, and maintenance.
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-l-4 border-purple-400 p-4 rounded-lg">
+                      <div className="space-y-3">
+                        <div className="text-lg font-bold text-purple-700 dark:text-purple-200">
+                          Minimum Total Investment
+                        </div>
+                        <div className="bg-white dark:bg-stone-800 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
+                          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Investment Required</div>
+                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">
+                            {formatSol(formData.costPerArea * formData.min_area)}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                          <strong>Note:</strong> This includes working capital up to 3 years, rent, salary, and maintenance.
+                        </div>
                       </div>
                     </div>
                   )}

@@ -2,6 +2,8 @@ import BusinessSideNav from "@/components/business/BusinessSideNav";
 // import Footer from "@/components/Footer";
 import FooterMobile from "@/components/FooterMobile";
 import React from "react";
+import { fetchQuery } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
 
 export default async function BusinessLayout({
   children,
@@ -9,11 +11,17 @@ export default async function BusinessLayout({
 }: {
   children: React.ReactNode;
   params: Promise<{
-    businessId: string;
+    brandSlug: string;
   }>;
 }) {
   const resolvedParams = await params;
-  const businessId = resolvedParams.businessId;
+  const brandSlug = resolvedParams.brandSlug;
+
+  // Get business by slug to get the ID for the sidebar
+  const business = await fetchQuery(api.businesses.getBySlug, { slug: brandSlug });
+  if (!business) return null;
+
+  const businessId = business._id;
 
   return (
     <main className="min-h-screen bg-stone-100 dark:bg-stone-900">

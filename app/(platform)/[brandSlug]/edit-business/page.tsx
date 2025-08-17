@@ -8,7 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import Select, { MultiValue, SingleValue, CSSObjectWithLabel, ControlProps, OptionProps, GroupBase } from "react-select";
 import countryList from "react-select-country-list";
 import { toast } from "sonner";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSolOnly } from "@/contexts/SolOnlyContext";
 import { useUser } from "@clerk/nextjs";
 import UploadcareImage from "@uploadcare/nextjs-loader";
 import { Button } from "@/components/ui/button";
@@ -124,8 +124,12 @@ const countrySelectStyles = makeSelectStyles<CountryOption, true>();
 export default function EditBusinessPage() {
   const params = useParams();
   const router = useRouter();
-  const { businessId } = params as { businessId: string };
-  const { currency } = useCurrency();
+  const { brandSlug } = params as { brandSlug: string };
+
+  // Get business by slug
+  const businessBySlug = useQuery(api.businesses.getBySlug, { slug: brandSlug });
+  const businessId = businessBySlug?._id;
+  const { currency, formatSol } = useSolOnly();
   const { isSignedIn } = useUser();
   const getUploadSignature = useAction(api.uploadcare.getUploadSignature);
   const updateBusiness = useMutation(api.businesses.update);
@@ -386,21 +390,28 @@ export default function EditBusinessPage() {
             </div>
           </div>
           <div>
-            <label htmlFor="costPerArea" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cost Per Area ({currency.code})</label>
+            <label htmlFor="costPerArea" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cost Per Area (SOL)</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">{currency.symbol}</span>
-              <input type="number" id="costPerArea" name="costPerArea" value={formData.costPerArea} onChange={handleInputChange} className="w-full h-11 pl-8 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Enter cost per area" required min={1} />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">SOL</span>
+              <input type="number" id="costPerArea" name="costPerArea" value={formData.costPerArea} onChange={handleInputChange} className="w-full h-11 pl-12 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Enter cost per area in SOL" required min={0.0001} step={0.0001} />
             </div>
           </div>
         </div>
         {(formData.costPerArea > 0 && formData.min_area > 0) && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded mb-4">
-            <div className="text-md font-semibold text-yellow-700 dark:text-yellow-200">
-              Minimum Total Investment: {currency.symbol}{' '}
-              {(formData.costPerArea * formData.min_area).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-xs text-yellow-700 dark:text-yellow-200 mt-1">
-              This includes working capital up to 3 years, rent, salary, and maintenance.
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-l-4 border-purple-400 p-4 rounded-lg">
+            <div className="space-y-3">
+              <div className="text-lg font-bold text-purple-700 dark:text-purple-200">
+                Minimum Total Investment
+              </div>
+              <div className="bg-white dark:bg-stone-800 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Investment Required</div>
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">
+                  {formatSol(formData.costPerArea * formData.min_area)}
+                </div>
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                <strong>Note:</strong> This includes working capital up to 3 years, rent, salary, and maintenance.
+              </div>
             </div>
           </div>
         )}

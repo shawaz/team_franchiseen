@@ -11,8 +11,9 @@ import TableRow from "@/components/ui/table/TableRow";
 import TableCell from "@/components/ui/table/TableCell";
 import TableHeaderCell from "@/components/ui/table/TableHeaderCell";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
-import WalletCard from "@/components/wallet/WalletCard";
-import { useUser } from "@clerk/nextjs";
+import SolanaWalletWithLocalCurrency from "@/components/wallet/SolanaWalletWithLocalCurrency";
+// Removed SendBZCModal - now using SOL
+// Removed useUser import - not needed for BZC wallet
 // import StripeCardList from '@/components/wallet/StripeCardList';
 // import StripeCardTransactions from '@/components/wallet/StripeCardTransactions';
 // import StripeCardholderForm from '@/components/wallet/StripeCardholderForm';
@@ -23,12 +24,9 @@ function formatDate(timestamp: number) {
 }
 
 export default function TransactionsPage() {
-  const { user } = useUser();
-  const userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
-  const convexUser = useQuery(
-    api.myFunctions.getUserByEmail,
-    userEmail ? { email: userEmail } : "skip",
-  ) as Doc<"users"> | null | undefined;
+  // Removed user queries - not needed for BZC wallet
+
+  // Removed BZC modal states - now using SOL
   // For user wallet, we'll get all invoices or user-specific data
   // const invoices = useQuery(api.franchise.list, {}) as Doc<"franchise">[] | undefined;
   const franchises = useQuery(api.franchise.list, {}) as
@@ -36,12 +34,7 @@ export default function TransactionsPage() {
     | undefined;
   // const [selectedCardId, setSelectedCardId] = React.useState<string | null>(null);
 
-  // Calculate wallet balance (placeholder for user wallet)
-  const balance = React.useMemo(() => {
-    // For now, return a placeholder balance
-    // In a real app, this would come from user's actual wallet balance
-    return 50000;
-  }, []);
+  // Remove virtual wallet balance - now using only SOL
 
   // Map franchiseId to franchise name/building
   const franchiseMap = React.useMemo(() => {
@@ -55,34 +48,17 @@ export default function TransactionsPage() {
     );
   }, [franchises]);
 
-  // Placeholder handlers
-  const handleAddMoney = React.useCallback(() => {
-    // TODO: Implement add money logic/modal
-    alert("Add Money clicked!");
+  // SOL wallet handlers
+  const handleAddSOL = React.useCallback(() => {
+    alert('Add SOL clicked! You can get devnet SOL from the airdrop button or Solana faucet.');
   }, []);
-  const handleWithdraw = React.useCallback(() => {
-    // TODO: Implement withdraw logic/modal
-    alert("Withdraw clicked!");
-  }, []);
-
-  // if (convexUser && (!convexUser.stripeCardholderId || !convexUser.isActivated)) {
-  //   return (
-  //     <StripeCardholderForm />
-  //   );
-  // }
 
   return (
     <div>
-      <div className=" w-full">
-        <WalletCard
-          balance={balance}
-          userName={
-            convexUser && (convexUser.first_name || convexUser.family_name)
-              ? `${convexUser.first_name || ""} ${convexUser.family_name || ""}`.trim()
-              : user?.fullName || user?.firstName || "Username"
-          }
-          onAddMoney={handleAddMoney}
-          onWithdraw={handleWithdraw}
+      {/* Solana Wallet */}
+      <div className="mb-8">
+        <SolanaWalletWithLocalCurrency
+          onAddMoney={handleAddSOL}
           className="w-full"
         />
       </div>
@@ -159,6 +135,8 @@ export default function TransactionsPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* SOL modal already included above */}
     </div>
   );
 }

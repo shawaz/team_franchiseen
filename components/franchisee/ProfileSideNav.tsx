@@ -19,13 +19,13 @@ import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSolOnly } from "@/contexts/SolOnlyContext";
 import { Card, CardContent } from "../ui/card";
 
 function ProfileSideNav() {
   const pathname = usePathname();
   const { user } = useUser();
-  const { formatAmount } = useCurrency();
+  const { formatSol } = useSolOnly();
   const isActive = (path: string) => pathname === path;
 
   const userProfile = useQuery(api.myFunctions.getUserByEmail, {
@@ -62,7 +62,7 @@ function ProfileSideNav() {
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {userProfile.investment_budget
-                    ? `${formatAmount(userProfile.investment_budget)} / Month`
+                    ? `${formatSol(Number(userProfile.investment_budget))} / Month`
                     : "Budget not set"}
                 </p>
               </div>
@@ -78,26 +78,19 @@ function ProfileSideNav() {
               <PieChart className="h-5 w-5 mr-3" />
               Overview
             </a> */}
+             <Link
+              href="/profile/wallet"
+              className={`flex items-center ${isActive("/profile/wallet") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
+            >
+              <CreditCard className="h-5 w-5 mr-3" />
+              Wallet
+            </Link>
             <Link
               href="/profile/franchise"
               className={`flex items-center ${isActive("/profile/franchise") ? "text-primary bg-stone/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
             >
               <Store className="h-5 w-5 mr-3" />
-              Franchise Shares
-            </Link>
-            <Link
-              href="/profile/deals"
-              className={`flex items-center ${isActive("/profile/deals") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
-            >
-              <HeartHandshake className="h-5 w-5 mr-3" />
-              Shares Deals
-            </Link>
-            <Link
-              href="/profile/invoices"
-              className={`flex items-center ${isActive("/profile/invoices") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
-            >
-              <ReceiptText className="h-5 w-5 mr-3" />
-              Invoice
+              Portfolio
             </Link>
             <Link
               href="/profile/earnings"
@@ -107,12 +100,21 @@ function ProfileSideNav() {
               Earnings
             </Link>
             <Link
-              href="/profile/wallet"
-              className={`flex items-center ${isActive("/profile/wallet") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
+              href="/profile/deals"
+              className={`flex items-center ${isActive("/profile/deals") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
             >
-              <CreditCard className="h-5 w-5 mr-3" />
-              Card
+              <HeartHandshake className="h-5 w-5 mr-3" />
+              Contracts
             </Link>
+            <Link
+              href="/profile/invoices"
+              className={`flex items-center ${isActive("/profile/invoices") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
+            >
+              <ReceiptText className="h-5 w-5 mr-3" />
+              Invoice
+            </Link>
+            
+           
           </nav>
         </Card>
 

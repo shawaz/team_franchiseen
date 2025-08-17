@@ -9,7 +9,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
-import NewPaymentModal from "../franchise/NewPaymentModal";
+// Removed modal import - not needed in this component
 import BusinessCard from "./BusinessCard";
 
 interface BusinessSideNavProps {
@@ -22,11 +22,13 @@ function BusinessSideNav({ businessId }: BusinessSideNavProps) {
   const { user } = useUser();
   const createUser = useMutation(api.myFunctions.createUser);
   const [convexUserId, setConvexUserId] = useState<string | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const business = useQuery(api.businesses.getById, {
     businessId: businessId as Id<"businesses">,
   });
+
+  // Get business slug for routing
+  const businessSlug = business?.slug;
 
   React.useEffect(() => {
     async function fetchConvexUserId() {
@@ -73,37 +75,37 @@ function BusinessSideNav({ businessId }: BusinessSideNavProps) {
             <h3 className="text-lg font-semibold mb-4">Owner Dashboard</h3>
             <nav className="space-y-2">
               <Link
-                href={`/business/${businessId}/franchise`}
-                className={`flex items-center ${isActive(`/business/${businessId}/franchise`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
+                href={businessSlug ? `/${businessSlug}/franchise` : `/business/${businessId}/franchise`}
+                className={`flex items-center ${isActive(`/${businessSlug}/franchise`) || isActive(`/business/${businessId}/franchise`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
               >
                 <Store className="h-5 w-5 mr-3" />
                 Franchise
               </Link>
               <Link
-                href={`/business/${businessId}/approvals`}
-                className={`flex items-center ${isActive(`/business/${businessId}/approvals`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
+                href={businessSlug ? `/${businessSlug}/approvals` : `/business/${businessId}/approvals`}
+                className={`flex items-center ${isActive(`/${businessSlug}/approvals`) || isActive(`/business/${businessId}/approvals`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
               >
                 <CheckCircle className="h-5 w-5 mr-3" />
                 Approvals
               </Link>
               <Link
-                href={`/business/${businessId}/earnings`}
-                className={`flex items-center ${isActive(`/business/${businessId}/earnings`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
+                href={businessSlug ? `/${businessSlug}/earnings` : `/business/${businessId}/earnings`}
+                className={`flex items-center ${isActive(`/${businessSlug}/earnings`) || isActive(`/business/${businessId}/earnings`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
               >
                 <CreditCard className="h-5 w-5 mr-3" />
                 Earnings
               </Link>
               <Link
-                href={`/business/${businessId}/wallet`}
-                className={`flex items-center ${isActive(`/business/${businessId}/wallet`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
+                href={businessSlug ? `/${businessSlug}/wallet` : `/business/${businessId}/wallet`}
+                className={`flex items-center ${isActive(`/${businessSlug}/wallet`) || isActive(`/business/${businessId}/wallet`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
               >
                 <Wallet className="h-5 w-5 mr-3" />
                 Wallet
               </Link>
 
               <Link
-                href={`/business/${businessId}/edit-business`}
-                className={`flex items-center ${isActive(`/business/${businessId}/edit-business`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
+                href={businessSlug ? `/${businessSlug}/edit-business` : `/business/${businessId}/edit-business`}
+                className={`flex items-center ${isActive(`/${businessSlug}/edit-business`) || isActive(`/business/${businessId}/edit-business`) ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary hover:bg-stone-50 dark:hover:bg-stone-700 dark:text-white p-2 rounded-lg transition-colors`}
               >
                 <Settings className="h-5 w-5 mr-3" />
                 Edit Business
@@ -149,19 +151,7 @@ function BusinessSideNav({ businessId }: BusinessSideNavProps) {
         </section>
         )} */}
 
-        <NewPaymentModal
-          isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
-          businessId={businessId as Id<"businesses">}
-          franchiseData={{
-            name: business?.name || "",
-            logo: business?.logoUrl || "/logo/logo-2.svg",
-            address: "",
-            totalShares: 0,
-            soldShares: 0,
-            costPerShare: business?.costPerArea || 0,
-          }}
-        />
+        {/* SOL Payment Modal is now handled by centralized ModalManager */}
       </div>
     </div>
   );
