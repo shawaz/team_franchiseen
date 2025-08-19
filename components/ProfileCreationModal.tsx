@@ -19,16 +19,6 @@ const FEMALE_AVATARS = Array.from({ length: 6 }, (_, i) => `/avatar/avatar-f-${i
 declare global {
   interface Window {
     initGooglePlaces?: () => void;
-    google: {
-      maps: {
-        places: {
-          Autocomplete: new (input: HTMLInputElement, options?: { types: string[] }) => {
-            addListener: (event: string, handler: () => void) => void;
-            getPlace: () => google.maps.places.PlaceResult;
-          };
-        };
-      };
-    };
   }
 }
 

@@ -86,11 +86,11 @@ function ProfileSideNav() {
               Wallet
             </Link>
             <Link
-              href="/profile/franchise"
+              href="/profile/shares"
               className={`flex items-center ${isActive("/profile/franchise") ? "text-primary bg-stone/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
             >
               <Store className="h-5 w-5 mr-3" />
-              Portfolio
+              Shares
             </Link>
             <Link
               href="/profile/earnings"
@@ -100,7 +100,7 @@ function ProfileSideNav() {
               Earnings
             </Link>
             <Link
-              href="/profile/deals"
+              href="/profile/contacts"
               className={`flex items-center ${isActive("/profile/deals") ? "text-primary bg-primary/5" : "text-gray-600"} hover:text-primary dark:hover:text-primary dark:text-gray-400 dark:hover:bg-stone-700 hover:bg-stone-50 px-6 py-3 transition-colors`}
             >
               <HeartHandshake className="h-5 w-5 mr-3" />
@@ -113,8 +113,6 @@ function ProfileSideNav() {
               <ReceiptText className="h-5 w-5 mr-3" />
               Invoice
             </Link>
-            
-           
           </nav>
         </Card>
 

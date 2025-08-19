@@ -6,12 +6,12 @@ import { Instagram, Facebook, Youtube } from 'iconsax-reactjs';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import LanguageCurrencyModal from './LanguageCurrencyModal';
-import { useSolOnly } from '@/contexts/SolOnlyContext';
+import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 
 export default function Footer() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'language' | 'currency' | null>(null);
-  const { currency } = useSolOnly();
+  const { selectedCurrency } = useGlobalCurrency();
 
   const handleOpenModal = (type: 'language' | 'currency') => {
     setModalType(type);
@@ -34,7 +34,7 @@ export default function Footer() {
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => handleOpenModal('currency')}>
-                Currency: {currency.code}
+                Currency: {selectedCurrency.toUpperCase()}
               </Button>
               <Button variant="outline" size="sm" onClick={() => handleOpenModal('language')}>
                 Language: English

@@ -90,7 +90,7 @@ const SolanaWalletCard: React.FC<SolanaWalletCardProps> = ({
   };
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-6 text-white shadow-xl ${className}`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-600 via-yellow-600 to-yellow-700 p-6 text-white shadow-xl ${className}`}>
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
       <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10"></div>

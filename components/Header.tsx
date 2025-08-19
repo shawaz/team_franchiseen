@@ -8,14 +8,15 @@ import {
   Search,
   Store,
   UserCircle,
-  Globe,
   X,
   Filter,
+  Heart,
+  Settings,
+  PlusSquare,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
-import { ThemeSwitcher } from "./theme-switcher";
 import {
   SignedIn,
   SignedOut,
@@ -29,23 +30,32 @@ import { api } from "../convex/_generated/api";
 import CreateBusinessModal from "./business/CreateBusinessModal";
 import { Id } from "../convex/_generated/dataModel";
 import LanguageCurrencyModal from "./LanguageCurrencyModal";
+import SettingsModal from "./modals/SettingsModal";
+import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 
 function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isCreateBusinessOpen, setIsCreateBusinessOpen] = useState(false);
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
+  const [isLikedOpen, setIsLikedOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileSearchMode, setIsMobileSearchMode] = useState(false);
+
+  // Use global currency context
+  const { selectedCurrency, currencies } = useGlobalCurrency();
   const [isLangCurrModalOpen, setIsLangCurrModalOpen] = useState(false);
-  const [langCurrModalType, setLangCurrModalType] = useState<
+  const [langCurrModalType] = useState<
     "language" | "currency" | null
   >(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsModalTab, setSettingsModalTab] = useState<'currency' | 'theme'>('currency');
 
   // Refs for dropdown containers
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const likedRef = useRef<HTMLDivElement>(null);
 
   const { user } = useUser();
   const { userMemberships } = useOrganizationList();
@@ -157,7 +167,7 @@ function Header() {
 
   return (
     <>
-      <header className="fixed w-full bg-background-light dark:bg-stone-800/50 bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 py-3">
+      <header className="fixed w-full bg-background-light dark:bg-stone-800/50 bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 py-3 border-b border-stone-200 dark:border-stone-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Mobile Search Mode */}
           {isMobileSearchMode ? (
@@ -261,11 +271,13 @@ function Header() {
                       className="z-0"
                     />
                     <span className="text-xl ml-4 font-bold">FRANCHISEEN</span>
+                    
                   </div>
                 </Link>
                 {/* <div className="hidden sm:block">|</div> */}
               </div>
-              <div className="ml-4 hidden sm:flex items-center justify-center ">
+
+               <div className="ml-4 hidden sm:flex items-center justify-center ">
                 <div id="search-container" className="w-auto relative">
                   <div className="relative flex items-center dark:bg-stone-800 border-2 transition-all duration-300">
                     <input
@@ -330,6 +342,7 @@ function Header() {
                   )}
                 </div>
               </div>
+              
 
               {/* Right Navigation */}
               <div className="flex items-center justify-end w-full md:w-2/3">
@@ -341,20 +354,70 @@ function Header() {
                   >
                     <Search className="h-5 w-5 text-stone-700 dark:text-stone-300" />
                   </button>
-                  <ThemeSwitcher />
-                  <button
-                    className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                    aria-label="Change Currency"
-                    onClick={() => {
-                      setLangCurrModalType("currency");
-                      setIsLangCurrModalOpen(true);
-                    }}
-                  >
-                    <Globe className="h-5 w-5 text-stone-700 dark:text-stone-300" />
-                  </button>
                 </div>
                 <SignedIn>
                   <div className="flex items-center gap-3 ml-2">
+                    <Link
+                      href="/create"
+                      className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                      aria-label="Create New Franchise"
+                    >
+                      <PlusSquare className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                    </Link>
+                  {/* Liked Franchises Dropdown */}
+                  <div className="relative" ref={likedRef}>
+                    <button
+                      className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                      aria-label="Liked Franchises"
+                      onClick={() => setIsLikedOpen(!isLikedOpen)}
+                    >
+                      <Heart className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                    </button>
+                    
+                    {isLikedOpen && (
+                      <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 z-50">
+                        <div className="p-4 border-b border-stone-200 dark:border-stone-700">
+                          <h3 className="font-semibold text-stone-900 dark:text-stone-100">Liked Franchises</h3>
+                        </div>
+                        <div className="py-2 max-h-64 overflow-y-auto">
+                          {[
+                            { id: 1, name: "McDonald's Downtown", location: "Downtown Plaza", image: "/logo/logo-2.svg" },
+                            { id: 2, name: "Subway Central", location: "Central Mall", image: "/logo/logo-2.svg" },
+                            { id: 3, name: "KFC Westside", location: "West District", image: "/logo/logo-2.svg" }
+                          ].map((franchise) => (
+                            <div key={franchise.id} className="px-4 py-3 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-stone-200 dark:bg-stone-600">
+                                  <Image
+                                    src={franchise.image}
+                                    alt={franchise.name}
+                                    width={40}
+                                    height={40}
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium text-stone-900 dark:text-stone-100 text-sm">{franchise.name}</p>
+                                  <p className="text-xs text-stone-500 dark:text-stone-400">{franchise.location}</p>
+                                </div>
+                                <Heart className="h-4 w-4 text-red-500 fill-current" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="p-3 border-t border-stone-200 dark:border-stone-700">
+                          <Link 
+                            href="/liked-franchises"
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            onClick={() => setIsLikedOpen(false)}
+                          >
+                            View all liked franchises →
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                     {/* Notifications Dropdown */}
                     <div className="relative" ref={notificationsRef}>
                       <button
@@ -450,7 +513,7 @@ function Header() {
                         }`}
                       >
                         <div>
-                          <Link href="/profile/franchise">
+                          <Link href="/profile">
                             <div className="flex items-center gap-3 px-5 py-2 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors">
                               <div className="relative h-8 w-8 flex-shrink-0 z-0">
                                 <Image
@@ -510,12 +573,59 @@ function Header() {
                                     <h3 className="text-sm font-medium truncate">
                                       {business.name}
                                     </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                      {business.industry?.name || 'Business'}
+                                    </p>
                                   </div>
                                 </Link>
                               ),
                             )}
                           </div>
                         )}
+
+                        {/* Currency Display */}
+                        <div className="border-t px-6 py-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg">{currencies.find(c => c.code === selectedCurrency)?.flag}</span>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {selectedCurrency.toUpperCase()}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Current Currency
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSettingsModalTab('currency');
+                                setIsSettingsModalOpen(true);
+                                setIsProfileOpen(false);
+                              }}
+                              className="text-xs text-primary hover:text-primary/80 font-medium"
+                            >
+                              Change
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Settings Menu */}
+                        <div className="border-t">
+                          <button
+                            onClick={() => {
+                              setSettingsModalTab('theme');
+                              setIsSettingsModalOpen(true);
+                              setIsProfileOpen(false);
+                            }}
+                            className="w-full flex items-center gap-4 px-6 py-3 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors"
+                          >
+                            <Settings className="h-5 w-5 dark:text-gray-400 text-gray-400" />
+                            <span className="text-sm font-medium">
+                              Settings
+                            </span>
+                          </button>
+                        </div>
 
                         <div className="border-t">
                           <Link
@@ -574,6 +684,11 @@ function Header() {
         isOpen={isLangCurrModalOpen}
         type={langCurrModalType}
         onClose={() => setIsLangCurrModalOpen(false)}
+      />
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        initialTab={settingsModalTab}
       />
     </>
   );

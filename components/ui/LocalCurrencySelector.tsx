@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, Globe, Check } from 'lucide-react';
-import { useLocalCurrency } from '@/contexts/LocalCurrencyContext';
+import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 
 interface LocalCurrencySelectorProps {
   className?: string;
@@ -16,25 +16,24 @@ const LocalCurrencySelector: React.FC<LocalCurrencySelectorProps> = ({
   compact = false 
 }) => {
   const { 
-    localCurrency, 
-    availableCurrencies, 
-    setLocalCurrency, 
-    isDetecting,
-    detectedCountry 
-  } = useLocalCurrency();
+    selectedCurrency, 
+    currencies, 
+    setSelectedCurrency, 
+    loading 
+  } = useGlobalCurrency();
   
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleCurrencySelect = (currency: typeof localCurrency) => {
-    setLocalCurrency(currency);
+  const handleCurrencySelect = (currencyCode: string) => {
+    setSelectedCurrency(currencyCode);
     setIsOpen(false);
   };
 
-  if (isDetecting) {
+  if (loading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <Globe className="h-4 w-4 animate-spin text-gray-400" />
-        {!compact && <span className="text-sm text-gray-500">Detecting location...</span>}
+        {!compact && <span className="text-sm text-gray-500">Loading currencies...</span>}
       </div>
     );
   }
@@ -43,12 +42,7 @@ const LocalCurrencySelector: React.FC<LocalCurrencySelectorProps> = ({
     <div className={`relative ${className}`}>
       {showLabel && !compact && (
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Local Currency
-          {detectedCountry && (
-            <span className="text-xs text-gray-500 ml-1">
-              (Detected: {detectedCountry})
-            </span>
-          )}
+          Currency
         </label>
       )}
       
@@ -67,7 +61,7 @@ const LocalCurrencySelector: React.FC<LocalCurrencySelectorProps> = ({
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-gray-500" />
             <span className={`${compact ? 'text-sm' : ''} text-gray-900 dark:text-white`}>
-              {compact ? localCurrency.code : `${localCurrency.symbol} ${localCurrency.label}`}
+              {compact ? selectedCurrency.toUpperCase() : `${currencies.find(c => c.code === selectedCurrency)?.flag || '💰'} ${selectedCurrency.toUpperCase()}`}
             </span>
           </div>
           <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -83,27 +77,27 @@ const LocalCurrencySelector: React.FC<LocalCurrencySelectorProps> = ({
             
             {/* Dropdown */}
             <div className="absolute z-20 w-full mt-1 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg shadow-lg max-h-60 overflow-auto">
-              {availableCurrencies.map((currency) => (
+              {currencies.map((currency) => (
                 <button
                   key={currency.code}
                   type="button"
-                  onClick={() => handleCurrencySelect(currency)}
+                  onClick={() => handleCurrencySelect(currency.code)}
                   className={`
                     w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-stone-600 
                     flex items-center justify-between transition-colors
-                    ${currency.code === localCurrency.code ? 'bg-primary/10 text-primary' : 'text-gray-900 dark:text-white'}
+                    ${currency.code === selectedCurrency ? 'bg-primary/10 text-primary' : 'text-gray-900 dark:text-white'}
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm">{currency.symbol}</span>
+                    <span className="text-lg">{currency.flag}</span>
                     <div>
-                      <div className="font-medium">{currency.label}</div>
+                      <div className="font-medium">{currency.code.toUpperCase()}</div>
                       <div className="text-xs text-gray-500">
-                        1 SOL = {currency.solRate.toLocaleString()} {currency.code}
+                        {currency.name}
                       </div>
                     </div>
                   </div>
-                  {currency.code === localCurrency.code && (
+                  {currency.code === selectedCurrency && (
                     <Check className="h-4 w-4 text-primary" />
                   )}
                 </button>
@@ -115,7 +109,7 @@ const LocalCurrencySelector: React.FC<LocalCurrencySelectorProps> = ({
       
       {!compact && (
         <div className="mt-1 text-xs text-gray-500">
-          Exchange rate: 1 SOL = {localCurrency.solRate.toLocaleString()} {localCurrency.code}
+          Selected: {selectedCurrency.toUpperCase()}
         </div>
       )}
     </div>

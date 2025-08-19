@@ -26,6 +26,7 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
   return (
     <BusinessPageClient 
       businessId={business._id}
+      brandSlug={brandSlug}
       franchises={franchises.map(f => ({
         _id: f._id,
         building: f.building,

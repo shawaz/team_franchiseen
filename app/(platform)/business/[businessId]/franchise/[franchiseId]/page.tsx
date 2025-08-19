@@ -154,7 +154,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                   Cost per Share
                 </p>
-                <p className="text-2xl font-semibold dark:text-white">₹500</p>
+                <p className="text-2xl font-semibold dark:text-white">500</p>
               </div>
               <BuySharesButtonClient
                 franchiseData={{

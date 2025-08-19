@@ -8,7 +8,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useModal } from "@/contexts/ModalContext";
 import EmailVerificationModal from "@/components/EmailVerificationModal";
-import { useSolOnly } from "@/contexts/SolOnlyContext";
+import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 import Image from "next/image";
 
 interface Franchise {
@@ -30,15 +30,17 @@ interface Franchise {
 export default function BusinessPageClient({
   businessId,
   franchises,
+  brandSlug,
 }: {
   businessId: string;
   franchises: Franchise[];
+  brandSlug: string;
 }) {
   const router = useRouter();
   const { isSignedIn } = useUser();
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] =
     React.useState(false);
-  const { formatSol } = useSolOnly();
+  const { formatAmount } = useGlobalCurrency();
   const { openSOLPaymentModal } = useModal();
   const business = useQuery(api.businesses.getById, {
     businessId: businessId as Id<"businesses">,
@@ -114,91 +116,34 @@ export default function BusinessPageClient({
 
   // Removed payment modal state management - now handled by centralized modal system
 
-  const statusCounts = useQuery(
-    api.franchise.getStatusCountsByBusiness,
-    business?._id ? { businessId: business._id as Id<"businesses"> } : "skip",
-  );
-  const statusCountsError =
-    statusCounts === undefined && business?._id ? "..." : null;
-
   return (
-    <div>
-      <div className="md:hidden ">
-        <div className="text-center rounded-lg px-4 py-3 mb-4 bg-white dark:bg-stone-800  ">
-          <Image
-            src={business?.logoUrl || "/logo/logo-2.svg"}
-            alt="Business Logo"
-            width={75}
-            height={75}
-            className="rounded text-center mx-auto my-3"
-            loading="lazy"
-          />
-          <h1 className="text-lg font-semibold text-stone-900 dark:text-white mb-3">
-            {business?.name || "Business Name"}
-          </h1>
-          <div className="text-gray-500 dark:text-gray-400 mb-4 text-sm mt-1">
-            {business?.category?.name || "No Category"} 
-            {/* {business?.industry?.name || "No industry"} */}
-          </div>
-          <div className=" border-b pb-3 mb-3 gap-3 flex justify-evenly">
-            <div className="space-y-1 text-center">
-              <p className="font-bold">
-                {statusCounts ? statusCounts.Funding : statusCountsError || "-"}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Funding
-              </p>
+      <div className=" h-space-y-8 py-6">
+        <section className="bg-white dark:bg-stone-800  border border-stone-200 dark:border-stone-700">
+          <div className="flex px-4 py-4 space-x-4 justify-between">
+            <div className="flex items-center space-x-4">
+              <Image src={business?.logoUrl || "/logo/logo-2.svg"} alt="Business Logo" width={60} height={60} className="rounded text-center" />
+              <div className="flex flex-col ">
+                <h1 className="text-2xl font-bold  text-stone-900 dark:text-white">{business?.name}</h1>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.industry?.name}</p>
+                  <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.category?.name}</p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1 text-center">
-              <p className="font-bold">
-                {statusCounts
-                  ? statusCounts.Launching
-                  : statusCountsError || "-"}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Launching
-              </p>
-            </div>
-            <div className="space-y-1 text-center">
-              <p className="font-bold">
-                {statusCounts ? statusCounts.Active : statusCountsError || "-"}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Active</p>
+            <div className="flex items-center gap-2">
+              <button className="bg-stone-900 text-white font-medium px-5 py-2 transition-colors hover:bg-stone-700">Follow Franchise</button>
             </div>
           </div>
-          <button
-            onClick={() => {
-              if (!isSignedIn) {
-                setIsEmailVerificationOpen(true);
-              } else {
-                openSOLPaymentModal({
-                  franchiseData: {
-                    name: business?.name || "",
-                    logo: business?.logoUrl || "/logo/logo-2.svg",
-                    address: "",
-                    totalShares: 0,
-                    soldShares: 0,
-                    costPerShare: business?.costPerArea || 0,
-                    franchiseId: businessId as string,
-                  }
-                });
-              }
-            }}
-            className="px-4 py-2 border-t w-full rounded-full bg-stone-900 text-white dark:bg-white dark:text-stone-900 hover:bg-stone-700 dark:hover:bg-stone-300 transition-colors"
-          >
-            Start New Franchise
-          </button>
-        </div>
-      </div>
-      <div className="lg:col-span-3 h-space-y-8">
-        <section className="bg-white dark:bg-stone-800 rounded-xl shadow-sm">
+
+        </section>
+        <section className="bg-white dark:bg-stone-800  border border-stone-200 dark:border-stone-700">
           <div className="">
             <div className="flex items-center px-4 py-4 justify-between">
               <nav className="flex gap-4 overflow-x-auto no-scrollbar">
                 {statusTabs.map((tab) => (
                   <button
                     key={tab.value}
-                    className={`px-4 py-2 flex items-center rounded-full text-sm font-semibold border transition-colors duration-200 ${selectedStatus === tab.value ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-stone-900 dark:border-white" : "bg-white dark:bg-stone-800 text-stone-900 dark:text-white border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700"}`}
+                    className={`px-4 py-2 flex items-center text-sm font-semibold border transition-colors duration-200 ${selectedStatus === tab.value ? "bg-stone-900 text-white dark:bg-white dark:text-stone-900 border-stone-900 dark:border-white" : "bg-white dark:bg-stone-800 text-stone-900 dark:text-white border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700"}`}
                     onClick={() => setSelectedStatus(tab.value)}
                   >
                     {tab.label}{" "}
@@ -227,7 +172,7 @@ export default function BusinessPageClient({
                       });
                     }
                   }}
-                  className="flex items-center justify-center w-full dark:bg-white dark:text-stone-800 text-sm font-semibold dark:hover:bg-stone-300 bg-stone-900 hover:bg-stone-700 cursor-pointer text-white py-2.5 px-4 rounded-full transition-colors"
+                  className="flex items-center justify-center w-full dark:bg-white dark:text-stone-800 text-sm font-semibold dark:hover:bg-stone-300 bg-stone-900 hover:bg-stone-700 cursor-pointer text-white py-2.5 px-4 transition-colors"
                 >
                   Start New Franchise
                 </button>
@@ -243,8 +188,8 @@ export default function BusinessPageClient({
 
               if (filteredFranchises.length === 0) {
                 return (
-                  <div className="flex flex-col items-center justify-center py-62 px-4 text-center">
-                    <div className="bg-gray-100 dark:bg-stone-700 rounded-full p-4 mb-4">
+                  <div className="flex flex-col items-center justify-center py-62 px-4 ">
+                    <div className="bg-gray-100 dark:bg-stone-700 p-4 mb-4">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-8 w-8 text-gray-400"
@@ -279,13 +224,13 @@ export default function BusinessPageClient({
                       className=" p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-stone-700/50 transition-colors duration-200"
                       onClick={() =>
                         router.push(
-                          `/business/${businessId}/franchise/${franchise._id}`,
+                          `/${brandSlug}/${franchise._id}`,
                         )
                       }
                     >
                       {franchise.status && (
                         <div
-                          className={`ml-2 absolute  md:hidden flex px-3 py-2 rounded-full text-xs uppercase font-semibold ${getStatusBadge(franchise.status)}`}
+                          className={`ml-2 absolute  md:hidden flex px-3 py-2 text-xs uppercase font-semibold ${getStatusBadge(franchise.status)}`}
                         >
                           {franchise.status}
                         </div>
@@ -316,7 +261,7 @@ export default function BusinessPageClient({
                                 </h2>
                                 {franchise.status && (
                                   <span
-                                    className={`ml-2 hidden md:flex px-4 py-2 rounded-full text-sm font-semibold ${getStatusBadge(franchise.status)}`}
+                                    className={`ml-2 hidden md:flex px-4 py-2 text-sm font-semibold ${getStatusBadge(franchise.status)}`}
                                   >
                                     {franchise.status}
                                   </span>
@@ -332,7 +277,7 @@ export default function BusinessPageClient({
                                     <div className="hidden md:flex items-center space-x-2">
                                       <div className="text-sm dark:text-gray-400 text-gray-500">
                                         Share Price:{" "}
-                                        {formatSol(franchise.costPerShare)}
+                                        {formatAmount(franchise.costPerShare)}
                                       </div>
                                       {/* <div className="text-sm font-semibold dark:text-gray-100 text-gray-900"></div> */}
                                       <div className="text-sm hidden md:block dark:text-gray-400 text-gray-500">
@@ -347,7 +292,7 @@ export default function BusinessPageClient({
                                       </div>
                                       <div className="text-sm dark:text-gray-400 text-gray-500">
                                         Investment:{" "}
-                                        {formatSol(
+                                        {formatAmount(
                                           franchise.totalInvestment,
                                         )}
                                       </div>
@@ -369,11 +314,11 @@ export default function BusinessPageClient({
                                         (franchise.selectedShares || 0) * 500;
                                       return (
                                         <div className="flex items-center justify-between">
-                                          Invested: {formatSol(invested)}{" "}
+                                          Invested: {formatAmount(invested)}{" "}
                                           <span className="font-bold">
                                             {" "}
                                             Goal:{" "}
-                                            {formatSol(
+                                            {formatAmount(
                                               franchise.totalInvestment,
                                             )}
                                           </span>
@@ -421,7 +366,7 @@ export default function BusinessPageClient({
                             {(() => {
                               const { percent, color } = getProgress(franchise);
                               return (
-                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
+                                <div className="w-full h-2 bg-gray-200 overflow-hidden mt-2">
                                   <div
                                     className={`h-full ${color} transition-all duration-500 ease-in-out`}
                                     style={{ width: `${percent}%` }}
@@ -453,6 +398,6 @@ export default function BusinessPageClient({
           onClose={() => setIsEmailVerificationOpen(false)}
         />
       </div>
-    </div>
+
   );
 }

@@ -7,6 +7,7 @@ import SolanaWalletProvider from "@/components/providers/SolanaWalletProvider";
 import { ModalProvider } from "@/contexts/ModalContext";
 import ModalManager from "@/components/modals/ModalManager";
 import { SolOnlyProvider } from "@/contexts/SolOnlyContext";
+import { GlobalCurrencyProvider } from "@/contexts/GlobalCurrencyContext";
 import FullScreenLoader from '@/components/ui/FullScreenLoader';
 import { Suspense } from 'react';
 
@@ -14,19 +15,21 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
-        <SolanaWalletProvider>
-          <SolOnlyProvider>
-            <ModalProvider>
-              <ConvexClientProvider>
-                <Suspense fallback={<FullScreenLoader />}>
-                  {children}
-                </Suspense>
-                {/* Centralized Modal Manager */}
-                <ModalManager />
-              </ConvexClientProvider>
-            </ModalProvider>
-          </SolOnlyProvider>
-        </SolanaWalletProvider>
+        <GlobalCurrencyProvider>
+          <SolanaWalletProvider>
+            <SolOnlyProvider>
+              <ModalProvider>
+                <ConvexClientProvider>
+                  <Suspense fallback={<FullScreenLoader />}>
+                    {children}
+                  </Suspense>
+                  {/* Centralized Modal Manager */}
+                  <ModalManager />
+                </ConvexClientProvider>
+              </ModalProvider>
+            </SolOnlyProvider>
+          </SolanaWalletProvider>
+        </GlobalCurrencyProvider>
       </ClerkProvider>
     </ThemeProvider>
   );

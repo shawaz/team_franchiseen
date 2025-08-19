@@ -1,6 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { query, mutation } from "./_generated/server";
 
 export const listAllUsers = query({
   args: {},

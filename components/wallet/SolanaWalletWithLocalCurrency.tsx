@@ -1,36 +1,42 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { CreditCard, Zap, ExternalLink, Wallet, Globe, RefreshCw } from 'lucide-react';
+import { CreditCard, Zap, Wallet, RefreshCw } from 'lucide-react';
 import { useSolana } from '@/hooks/useSolana';
 import { useModal } from '@/contexts/ModalContext';
-import { coinGeckoService, SUPPORTED_CURRENCIES, formatSol, formatLocalCurrency } from '@/lib/coingecko';
+import { formatSol } from '@/lib/coingecko';
+import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 
 interface SolanaWalletWithLocalCurrencyProps {
-  userName?: string;
   onAddMoney?: () => void;
   className?: string;
+  user?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    imageUrl?: string;
+  };
 }
 
 const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps> = ({
-  userName = "User",
   onAddMoney,
   className,
+  user,
 }) => {
-  const { publicKey, connected, disconnect } = useWallet();
+  const { publicKey, connected } = useWallet();
   const { setVisible } = useWalletModal();
   const { getSOLBalance, requestAirdrop, loading: solanaLoading } = useSolana();
   const { openSendSOLModal } = useModal();
-  
+
   // State
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
-  const [localCurrency, setLocalCurrency] = useState<string>('usd');
-  const [localPrice, setLocalPrice] = useState<number>(0);
-  const [priceLoading, setPriceLoading] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Use global currency context
+  const { selectedCurrency, convertFromSOL, formatAmount, refreshRates, loading: currencyLoading } = useGlobalCurrency();
 
   // Load SOL balance
   const refreshBalance = React.useCallback(async () => {
@@ -39,6 +45,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
       try {
         const solBalance = await getSOLBalance();
         setBalance(solBalance);
+        setLastUpdated(new Date());
       } catch (error) {
         console.error('Error fetching balance:', error);
       } finally {
@@ -46,35 +53,6 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
       }
     }
   }, [connected, publicKey, getSOLBalance]);
-
-  // Load SOL price in local currency
-  const refreshPrice = React.useCallback(async () => {
-    setPriceLoading(true);
-    try {
-      const prices = await coinGeckoService.getSolPrices();
-      const price = prices[localCurrency as keyof typeof prices];
-      setLocalPrice(price || 0);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error fetching SOL price:', error);
-    } finally {
-      setPriceLoading(false);
-    }
-  }, [localCurrency]);
-
-  // Auto-detect local currency on mount
-  useEffect(() => {
-    const detectAndSetCurrency = async () => {
-      try {
-        const detectedCurrency = await coinGeckoService.detectLocalCurrency();
-        setLocalCurrency(detectedCurrency);
-      } catch {
-        console.log('Using default currency (USD)');
-      }
-    };
-    
-    detectAndSetCurrency();
-  }, []);
 
   // Load balance when wallet connects
   useEffect(() => {
@@ -85,15 +63,10 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
     }
   }, [connected, publicKey, refreshBalance]);
 
-  // Load price when currency changes
-  useEffect(() => {
-    refreshPrice();
-  }, [localCurrency, refreshPrice]);
-
   // Handle airdrop
   const handleAirdrop = async () => {
     if (!connected || !publicKey) return;
-    
+
     setLoading(true);
     try {
       await requestAirdrop(1); // Request 1 SOL
@@ -105,145 +78,149 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
     }
   };
 
-  // Get selected currency info
-  const selectedCurrency = SUPPORTED_CURRENCIES.find(c => c.code === localCurrency);
-  const localValue = balance * localPrice;
+  // Handle refresh
+  const handleRefresh = async () => {
+    await Promise.all([refreshBalance(), refreshRates()]);
+  };
 
   return (
-    <div className={`bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 p-2 rounded-lg">
-            <Wallet className="h-6 w-6" />
+    <div className={`bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-800 text-white overflow-hidden ${className}`}>
+      {/* Header with Avatar and Controls */}
+      <div className="p-3 sm:p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            {/* User Avatar */}
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
+              {user?.imageUrl ? (
+                <Image
+                  src={user.imageUrl}
+                  alt="User Avatar"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-white font-semibold text-sm">
+                  {user?.firstName?.charAt(0) || 'U'}{user?.lastName?.charAt(0) || ''}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">
+                {user?.firstName && user?.lastName 
+                  ? `${user.firstName} ${user.lastName}` 
+                  : user?.firstName || 'User'}
+              </h3>
+              {connected && publicKey && (
+                <p className="text-purple-100 text-xs font-mono">
+                  {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-lg">Solana Wallet</h3>
-            <p className="text-purple-100 text-sm">{userName}</p>
-          </div>
-        </div>
-        
-        {/* Currency Selector */}
-        <div className="relative">
-          <select
-            value={localCurrency}
-            onChange={(e) => setLocalCurrency(e.target.value)}
-            className="bg-white/20 border border-white/30 rounded-lg px-3 py-1 text-sm text-white appearance-none cursor-pointer hover:bg-white/30 transition"
-          >
-            {SUPPORTED_CURRENCIES.map((currency) => (
-              <option key={currency.code} value={currency.code} className="text-gray-900">
-                {currency.flag} {currency.code.toUpperCase()}
-              </option>
-            ))}
-          </select>
-          <Globe className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none" />
-        </div>
-      </div>
 
-      {/* Wallet Status */}
-      {!connected ? (
-        <div className="text-center py-8">
-          <div className="bg-white/10 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <Wallet className="h-8 w-8" />
+          {/* Refresh Button */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={currencyLoading}
+              className="bg-white/20 border border-white/30 rounded-md p-1.5 hover:bg-white/30 transition"
+            >
+              <RefreshCw className={`h-3 w-3 text-white ${currencyLoading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
-          <h4 className="text-lg font-semibold mb-2">Connect Your Wallet</h4>
-          <p className="text-purple-100 mb-4">Connect your Phantom wallet to view your SOL balance</p>
-          <button
-            onClick={() => setVisible(true)}
-            className="bg-white text-purple-600 font-semibold px-6 py-2 rounded-lg hover:bg-purple-50 transition"
-          >
-            Connect Wallet
-          </button>
         </div>
-      ) : (
-        <>
-          {/* Balance Display */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-purple-100 text-sm">SOL Balance</span>
+
+        {/* Wallet Status */}
+        {!connected ? (
+          <div className="text-center py-4">
+            <div className="bg-white/10 rounded-full p-3 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+              <Wallet className="h-6 w-6" />
+            </div>
+            <h4 className="text-sm font-semibold mb-2">Connect Your Wallet</h4>
+            <p className="text-purple-100 text-xs mb-3">Connect your Phantom wallet to view your SOL balance</p>
+            <button
+              onClick={() => setVisible(true)}
+              className="bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 transition text-sm"
+            >
+              Connect Wallet
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Balance Display - Split Layout */}
+            <div className="mb-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* SOL Balance - Left */}
+                <div>
+                  <div className="text-purple-100 text-xs mb-1">SOL Balance</div>
+                  <div className="text-xl sm:text-2xl font-bold">
+                    {loading ? '...' : formatSol(balance)}
+                  </div>
+                  {lastUpdated && (
+                    <div className="text-purple-200 text-xs mt-1">
+                      Updated: {lastUpdated.toLocaleTimeString()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Local Currency Balance - Right */}
+                <div className="text-right">
+                  <div className="text-purple-100 text-xs mb-1">
+                    {selectedCurrency.toUpperCase()} Balance
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold">
+                    {loading ? '...' : formatAmount(balance)}
+                  </div>
+                  <div className="text-purple-200 text-xs mt-1">
+                    {convertFromSOL(1).toFixed(2)} {selectedCurrency.toUpperCase()}/SOL
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons - Compact */}
+            <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={refreshPrice}
-                disabled={priceLoading}
-                className="text-purple-100 hover:text-white transition"
+                onClick={onAddMoney || handleAirdrop}
+                disabled={loading || solanaLoading}
+                className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs disabled:opacity-50 rounded-md"
               >
-                <RefreshCw className={`h-4 w-4 ${priceLoading ? 'animate-spin' : ''}`} />
+                <Zap className="h-3 w-3" />
+                {loading ? 'Loading...' : 'Deposit'}
+              </button>
+
+              <button
+                onClick={() => openSendSOLModal({
+                  onSuccess: (signature) => {
+                    console.log('SOL sent successfully:', signature);
+                    refreshBalance();
+                  }
+                })}
+                className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs rounded-md"
+                disabled={!connected || balance === 0}
+              >
+                <CreditCard className="h-3 w-3" />
+                Send
+              </button>
+
+              <button
+                onClick={() => openSendSOLModal({
+                  onSuccess: (signature) => {
+                    console.log('SOL sent successfully:', signature);
+                    refreshBalance();
+                  }
+                })}
+                className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs rounded-md"
+                disabled={!connected || balance === 0}
+              >
+                <CreditCard className="h-3 w-3" />
+                Withdraw
               </button>
             </div>
-            
-            <div className="space-y-1">
-              <div className="text-3xl font-bold">
-                {loading ? '...' : formatSol(balance)}
-              </div>
-              
-              {selectedCurrency && localPrice > 0 && (
-                <div className="text-purple-100 text-lg">
-                  ≈ {formatLocalCurrency(localValue, localCurrency)}
-                </div>
-              )}
-              
-              {lastUpdated && (
-                <div className="text-purple-200 text-xs">
-                  Updated: {lastUpdated.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Wallet Address */}
-          <div className="mb-6 p-3 bg-white/10 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-xs mb-1">Wallet Address</p>
-                <p className="font-mono text-sm">
-                  {publicKey?.toString().slice(0, 8)}...{publicKey?.toString().slice(-8)}
-                </p>
-              </div>
-              <a
-                href={`https://explorer.solana.com/address/${publicKey?.toString()}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-100 hover:text-white transition"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <button
-              onClick={onAddMoney || handleAirdrop}
-              disabled={loading || solanaLoading}
-              className="bg-white/20 text-white font-semibold px-4 py-2 rounded-lg border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-2"
-            >
-              <Zap className="h-4 w-4" />
-              {onAddMoney ? 'Add SOL' : 'Airdrop'}
-            </button>
-            
-            <button
-              onClick={() => openSendSOLModal({
-                onSuccess: (signature) => {
-                  console.log('SOL sent successfully:', signature);
-                  refreshBalance();
-                }
-              })}
-              className="bg-white/20 text-white font-semibold px-4 py-2 rounded-lg border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-2"
-              disabled={!connected || balance === 0}
-            >
-              <CreditCard className="h-4 w-4" />
-              Send SOL
-            </button>
-          </div>
-
-          {/* Disconnect Button */}
-          <button
-            onClick={disconnect}
-            className="w-full text-purple-100 hover:text-white text-sm transition"
-          >
-            Disconnect Wallet
-          </button>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

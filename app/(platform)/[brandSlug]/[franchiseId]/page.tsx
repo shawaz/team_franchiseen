@@ -1,4 +1,4 @@
-import { Heart, MoveLeft, Share } from "lucide-react";
+import { Heart, MoveLeft, Share, Star } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import BuySharesButtonClient from "@/components/franchise/BuySharesButtonClient";
@@ -11,19 +11,27 @@ import ManageFranchiseButton from "@/components/franchise/ManageFranchiseButton"
 
 interface FranchisePageProps {
   params: Promise<{
-    businessId: string;
+    brandSlug: string;
     franchiseId: string;
   }>;
 }
 
 export default async function FranchisePage({ params }: FranchisePageProps) {
   const resolvedParams = await params;
+  const { brandSlug, franchiseId } = resolvedParams;
+  
+  // Get business by slug first
+  const business = await fetchQuery(api.businesses.getBySlug, { slug: brandSlug });
+  if (!business) {
+    return <div>Business not found</div>;
+  }
+  
   const franchise = await fetchQuery(api.franchise.getById, {
-    franchiseId: resolvedParams.franchiseId as Id<"franchise">,
+    franchiseId: franchiseId as Id<"franchise">,
   });
 
   const franchisees = await fetchQuery(api.shares.getFranchiseesByFranchise, {
-    franchiseId: resolvedParams.franchiseId as Id<"franchise">,
+    franchiseId: franchiseId as Id<"franchise">,
   });
 
   // Map status to badge classes
@@ -45,10 +53,10 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
   };
 
   return (
-    <div className="lg:col-span-2 space-y-8">
-      <section className="bg-white dark:bg-stone-800 rounded-xl">
+    <div className="lg:col-span-2 space-y-1 py-6">
+      <section className="bg-white dark:bg-stone-800">
         <div className="flex items-center px-6 py-4 border-b border-stone-200 dark:border-stone-700 justify-between">
-          <Link href={`/business/${franchise?.businessId}/franchise`}>
+          <Link href={`/${brandSlug}`}>
             <div className="flex items-center">
               <MoveLeft className="mr-3" />
             </div>
@@ -80,26 +88,80 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto p-6">
-        <div>
-              {franchise?.status && (
-                <span
-                  className={` px-4 absolute  py-2 rounded-full text-sm font-semibold ${getStatusBadge(franchise.status)}`}
-                >
-                  {franchise.status}
-                </span>
-              )}
-            </div>
-          <div className=" flex justify-between">
-            <div className="flex flex-col">
+        {/* Airbnb-style Image Grid */}
+        <div className="relative">
+          <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] rounded-xl overflow-hidden">
+            {/* Main large image */}
+            <div className="col-span-2 row-span-2">
               <Image
                 src="/images/1.svg"
-                alt="Franchisor"
-                layout="responsive"
-                width={140}
-                height={100}
-                className="rounded md:hidden block mb-4"
+                alt="Main franchise view"
+                fill
+                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
               />
+            </div>
+            
+            {/* Top right images */}
+            <div className="relative">
+              <Image
+                src="/franchise/hubcv-1-1.png"
+                alt="Franchise interior"
+                fill
+                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
+              />
+            </div>
+            <div className="relative">
+              <Image
+                src="/images/1.svg"
+                alt="Franchise exterior"
+                fill
+                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
+              />
+            </div>
+            
+            {/* Bottom right images */}
+            <div className="relative">
+              <Image
+                src="/franchise/hubcv-1-1.png"
+                alt="Franchise amenities"
+                fill
+                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
+              />
+            </div>
+            <div className="relative">
+              <Image
+                src="/images/1.svg"
+                alt="Franchise location"
+                fill
+                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
+              />
+              {/* Show all photos button overlay */}
+              <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+                <button className="bg-white text-black px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Show all photos
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Status badge overlay */}
+          {franchise?.status && (
+            <div className="absolute top-4 left-4 z-10">
+              <span
+                className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusBadge(franchise.status)}`}
+              >
+                {franchise.status}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="max-w-7xl mx-auto p-6">
+          <div className=" flex justify-between">
+            <div className="flex flex-col">
               <h1 className="text-2xl font-bold dark:text-white">
                 {franchise?.building || "Franchise"}
               </h1>
@@ -107,7 +169,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
                 {franchise?.locationAddress}
               </div>
               <div className="text-gray-600 dark:text-gray-400">
-                Investment: ₹{franchise?.totalInvestment?.toLocaleString()} •
+                Investment: {franchise?.totalInvestment?.toLocaleString()} •
                 Carpet Area: {franchise?.carpetArea?.toLocaleString()} sq.ft
               </div>
             </div>
@@ -116,7 +178,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
       </section>
       {/* Fundraising Card */}
       {franchise?.status === "Funding" && (
-        <section className="bg-white dark:bg-stone-800 rounded-xl p-6 shadow-sm">
+        <section className="bg-white dark:bg-stone-800 p-6 ">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold dark:text-white">
               Fundraising
@@ -153,7 +215,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                   Cost per Share
                 </p>
-                <p className="text-2xl font-semibold dark:text-white">₹500</p>
+                <p className="text-2xl font-semibold dark:text-white">500</p>
               </div>
               <BuySharesButtonClient
                 franchiseData={{
@@ -163,7 +225,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
                   totalShares: franchise?.totalShares || 0,
                   soldShares: franchise?.selectedShares || 0,
                   costPerShare: 500,
-                  franchiseId: resolvedParams.franchiseId as Id<"franchise">,
+                  franchiseId: franchiseId as Id<"franchise">,
                 }}
               />
             </div>
@@ -172,11 +234,11 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
       )}
 
       {/* Franchisee List */}
-      <section className="bg-white dark:bg-stone-800 rounded-xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-stone-800 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">
           Current Franchisees
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {franchisees?.map((franchisee) => (
             <div
               key={franchisee._id}
@@ -214,8 +276,36 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
         </div>
       </section>
 
+      {/* Product List */}
+      <section className="bg-white dark:bg-stone-800 p-6 ">
+        <h2 className="text-2xl font-semibold mb-4 dark:text-white">
+          Products & Services
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="border dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
+            <div className="relative h-48">
+              <Image
+                src={"/franchise/hubcv-1-1.png"}
+                alt={"HubCV"}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="p-4">
+              <h3 className="font-medium dark:text-white">Product 1</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Description
+              </p>
+              <p className="text-primary dark:text-primary/90 font-medium mt-2">
+                ₹100
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Financial Projections */}
-      <section className="bg-white dark:bg-stone-800 rounded-xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-stone-800 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">
           Financial Projections
         </h2>
@@ -279,36 +369,8 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
         </div>
       </section>
 
-      {/* Product List */}
-      <section className="bg-white dark:bg-stone-800 rounded-xl p-6 shadow-sm">
-        <h2 className="text-2xl font-semibold mb-4 dark:text-white">
-          Products & Services
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="border dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-800">
-            <div className="relative h-48">
-              <Image
-                src={"/franchise/hubcv-1-1.png"}
-                alt={"HubCV"}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="p-4">
-              <h3 className="font-medium dark:text-white">Product 1</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Description
-              </p>
-              <p className="text-primary dark:text-primary/90 font-medium mt-2">
-                ₹100
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Location Analysis */}
-      {/* <section className="bg-white dark:bg-stone-800 rounded-xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-stone-800 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">Location Analysis</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -358,10 +420,10 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
             </div>
             </div>
         </div>
-        </section> */}
+        </section>
 
       {/* Reviews */}
-      {/* <section className="bg-white dark:bg-stone-800 rounded-xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-stone-800 p-6 ">
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold dark:text-white">Reviews</h2>
             <div className="flex items-center">
@@ -394,7 +456,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
                 <p className="text-gray-700 dark:text-gray-300">Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.</p>
             </div>
         </div>
-        </section> */}
+        </section>
     </div>
   );
 }
