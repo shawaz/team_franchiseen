@@ -215,45 +215,11 @@ function NotifyPage() {
   };
 
   return (
-    <div className="pt-[60px] pb-20 md:pb-8 min-h-screen bg-stone-50 dark:bg-stone-900">
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
+    <div className="pb-20 md:pb-8 min-h-screen ">
         {/* Mobile-optimized Header */}
-        <div className="sticky top-[60px] z-10 bg-stone-50 dark:bg-stone-900 pt-4 pb-2 border-b border-stone-200 dark:border-stone-700 mb-6">
+        <div className="sticky top-[60px] px-6 z-10 bg-stone-50 dark:bg-stone-900 py-4 border-b border-stone-200 dark:border-stone-700 mb-6">
           <div className="flex flex-col space-y-4">
-            {/* Title and Badge */}
-            {/* <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative p-2 bg-primary/10 rounded-xl">
-                  <Bell className="h-6 w-6 text-primary" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100">
-                    Notifications
-                  </h1>
-                  <p className="text-sm text-stone-600 dark:text-stone-400">
-                    {unreadCount > 0
-                      ? `${unreadCount} unread`
-                      : "All caught up!"}
-                  </p>
-                </div>
-              </div>
 
-              {unreadCount > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={markAllAsRead}
-                  className="text-xs px-3 py-1.5 h-auto"
-                >
-                  Mark all read
-                </Button>
-              )}
-            </div> */}
 
             {/* Mobile-optimized Filter Tabs */}
             <div
@@ -270,7 +236,7 @@ function NotifyPage() {
                   <button
                     key={type.key}
                     onClick={() => setSelectedFilter(type.key)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-4 py-2.5  text-sm font-medium transition-all whitespace-nowrap ${
                       selectedFilter === type.key
                         ? "bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-50 shadow-sm"
                         : "bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-600"
@@ -279,7 +245,7 @@ function NotifyPage() {
                     <span>{type.label}</span>
                     {type.count > 0 && (
                       <span
-                        className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                        className={`px-2 py-0.5 text-xs  font-medium ${
                           selectedFilter === type.key
                             ? "bg-white/50 text-stone-800 dark:text-stone-100"
                             : "bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-400"
@@ -296,10 +262,10 @@ function NotifyPage() {
         </div>
 
         {/* Notifications List */}
-        <div className="space-y-3 px-2">
+        <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800 rounded-full flex items-center justify-center mb-6">
+              <div className="w-20 h-20 bg-stone-100 dark:bg-stone-800  flex items-center justify-center mb-6">
                 <Bell className="h-10 w-10 text-stone-400" />
               </div>
               <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2 text-center">
@@ -378,7 +344,7 @@ function NotifyPage() {
                             </span>
 
                             {notification.amount && (
-                              <span className="flex items-center gap-1.5 font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                              <span className="flex items-center gap-1.5 font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 ">
                                 <DollarSign className="h-3.5 w-3.5" />₹
                                 {notification.amount.toLocaleString()}
                               </span>
@@ -393,7 +359,7 @@ function NotifyPage() {
                             )}
 
                             {notification.progress && (
-                              <span className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400 bg-stone-50 dark:bg-stone-900/20 px-2 py-1 rounded-full font-medium">
+                              <span className="flex items-center gap-1.5 text-stone-600 dark:text-stone-400 bg-stone-50 dark:bg-stone-900/20 px-2 py-1  font-medium">
                                 <TrendingUp className="h-3.5 w-3.5" />
                                 {notification.progress}%
                               </span>
@@ -404,7 +370,7 @@ function NotifyPage() {
                         {/* Unread indicator */}
                         {!notification.read && (
                           <div className="flex-shrink-0 mt-1">
-                            <div className="w-3 h-3 bg-primary rounded-full shadow-sm ring-2 ring-white dark:ring-stone-800"></div>
+                            <div className="w-3 h-3 bg-primary  shadow-sm ring-2 ring-white dark:ring-stone-800"></div>
                           </div>
                         )}
                       </div>
@@ -441,19 +407,19 @@ function NotifyPage() {
                 </div>
                 <ul className="space-y-2.5 text-sm text-stone-700 dark:text-stone-300">
                   <li className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-stone-600 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-stone-600  mt-2 flex-shrink-0"></div>
                     Share purchase confirmations
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-stone-600 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-stone-600  mt-2 flex-shrink-0"></div>
                     Investment milestone achievements
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-stone-600 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-stone-600  mt-2 flex-shrink-0"></div>
                     Portfolio performance updates
                   </li>
                   <li className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-stone-600 rounded-full mt-2 flex-shrink-0"></div>
+                    <div className="w-1.5 h-1.5 bg-stone-600  mt-2 flex-shrink-0"></div>
                     Dividend payment notifications
                   </li>
                 </ul>
@@ -554,8 +520,6 @@ function NotifyPage() {
             </Card>
           </div>
         </div>
-      </div>
-      <FooterMobile />
     </div>
   );
 }

@@ -25,6 +25,7 @@ interface Franchise {
   launchStartDate?: string;
   launchEndDate?: string;
   costPerShare: number;
+  slug?: string;
 }
 
 export default function BusinessPageClient({
@@ -224,7 +225,7 @@ export default function BusinessPageClient({
                       className=" p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-stone-700/50 transition-colors duration-200"
                       onClick={() =>
                         router.push(
-                          `/${brandSlug}/${franchise._id}`,
+                          `/${brandSlug}/${franchise.slug || franchise._id}`,
                         )
                       }
                     >
@@ -383,14 +384,14 @@ export default function BusinessPageClient({
               );
             })()}
           </div>
-          {/* <div className="p-6 text-center w-full">
+          <div className="p-6 text-center w-full">
           <button
             onClick={() => router.push(`/business/franchise`)}
             className="items-center w-full text-center px-4 py-2 border border-stone-200 dark:border-stone-700 text-sm font-medium rounded-md text-primary hover:bg-primary cursor-pointer hover:text-stone-100 transition-colors duration-200"
           >
             Load More
           </button>
-        </div> */}
+        </div>
         </section>
         {/* SOL Payment Modal is now handled by centralized ModalManager */}
         <EmailVerificationModal

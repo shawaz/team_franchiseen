@@ -10,7 +10,7 @@ function PlatformLayout({
   return (
     <main className="min-h-screen bg-stone-100 dark:bg-stone-900">
       <Header />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[60px]">
+      <div className="max-w-7xl min-h-[calc(100vh-320px)] mx-auto px-4 sm:px-6 lg:px-8 pt-[60px]">
         {children}
       </div>
       <Footer />

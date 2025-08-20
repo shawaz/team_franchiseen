@@ -147,9 +147,9 @@ export default function FranchiseList({
             key={share._id}
             className="border-t p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-stone-700/50 transition-colors duration-200"
             onClick={() =>
-              franchise &&
+              franchise && business &&
               router.push(
-                `/business/${franchise.businessId}/franchise/${franchise._id}`,
+                `/${business._id}/${franchise._id}`,
               )
             }
           >

@@ -299,4 +299,58 @@ export const getSharesStatsByBusiness = query({
     const issuedShares = filtered.reduce((sum, f) => sum + (f.selectedShares || 0), 0);
     return { totalShares, issuedShares };
   },
-}); 
+});
+
+export const updateSlug = mutation({
+  args: {
+    franchiseId: v.id("franchise"),
+    newSlug: v.optional(v.string())
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const franchise = await ctx.db.get(args.franchiseId);
+    if (!franchise) {
+      throw new Error("Franchise not found");
+    }
+
+    // Generate new slug if not provided
+    let slug = args.newSlug || generateFranchiseSlug(franchise.building, franchise.locationAddress);
+
+    // Ensure slug is unique
+    let counter = 1;
+    let originalSlug = slug;
+    while (true) {
+      const existingFranchise = await ctx.db
+        .query("franchise")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("slug"), slug),
+            q.neq(q.field("_id"), args.franchiseId)
+          )
+        )
+        .unique();
+
+      if (!existingFranchise) break;
+
+      slug = `${originalSlug}-${counter}`;
+      counter++;
+    }
+
+    await ctx.db.patch(args.franchiseId, { slug });
+    return slug;
+  },
+});
+
+export const listByBusiness = query({
+  args: { businessId: v.id("businesses") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("franchise")
+      .filter((q) => q.eq(q.field("businessId"), args.businessId))
+      .collect();
+  },
+});

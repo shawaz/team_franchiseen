@@ -1060,15 +1060,6 @@ export default function CreateFranchisePage() {
                               <span className="font-bold text-lg text-primary">₹{(selectedShares * 5.75 * 83 * 1.2).toLocaleString()}</span>
                             </div>
                           </div>
-
-                          <Button
-                            className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground"
-                            size="lg"
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? "Processing..." : "Proceed to Payment"}
-                          </Button>
                         </div>
                       </div>
                     </div>

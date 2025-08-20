@@ -13,6 +13,8 @@ import {
   Heart,
   Settings,
   PlusSquare,
+  Compass,
+  HelpCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -358,142 +360,36 @@ function Header() {
                 <SignedIn>
                   <div className="flex items-center gap-3 ml-2">
                     <Link
+                      href="/"
+                      className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                      aria-label="Create New Franchise"
+                    >
+                      <Compass className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                    </Link>
+                    <Link
+                      href="/liked"
+                      className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                      aria-label="Create New Franchise"
+                    >
+                      <Heart className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                    </Link>
+                 
+
+                  <Link
                       href="/create"
                       className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
                       aria-label="Create New Franchise"
                     >
                       <PlusSquare className="h-5 w-5 text-stone-700 dark:text-stone-300" />
                     </Link>
-                  {/* Liked Franchises Dropdown */}
-                  <div className="relative" ref={likedRef}>
-                    <button
+
+                    <Link
+                      href="/notify"
                       className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                      aria-label="Liked Franchises"
-                      onClick={() => setIsLikedOpen(!isLikedOpen)}
+                      aria-label="Notifications"
                     >
-                      <Heart className="h-5 w-5 text-stone-700 dark:text-stone-300" />
-                    </button>
-                    
-                    {isLikedOpen && (
-                      <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 z-50">
-                        <div className="p-4 border-b border-stone-200 dark:border-stone-700">
-                          <h3 className="font-semibold text-stone-900 dark:text-stone-100">Liked Franchises</h3>
-                        </div>
-                        <div className="py-2 max-h-64 overflow-y-auto">
-                          {[
-                            { id: 1, name: "McDonald's Downtown", location: "Downtown Plaza", image: "/logo/logo-2.svg" },
-                            { id: 2, name: "Subway Central", location: "Central Mall", image: "/logo/logo-2.svg" },
-                            { id: 3, name: "KFC Westside", location: "West District", image: "/logo/logo-2.svg" }
-                          ].map((franchise) => (
-                            <div key={franchise.id} className="px-4 py-3 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-stone-200 dark:bg-stone-600">
-                                  <Image
-                                    src={franchise.image}
-                                    alt={franchise.name}
-                                    width={40}
-                                    height={40}
-                                    className="object-cover"
-                                  />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-medium text-stone-900 dark:text-stone-100 text-sm">{franchise.name}</p>
-                                  <p className="text-xs text-stone-500 dark:text-stone-400">{franchise.location}</p>
-                                </div>
-                                <Heart className="h-4 w-4 text-red-500 fill-current" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="p-3 border-t border-stone-200 dark:border-stone-700">
-                          <Link 
-                            href="/liked-franchises"
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                            onClick={() => setIsLikedOpen(false)}
-                          >
-                            View all liked franchises →
-                          </Link>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                    {/* Notifications Dropdown */}
-                    <div className="relative" ref={notificationsRef}>
-                      <button
-                        onClick={() =>
-                          handleDropdownToggle(
-                            isNotificationsOpen,
-                            setIsNotificationsOpen,
-                          )
-                        }
-                        className="hover:bg-gray-100 hidden md:block dark:hover:bg-stone-800 p-2 rounded-full transition-colors duration-200"
-                      >
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-0 right-0 h-2 w-2 bg-primary rounded-full"></span>
-                      </button>
-                      <div
-                        className={`absolute  right-0 mt-3 w-80 dark:bg-stone-800 bg-white border-0 py-4 transform transition-all duration-200 origin-top-right ${
-                          isNotificationsOpen
-                            ? "scale-100 opacity-100"
-                            : "scale-95 opacity-0 pointer-events-none"
-                        }`}
-                      >
-                        <div className="px-6 pb-4 border-b">
-                          <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold dark:text-gray-100 text-gray-900">
-                              Notifications
-                            </h3>
-                            <span className="bg-primary/10 text-primary text-xs px-2.5 py-1 rounded-full font-medium">
-                              2 new
-                            </span>
-                          </div>
-                        </div>
-                        <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
-                          <div className="px-6 py-4 border-b last:border-0 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors cursor-pointer">
-                            <div className="flex gap-4">
-                              <div className="mt-1 rounded-full bg-primary/10 p-2">
-                                <HeartHandshake className="h-4 w-4 text-primary" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-gray-100">
-                                  New Share Offer
-                                </p>
-                                <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
-                                  You received a new share purchase offer
-                                </p>
-                                <p className="text-gray-400 dark:text-gray-600 text-xs mt-2">
-                                  2 minutes ago
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="px-6 py-4 border-b last:border-0 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors cursor-pointer">
-                            <div className="flex gap-4">
-                              <div className="mt-1 rounded-full dark:bg-green-900/50 bg-green-50 p-2">
-                                <CreditCard className="h-4 w-4 text-green-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-gray-100">
-                                  Monthly Earnings Update
-                                </p>
-                                <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
-                                  Your monthly earnings have been calculated
-                                </p>
-                                <p className="text-gray-400 dark:text-gray-600 text-xs mt-2">
-                                  1 hour ago
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="px-6 pt-4 border-t mt-2">
-                          <button className="text-primary hover:text-primary/90 text-sm font-medium">
-                            View all notifications
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                      <Bell className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                    </Link>
 
                     {/* Profile Dropdown */}
                     <div className="relative" ref={profileRef}>
@@ -501,7 +397,7 @@ function Header() {
                         onClick={() =>
                           handleDropdownToggle(isProfileOpen, setIsProfileOpen)
                         }
-                        className="hover:bg-gray-100 hidden md:block dark:hover:bg-stone-700 p-2 rounded-full transition-colors duration-200"
+                        className="hover:bg-gray-100 cursor-pointer hidden md:block dark:hover:bg-stone-700 p-2 rounded-full transition-colors duration-200"
                       >
                         <UserCircle className="h-5 w-5" />
                       </button>
@@ -554,7 +450,7 @@ function Header() {
                               }) => (
                                 <Link
                                   key={business._id}
-                                  href={business.slug ? `/${business.slug}/franchise` : `/business/${business._id}/franchise`}
+                                  href= {`/${business.slug}/account`}
                                   className="flex items-center gap-3 px-5 py-2 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors"
                                 >
                                   <div className="relative h-8 w-8 flex-shrink-0 z-0">
@@ -583,31 +479,16 @@ function Header() {
                           </div>
                         )}
 
-                        {/* Currency Display */}
-                        <div className="border-t px-6 py-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-lg">{currencies.find(c => c.code === selectedCurrency)?.flag}</span>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {selectedCurrency.toUpperCase()}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Current Currency
-                                </div>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setSettingsModalTab('currency');
-                                setIsSettingsModalOpen(true);
-                                setIsProfileOpen(false);
-                              }}
-                              className="text-xs text-primary hover:text-primary/80 font-medium"
-                            >
-                              Change
-                            </button>
-                          </div>
+                         <div className="border-t">
+                          <Link
+                            href="/register"
+                            className="flex items-center gap-4 px-6 py-3 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors"
+                          >
+                            <Store className="h-5 w-5 dark:text-gray-400 text-gray-400" />
+                            <span className="text-sm font-medium">
+                              Create New Business
+                            </span>
+                          </Link>
                         </div>
 
                         {/* Settings Menu */}
@@ -627,21 +508,7 @@ function Header() {
                           </button>
                         </div>
 
-                        <div className="border-t">
-                          <Link
-                            href="#"
-                            className="flex items-center gap-4 px-6 py-3 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsCreateBusinessOpen(true);
-                            }}
-                          >
-                            <Store className="h-5 w-5 dark:text-gray-400 text-gray-400" />
-                            <span className="text-sm font-medium">
-                              Create New Business
-                            </span>
-                          </Link>
-                        </div>
+                       
                         <div className="border-t">
                           <SignOutButton>
                             <button className="w-full flex items-center cursor-pointer gap-4 px-6 py-3 text-gray-700 dark:text-gray-100 dark:hover:bg-red-900/50 hover:bg-red-50 transition-colors">

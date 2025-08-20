@@ -29,7 +29,8 @@ interface FranchiseCardProps {
   totalBudget?: number;
   activeOutlets?: number;
   id: string;
-  businessSlug?: string;
+  brandSlug?: string;
+  franchiseSlug?: string;
 }
 
 const FranchiseCard: React.FC<FranchiseCardProps> = ({
@@ -53,7 +54,8 @@ const FranchiseCard: React.FC<FranchiseCardProps> = ({
   totalBudget,
   activeOutlets,
   id,
-  businessSlug,
+  brandSlug,
+  franchiseSlug,
 }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
@@ -215,10 +217,10 @@ const FranchiseCard: React.FC<FranchiseCardProps> = ({
 
   // Determine the navigation path using brandSlug routing
   const getNavigationPath = () => {
-    if (businessSlug) {
-      return `/${businessSlug}/${id}`;
+    if (brandSlug && franchiseSlug) {
+      return `/${brandSlug}/${franchiseSlug}`;
     }
-    // Fallback to old routing if businessSlug is not available
+    // Fallback to old routing if brandSlug or franchiseSlug is not available
     const baseId = id
       ? id.toString().replace(/^(fund-|launch-|live-)/, "")
       : "1";
