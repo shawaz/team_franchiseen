@@ -8,6 +8,10 @@ export type ModalType =
   | 'solPayment'
   | 'walletConnect'
   | 'mobileProfile'
+  | 'createFranchise'
+  | 'typeformCreateFranchise'
+  | 'mobileMenu'
+  | 'accountSelection'
   | null;
 
 // Modal data interfaces
@@ -35,6 +39,10 @@ export interface ModalData {
   sendSOL?: SendSOLModalData;
   solPayment?: SOLPaymentModalData;
   mobileProfile?: MobileProfileModalData;
+  createFranchise?: {};
+  typeformCreateFranchise?: {};
+  mobileMenu?: MobileProfileModalData;
+  accountSelection?: {};
 }
 
 // Context interface
@@ -51,6 +59,10 @@ interface ModalContextType {
   openSendSOLModal: (data?: SendSOLModalData) => void;
   openSOLPaymentModal: (data: SOLPaymentModalData) => void;
   openMobileProfileModal: (data?: MobileProfileModalData) => void;
+  openCreateFranchiseModal: () => void;
+  openTypeformCreateFranchiseModal: () => void;
+  openMobileMenuModal: (data?: MobileProfileModalData) => void;
+  openAccountSelectionModal: () => void;
 }
 
 // Create context
@@ -83,6 +95,22 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     openModal('mobileProfile', { mobileProfile: data });
   };
 
+  const openCreateFranchiseModal = () => {
+    openModal('createFranchise', { createFranchise: {} });
+  };
+
+  const openTypeformCreateFranchiseModal = () => {
+    openModal('typeformCreateFranchise', { typeformCreateFranchise: {} });
+  };
+
+  const openMobileMenuModal = (data: MobileProfileModalData = {}) => {
+    openModal('mobileMenu', { mobileMenu: data });
+  };
+
+  const openAccountSelectionModal = () => {
+    openModal('accountSelection', { accountSelection: {} });
+  };
+
   const value: ModalContextType = {
     currentModal,
     modalData,
@@ -91,6 +119,10 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     openSendSOLModal,
     openSOLPaymentModal,
     openMobileProfileModal,
+    openCreateFranchiseModal,
+    openTypeformCreateFranchiseModal,
+    openMobileMenuModal,
+    openAccountSelectionModal,
   };
 
   return (

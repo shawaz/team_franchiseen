@@ -15,7 +15,7 @@ interface MobileProfileModalProps {
   onSettingsClick: () => void;
 }
 
-export default function MobileProfileModal({ isOpen, onClose, onSettingsClick }: MobileProfileModalProps) {
+const MobileProfileModal: React.FC<MobileProfileModalProps> = ({ isOpen, onClose, onSettingsClick }) => {
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
 
@@ -34,139 +34,98 @@ export default function MobileProfileModal({ isOpen, onClose, onSettingsClick }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-stone-900 z-50 md:hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-stone-700">
-        <h2 className="text-lg font-semibold">Profile</h2>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-stone-800 rounded-full transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* User Profile Section */}
-        <div className="p-6">
-          <Link href="/profile" onClick={onClose}>
-            <div className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-stone-800 rounded-xl transition-colors">
-              <div className="relative h-12 w-12 flex-shrink-0">
-                <Image
-                  src={convexUser?.avatar || "/logo/logo-2.svg"}
-                  alt="Profile"
-                  width={48}
-                  height={48}
-                  className="object-cover rounded-full"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold truncate">
-                  {convexUser?.first_name} {convexUser?.family_name}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                  View profile
-                </p>
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        {/* User Businesses */}
-        {userBusinesses.length > 0 && (
-          <div className="px-6 pb-6">
-            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              Your Businesses
-            </h4>
-            <div className="space-y-2">
-              {userBusinesses.map((business: {
-                _id: string;
-                name: string;
-                slug?: string;
-                logoUrl?: string;
-                industry?: { name: string };
-              }) => (
-                <Link
-                  key={business._id}
-                  href={`/${business.slug}/account`}
-                  onClick={onClose}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
-                >
-                  <div className="relative h-10 w-10 flex-shrink-0">
-                    <Image
-                      src={business.logoUrl || "/logo/logo-2.svg"}
-                      alt={business.name}
-                      width={40}
-                      height={40}
-                      className="object-cover rounded-lg"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium truncate">
-                      {business.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {business.industry?.name || 'Business'}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center md:p-4">
+      <div className="bg-white dark:bg-stone-800 md:rounded-lg w-full md:max-w-2xl h-full md:max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-stone-700">
+          <div className="flex items-center gap-2">
+            <UserCircle className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Profile</h2>
           </div>
-        )}
-
-        {/* Menu Items */}
-        <div className="px-6 space-y-2">
-          {/* Create New Business */}
-          <Link
-            href="/register"
-            onClick={onClose}
-            className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
-          >
-            <div className="p-2 bg-gray-100 dark:bg-stone-700 rounded-lg">
-              <Store className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium">Create New Business</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Start your franchise journey
-              </p>
-            </div>
-          </Link>
-
-          {/* Settings */}
           <button
-            onClick={() => {
-              onSettingsClick();
-              onClose();
-            }}
-            className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-stone-700 rounded-full transition-colors"
           >
-            <div className="p-2 bg-gray-100 dark:bg-stone-700 rounded-lg">
-              <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            </div>
-            <div className="text-left">
-              <h3 className="text-sm font-medium">Settings</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Preferences and account
-              </p>
-            </div>
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Sign Out */}
-        <div className="px-6 pt-6 pb-8">
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* User Info */}
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-stone-700">
+              {user?.imageUrl ? (
+                <Image
+                  src={user.imageUrl}
+                  alt="Profile"
+                  width={64}
+                  height={64}
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <UserCircle className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">{user?.fullName || 'User'}</h3>
+              <p className="text-sm text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 dark:bg-stone-700 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-primary">{userBusinesses.length}</div>
+              <div className="text-sm text-muted-foreground">Businesses</div>
+            </div>
+            <div className="bg-gray-50 dark:bg-stone-700 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">0</div>
+              <div className="text-sm text-muted-foreground">Investments</div>
+            </div>
+          </div>
+
+          {/* Menu Items */}
+          <div className="space-y-2">
+            <Link
+              href="/profile"
+              onClick={onClose}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
+            >
+              <UserCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="font-medium">View Profile</span>
+            </Link>
+
+            <Link
+              href="/profile?tab=businesses"
+              onClick={onClose}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
+            >
+              <Store className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="font-medium">My Businesses</span>
+            </Link>
+
+            <button
+              onClick={() => {
+                onSettingsClick();
+                onClose();
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
+            >
+              <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="font-medium">Settings</span>
+            </button>
+          </div>
+
+          {/* Sign Out */}
           <SignOutButton>
-            <button className="w-full flex items-center gap-4 p-4 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <Power className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
+            <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+              <Power className="h-5 w-5" />
               <div className="text-left">
-                <h3 className="text-sm font-medium text-red-600 dark:text-red-400">
-                  Sign Out
-                </h3>
-                <p className="text-xs text-red-500 dark:text-red-500">
+                <div className="font-medium">Sign Out</div>
+                <p className="text-xs text-muted-foreground">
                   Sign out of your account
                 </p>
               </div>
@@ -176,4 +135,6 @@ export default function MobileProfileModal({ isOpen, onClose, onSettingsClick }:
       </div>
     </div>
   );
-}
+};
+
+export default MobileProfileModal;

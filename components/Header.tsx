@@ -10,6 +10,7 @@ import {
   UserCircle,
   X,
   Filter,
+  Menu,
   Heart,
   Settings,
   PlusSquare,
@@ -35,6 +36,7 @@ import LanguageCurrencyModal from "./LanguageCurrencyModal";
 import SettingsModal from "./modals/SettingsModal";
 import FilterModal, { FilterOptions } from "./modals/FilterModal";
 import { ThemeSwitcher } from "./theme-switcher";
+import { useModal } from "@/contexts/ModalContext";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 
 function Header() {
@@ -47,6 +49,19 @@ function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileSearchMode, setIsMobileSearchMode] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+  // Use modal context
+  const { openCreateFranchiseModal, openTypeformCreateFranchiseModal, openMobileMenuModal } = useModal();
+
+  // Function to handle create franchise click
+  const handleCreateFranchiseClick = () => {
+    // Check if mobile screen size
+    if (window.innerWidth < 768) {
+      openTypeformCreateFranchiseModal();
+    } else {
+      openCreateFranchiseModal();
+    }
+  };
 
   // Use global currency context
   const { selectedCurrency, currencies } = useGlobalCurrency();
@@ -383,10 +398,10 @@ function Header() {
                   </button>
                   <button
                     className="p-2 rounded-full sm:hidden block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                    aria-label="Filter"
-                    onClick={() => setIsFilterModalOpen(true)}
+                    aria-label="Menu"
+                    onClick={() => openMobileMenuModal()}
                   >
-                    <Filter className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                    <Menu className="h-5 w-5 text-stone-700 dark:text-stone-300" />
                   </button>
                 </div>
 
@@ -413,13 +428,13 @@ function Header() {
                     </Link>
                  
 
-                  <Link
-                      href="/create"
+                  <button
+                      onClick={handleCreateFranchiseClick}
                       className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
                       aria-label="Create New Franchise"
                     >
                       <PlusSquare className="h-5 w-5 text-stone-700 dark:text-stone-300" />
-                    </Link>
+                    </button>
 
                     <Link
                       href="/notify"

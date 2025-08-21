@@ -5,6 +5,10 @@ import { useModal } from '@/contexts/ModalContext';
 import SendSOLModal from '@/components/wallet/SendSOLModal';
 import SOLPaymentModal from '@/components/franchise/SOLPaymentModal';
 import MobileProfileModal from '@/components/modals/MobileProfileModal';
+import CreateFranchiseModal from '@/components/modals/CreateFranchiseModal';
+import TypeformCreateFranchiseModal from '@/components/modals/TypeformCreateFranchiseModal';
+import MobileMenuModal from '@/components/modals/MobileMenuModal';
+import AccountSelectionModal from '@/components/modals/AccountSelectionModal';
 import SettingsModal from '@/components/modals/SettingsModal';
 
 /**
@@ -64,6 +68,57 @@ const ModalManager: React.FC = () => {
           initialTab={settingsModalTab}
         />
       </>
+    );
+  }
+
+  // Render Create Franchise Modal
+  if (currentModal === 'createFranchise') {
+    return (
+      <CreateFranchiseModal
+        isOpen={true}
+        onClose={closeModal}
+      />
+    );
+  }
+
+  // Render Typeform Create Franchise Modal
+  if (currentModal === 'typeformCreateFranchise') {
+    return (
+      <TypeformCreateFranchiseModal
+        isOpen={true}
+        onClose={closeModal}
+      />
+    );
+  }
+
+  // Render Mobile Menu Modal
+  if (currentModal === 'mobileMenu') {
+    return (
+      <>
+        <MobileMenuModal
+          isOpen={true}
+          onClose={closeModal}
+          onSettingsClick={() => {
+            setSettingsModalTab('theme');
+            setIsSettingsModalOpen(true);
+          }}
+        />
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          initialTab={settingsModalTab}
+        />
+      </>
+    );
+  }
+
+  // Render Account Selection Modal
+  if (currentModal === 'accountSelection') {
+    return (
+      <AccountSelectionModal
+        isOpen={true}
+        onClose={closeModal}
+      />
     );
   }
 

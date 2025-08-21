@@ -16,7 +16,7 @@ import { useModal } from "@/contexts/ModalContext";
 
 function FooterMobile() {
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
-  const { openMobileProfileModal } = useModal();
+  const { openAccountSelectionModal, openTypeformCreateFranchiseModal } = useModal();
   const pathname = usePathname();
 
   // Function to check if a path is active
@@ -48,25 +48,25 @@ function FooterMobile() {
           <Link href={"/liked"}>
             <Heart className={getIconClasses("/liked")} />
           </Link>
-          <Link href={"/create"}>
+          <button onClick={() => openTypeformCreateFranchiseModal()}>
             <PlusSquare
               className={getIconClasses("/create")}
               color="currentColor"
             />
-          </Link>
+          </button>
           <Link href={"/notify"}>
             <Bell className={getIconClasses("/notify")} />
           </Link>
-          <button onClick={() => openMobileProfileModal()}>
+          <button onClick={() => openAccountSelectionModal()}>
             <UserCircle className={getIconClasses("/profile")} />
           </button>
         </div>
       </SignedIn>
       <SignedOut>
-        <div className="px-4 pt-2 pb-4 ">
+        <div className="px-4 pt-2 pb-2 ">
           <button
             onClick={() => setIsEmailVerificationOpen(true)}
-            className="cursor-pointer uppercase w-full px-4 py-3 rounded-full text-sm font-bold bg-neutral-800 hover:bg-yellow-700 text-stone-100 dark:bg-stone-200 border dark:text-stone-800 dark:hover:bg-stone-700 transition-colors duration-200"
+            className="cursor-pointer uppercase w-full px-4 py-3 text-sm font-bold bg-neutral-800 hover:bg-yellow-700 text-stone-100 dark:bg-stone-200 border dark:text-stone-800 dark:hover:bg-stone-700 transition-colors duration-200"
             aria-label="Get Started"
           >
             GET STARTED
