@@ -47,7 +47,7 @@ const BusinessCard: React.FC<{
     <Card className="p-6">
       <Link href={`/business/${business.id}/franchise`} className="block">
         <div className="flex justify-center items-center gap-4 mb-5">
-          <div className="relative rounded-sm overflow-hidden h-16 w-16 dark:border-stone-700">
+          <div className="relative overflow-hidden h-14 w-14 border border-stone-200 dark:border-stone-800/50">
             <Image
               src={business?.logo_url || "/logo/logo-2.svg"}
               alt="Business Logo"
@@ -55,26 +55,25 @@ const BusinessCard: React.FC<{
               className="object-contain"
             />
           </div>
-        </div>
-
-        <div className="flex-1 text-center mb-3">
-          <h1 className="text-2xl font-bold">
-            {business?.name || "Business Name"}
-          </h1>
-          <div className="text-gray-500 dark:text-gray-400 mb-4 text-sm mt-1">
-          {business.category}
-            {/* {business.category} • {business.industry} */}
+          <div className="flex-1 items-center">
+            <h1 className="text-xl font-bold">
+              {business?.name || "Business Name"}
+            </h1>
+            <div className="text-gray-500 dark:text-stone-400 text-sm mt-1">
+              {business.category}
+              {/* {business.category} • {business.industry} */}
+            </div>
           </div>
         </div>
 
-        <div className=" gap-3 flex justify-evenly">
-          <div className="space-y-1 text-center">
+        <div className="mt-5 gap-3 flex justify-evenly">
+          <div className="space-y-1 py-2 border w-full text-center">
             <p className="font-bold">
               {statusCounts ? statusCounts.Funding : statusCountsError || "-"}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Funding</p>
           </div>
-          <div className="space-y-1 text-center">
+          <div className="space-y-1 py-2 border w-full text-center">
             <p className="font-bold">
               {statusCounts ? statusCounts.Launching : statusCountsError || "-"}
             </p>
@@ -82,7 +81,7 @@ const BusinessCard: React.FC<{
               Launching
             </p>
           </div>
-          <div className="space-y-1 text-center">
+          <div className="space-y-1 py-2 border w-full text-center">
             <p className="font-bold">
               {statusCounts ? statusCounts.Active : statusCountsError || "-"}
             </p>
@@ -90,21 +89,6 @@ const BusinessCard: React.FC<{
           </div>
         </div>
 
-        {/* <div className="gap-3 flex justify-between mb-6">
-            <div className="space-y-1">
-              <p className="font-bold">{sharesAvailable !== null ? sharesAvailable : '-'}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Shares Available</p>
-            </div>
-            <div className="space-y-1">
-              <p className="font-bold text-right">{sharesStats ? sharesStats.issuedShares : '-'}</p>
-              <p className="text-sm text-right text-gray-500 dark:text-gray-400">Shares Issued</p>
-            </div>
-          </div> */}
-
-        {/* Progress bar */}
-        {/* <div className="w-full h-2 bg-gray-200 dark:bg-stone-700 rounded-full mt-3">
-            <div className="h-2 bg-stone-900 dark:bg-stone-300 rounded-full" style={{ width: `${crowdfundingPercent}%` }}></div>
-          </div> */}
       </Link>
     </Card>
   );

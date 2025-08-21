@@ -1,7 +1,6 @@
 import Header from '@/components/Header';
 import React from 'react'
 import Footer from '@/components/Footer';
-import FooterMobile from '@/components/FooterMobile';
 
 function PlatformLayout({
   children,
@@ -15,7 +14,6 @@ function PlatformLayout({
         {children}
       </div>
       <Footer />
-      <FooterMobile />
     </main>
   )
 }

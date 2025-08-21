@@ -3,10 +3,11 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Modal types
-export type ModalType = 
+export type ModalType =
   | 'sendSOL'
   | 'solPayment'
   | 'walletConnect'
+  | 'mobileProfile'
   | null;
 
 // Modal data interfaces
@@ -26,9 +27,14 @@ export interface SOLPaymentModalData {
   };
 }
 
+export interface MobileProfileModalData {
+  onSettingsClick?: () => void;
+}
+
 export interface ModalData {
   sendSOL?: SendSOLModalData;
   solPayment?: SOLPaymentModalData;
+  mobileProfile?: MobileProfileModalData;
 }
 
 // Context interface
@@ -44,6 +50,7 @@ interface ModalContextType {
   // Specific modal openers
   openSendSOLModal: (data?: SendSOLModalData) => void;
   openSOLPaymentModal: (data: SOLPaymentModalData) => void;
+  openMobileProfileModal: (data?: MobileProfileModalData) => void;
 }
 
 // Create context
@@ -72,6 +79,10 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     openModal('solPayment', { solPayment: data });
   };
 
+  const openMobileProfileModal = (data: MobileProfileModalData = {}) => {
+    openModal('mobileProfile', { mobileProfile: data });
+  };
+
   const value: ModalContextType = {
     currentModal,
     modalData,
@@ -79,6 +90,7 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     closeModal,
     openSendSOLModal,
     openSOLPaymentModal,
+    openMobileProfileModal,
   };
 
   return (

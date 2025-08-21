@@ -423,86 +423,14 @@ export default function CreateFranchisePage() {
   };
 
   return (
-    <div className=" dark:bg-stone-800/50 bg-white text-foreground my-6 dark:text-foreground border ">
-      <header className=" flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 justify-between pr-6 border-b ">
-        <div className="flex items-center gap-2 px-4 w-3/4">
-          <div className="ml-2">
-            <h1 className="text-lg font-semibold text-foreground">Create New Franchise</h1>
-          </div>
+    <div className="dark:bg-stone-800/50 bg-white text-foreground my-6 dark:text-foreground border">
+      <header className="flex flex-col md:flex-row md:h-16 shrink-0 items-start md:items-center gap-4 md:gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 justify-between p-4 md:pr-6 border-b">
+        <div className="flex items-center gap-2 w-full md:w-3/4">
+          <h1 className="text-lg md:text-xl font-semibold text-foreground">Create New Franchise</h1>
         </div>
-        {/* Progress Steps */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center justify-end p-6"
-        >
-          {[
-            { num: 1, label: "Confirm Brand" },
-            { num: 2, label: "Confirm Location" },
-            { num: 3, label: "Make Payment" }
-          ].map((stepInfo, index) => (
-            <div key={stepInfo.num} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm text-white font-medium ${
-                    step >= stepInfo.num
-                      ? "bg-neutral-700 text-primary-foreground"
-                      : "bg-muted-gradient text-muted-foreground"
-                  }`}
-                >
-                  {stepInfo.num}
-                </div>
-                {/* <span className="text-xs text-muted-foreground mt-1">{stepInfo.label}</span> */}
-              </div>
-              {index < 2 && (
-                <div
-                  className={`w-16 h-0.5 mx-2 ${
-                    step > stepInfo.num ? "bg-neutral-700" : "bg-muted-gradient"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </motion.div>
-        <div className="w-3/4 flex justify-end  gap-4">
-          {step === 1 && (
-            <Button variant="outline" onClick={() => router.back()}>
-                      Cancel Application
-                    </Button>
-          )}
-          {step === 2 && (
-            <Button variant="outline" onClick={() => setStep(1)}>
-                      Previous
-                    </Button>
-          )}
-          {step === 2 && (
-            <Button
-                      onClick={() => setStep(3)}
-                      className="bg-yellow-600 text-white hover:bg-yellow-700"
-                    >
-                      Confirm Location
-                    </Button>
-          )}
-          {step === 3 && (
-            <>
-              <Button variant="outline" onClick={() => setStep(2)}>
-                      Previous
-                    </Button>
-              <Button
-                      onClick={handleSubmit}
-                      className="bg-yellow-600 text-white hover:bg-yellow-700"
-                    >
-                      Make Payment
-                    </Button>
-            </>
-          )}
-
-
-        </div>
+       
       </header>
-      <div  className=" p-6">
-
+      <div className="p-4 md:p-6 border-b  ">
         {/* Form Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -577,9 +505,9 @@ export default function CreateFranchisePage() {
                             : "border-border hover:border-primary/50 hover:bg-muted/50"
                         }`}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                           {/* Brand Logo */}
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                          <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                             <Image
                               src={brand.logo}
                               alt={brand.name}
@@ -590,33 +518,33 @@ export default function CreateFranchisePage() {
                           </div>
 
                           {/* Brand Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-semibold text-foreground text-lg mb-1">
+                          <div className="flex-1 min-w-0 w-full">
+                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-2 md:gap-0">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-foreground text-base md:text-lg mb-1">
                                   {brand.name}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                                   {brand.description}
                                 </p>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
                                   <div className="flex items-center gap-1">
-                                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                    <Star className="h-3 w-3 md:h-4 md:w-4 text-yellow-500 fill-current" />
                                     <span>{brand.rating}</span>
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <MapPin className="h-4 w-4" />
+                                    <MapPin className="h-3 w-3 md:h-4 md:w-4" />
                                     <span>{brand.outlets} outlets</span>
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <DollarSign className="h-4 w-4" />
+                                    <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
                                     <span>${brand.costPerArea}/sq ft</span>
                                   </div>
                                 </div>
                               </div>
 
                               {/* Category Badge */}
-                              <div className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs font-medium">
+                              <div className="bg-muted text-muted-foreground px-2 py-1 rounded text-xs font-medium self-start md:self-center">
                                 {brand.category}
                               </div>
                             </div>
@@ -652,21 +580,9 @@ export default function CreateFranchisePage() {
                     {/* Selected Location and Property Details - Two Columns */}
                   <div className="bg-muted/50 rounded-lg p-4">
                   <div className="grid grid-cols-1 gap-6 ">
-                    {/* Left Column - Selected Location */}
-                    <div>
-                      {formData.location && (
-                        <div >
-                          <p className="text-sm text-muted-foreground">Selected Location: {formData.location.address}</p>
-                          {/* Door Number & Carpet Area */}
-                       
-                        </div>
-                      )}
-                      
-                    </div>
-
                     {/* Right Column - Property Details Form */}
 
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                         <label className="text-sm text-muted-foreground mb-1 block">Door No & Building Name</label>
                         <Input
@@ -740,6 +656,19 @@ export default function CreateFranchisePage() {
                     </div>
 
                     </div>
+                    {/* Left Column - Selected Location */}
+                    <div>
+                      {formData.location && (
+                        <div >
+                          <p className="text-sm text-muted-foreground">Selected Location: {formData.location.address}</p>
+                          {/* Door Number & Carpet Area */}
+                       
+                        </div>
+                      )}
+                      
+                    </div>
+
+                    
 
 
                         
@@ -749,10 +678,10 @@ export default function CreateFranchisePage() {
 
                   {/* Map Container with Controls */}
                   <div className="bg-muted/30 rounded-lg overflow-hidden border border-border">
-                    <div className="relative h-[500px] bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20">
+                    <div className="relative h-[300px] md:h-[500px] bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20">
                       {/* Map Search Bar - Inside Map */}
-                      <div className="absolute top-4 left-4 right-4 z-10">
-                        <div className="flex gap-2">
+                      <div className="absolute top-2 md:top-4 left-2 md:left-4 right-2 md:right-4 z-10">
+                        <div className="flex flex-col md:flex-row gap-2">
                           <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -761,25 +690,27 @@ export default function CreateFranchisePage() {
                               value={mapSearchQuery}
                               onChange={(e) => setMapSearchQuery(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleMapSearch()}
-                              className="pl-10 bg-background/90 backdrop-blur-sm border-border text-foreground shadow-sm"
+                              className="pl-10 bg-background/90 backdrop-blur-sm border-border text-foreground shadow-sm text-sm"
                             />
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-background/90 backdrop-blur-sm"
-                            onClick={handleMapSearch}
-                          >
-                            Search
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-background/90 backdrop-blur-sm"
-                            onClick={getCurrentLocation}
-                          >
-                            <Navigation className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-background/90 backdrop-blur-sm flex-1 md:flex-none"
+                              onClick={handleMapSearch}
+                            >
+                              Search
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-background/90 backdrop-blur-sm"
+                              onClick={getCurrentLocation}
+                            >
+                              <Navigation className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
 
@@ -803,23 +734,23 @@ export default function CreateFranchisePage() {
                         </Button>
                       </div>
                       {/* Map Legend - Inside Map */}
-                      <div className="absolute bottom-4 left-4 right-4 z-10">
-                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-3 border border-border">
-                          <div className="flex items-center justify-between">
+                      <div className="absolute bottom-2 md:bottom-4 left-2 md:left-4 right-2 md:right-4 z-10">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-2 md:p-3 border border-border">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-primary" />
-                              <span className="text-sm text-foreground">
+                              <span className="text-xs md:text-sm text-foreground">
                                 Click on the map to select a location
                               </span>
                             </div>
-                            <div className="flex items-center gap-4 text-xs">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span className="text-muted-foreground">Existing Outlets</span>
+                            <div className="flex items-center gap-2 md:gap-4 text-xs">
+                              <div className="flex items-center gap-1 md:gap-2">
+                                <div className="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full"></div>
+                                <span className="text-muted-foreground">Existing</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                <span className="text-muted-foreground">Selected Location</span>
+                              <div className="flex items-center gap-1 md:gap-2">
+                                <div className="w-2 h-2 md:w-3 md:h-3 bg-red-500 rounded-full"></div>
+                                <span className="text-muted-foreground">Selected</span>
                               </div>
                             </div>
                           </div>
@@ -830,7 +761,7 @@ export default function CreateFranchisePage() {
                       <div
                         ref={mapRef}
                         className="w-full h-full"
-                        style={{ minHeight: '500px' }}
+                        style={{ minHeight: '300px' }}
                       />
 
                       {/* Fixed Center Location Indicator */}
@@ -876,188 +807,226 @@ export default function CreateFranchisePage() {
                   className="space-y-8"
                 >
 
-                  {/* Shadcn Slider and Text Fields in One Row */}
+                  {/* Investment Selection - Mobile Optimized */}
                   {formData.selectedBrand && formData.locationDetails?.carpetArea && (
-                    <div>
-                      <h3 className="font-medium text-foreground mb-6">Select Your Investment</h3>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-4 md:p-6 border border-blue-200 dark:border-blue-800">
+                      <div className="text-center mb-6">
+                        <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">Select Your Investment</h3>
+                        <p className="text-sm text-muted-foreground">Choose how much you want to invest in this franchise</p>
+                      </div>
 
-                      <div className="flex items-center gap-6">
-                        {/* Shadcn Slider */}
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-3">
-                            <label className="text-sm text-muted-foreground  block">
+                      {/* Investment Amount Display - Mobile First */}
+                      <div className="bg-white dark:bg-stone-800 rounded-lg p-4 mb-6 text-center border shadow-sm">
+                        <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
+                          ₹{(selectedShares * 5.75 * 83 * 1.2).toLocaleString()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {selectedShares} shares ({Math.round((selectedShares / Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)) * 100)}% ownership)
+                        </div>
+                      </div>
+
+                      {/* Slider Section */}
+                      <div className="space-y-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                          <label className="text-sm font-medium text-foreground">
                             Drag to select investment level
                           </label>
-                            {/* Min/Max Labels */}
-                          <div className="flex justify-between text-sm text-muted-foreground gap-2">
+                          <div className="flex flex-col md:flex-row gap-2 text-xs text-muted-foreground">
                             <span>Min: {Math.ceil(Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75) * 0.05)} shares</span>
                             <span>Max: {Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)} shares</span>
                           </div>
-                          </div>
-                          
-                          <div className="border border-border rounded-lg p-4 bg-card">
-                            <Slider
-                              value={[selectedShares]}
-                              onValueChange={(value) => setSelectedShares(value[0])}
-                              min={Math.ceil(Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75) * 0.05)}
-                              max={Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)}
-                              step={1}
-                              className="w-full"
-                            />
-                          </div>
-
-                          
                         </div>
 
-                        {/* Percentage Field */}
-                        <div className="w-32">
-                          <label className="text-sm text-muted-foreground mb-3 block">Percentage</label>
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              value={Math.round((selectedShares / Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)) * 100)}
-                              onChange={(e) => {
-                                const percentage = Number(e.target.value);
-                                const totalShares = Math.floor((formData.locationDetails!.carpetArea * formData.selectedBrand!.costPerArea) / 5.75);
-                                const newShares = Math.round((percentage / 100) * totalShares);
-                                const min = Math.ceil(totalShares * 0.05);
-                                const max = totalShares;
-                                if (newShares >= min && newShares <= max && percentage >= 5 && percentage <= 100) {
-                                  setSelectedShares(newShares);
-                                }
-                              }}
-                              min="5"
-                              max="100"
-                              className="text-center pr-8 text-lg font-semibold"
-                            />
-                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground font-medium">%</span>
-                          </div>
-                        </div>
-
-                        {/* Total Shares Field */}
-                        <div className="w-32">
-                          <label className="text-sm text-muted-foreground mb-3 block">Total Shares</label>
-                          <Input
-                            type="number"
-                            value={selectedShares}
-                            onChange={(e) => {
-                              const value = Number(e.target.value);
-                              const min = Math.ceil(Math.floor((formData.locationDetails!.carpetArea * formData.selectedBrand!.costPerArea) / 5.75) * 0.05);
-                              const max = Math.floor((formData.locationDetails!.carpetArea * formData.selectedBrand!.costPerArea) / 5.75);
-                              if (value >= min && value <= max) {
-                                setSelectedShares(value);
-                              }
-                            }}
+                        <div className="bg-white dark:bg-stone-800 rounded-lg p-4 border shadow-sm">
+                          <Slider
+                            value={[selectedShares]}
+                            onValueChange={(value) => setSelectedShares(value[0])}
                             min={Math.ceil(Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75) * 0.05)}
                             max={Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)}
-                            className="text-center text-lg font-semibold"
+                            step={1}
+                            className="w-full"
                           />
+                        </div>
+
+                        {/* Input Fields - Mobile Responsive */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block">Percentage</label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                value={Math.round((selectedShares / Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)) * 100)}
+                                onChange={(e) => {
+                                  const percentage = Number(e.target.value);
+                                  const totalShares = Math.floor((formData.locationDetails!.carpetArea * formData.selectedBrand!.costPerArea) / 5.75);
+                                  const newShares = Math.round((percentage / 100) * totalShares);
+                                  const min = Math.ceil(totalShares * 0.05);
+                                  const max = totalShares;
+                                  if (newShares >= min && newShares <= max && percentage >= 5 && percentage <= 100) {
+                                    setSelectedShares(newShares);
+                                  }
+                                }}
+                                min="5"
+                                max="100"
+                                className="text-center pr-8 text-base md:text-lg font-semibold bg-white dark:bg-stone-800"
+                              />
+                              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground font-medium">%</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block">Total Shares</label>
+                            <Input
+                              type="number"
+                              value={selectedShares}
+                              onChange={(e) => {
+                                const value = Number(e.target.value);
+                                const min = Math.ceil(Math.floor((formData.locationDetails!.carpetArea * formData.selectedBrand!.costPerArea) / 5.75) * 0.05);
+                                const max = Math.floor((formData.locationDetails!.carpetArea * formData.selectedBrand!.costPerArea) / 5.75);
+                                if (value >= min && value <= max) {
+                                  setSelectedShares(value);
+                                }
+                              }}
+                              min={Math.ceil(Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75) * 0.05)}
+                              max={Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)}
+                              className="text-center text-base md:text-lg font-semibold bg-white dark:bg-stone-800"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* 3-Column Layout: Brand Info, Location & Investment Details, Payment Details */}
+                  {/* Summary Cards - Mobile Optimized */}
                   {formData.selectedBrand && formData.locationDetails?.carpetArea && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
 
 
-                      {/* Column 2: Location & Investment Details */}
-                        {/* Location Details */}
-                        <div className="bg-muted/50 rounded-lg p-6">
+                      {/* Brand & Location Details */}
+                        <div className="bg-white dark:bg-stone-800 rounded-lg p-4 md:p-6 border shadow-sm">
+                          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <Building className="h-5 w-5 text-primary" />
+                            Franchise Details
+                          </h3>
+
+                          {/* Brand Info */}
+                          <div className="flex items-start gap-3 mb-4 pb-4 border-b border-border">
+                            <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                              <Image
+                                src={formData.selectedBrand.logo}
+                                alt={formData.selectedBrand.name}
+                                width={64}
+                                height={64}
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-foreground text-base md:text-lg mb-1">
+                                {formData.selectedBrand.name}
+                              </h4>
+                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
+                                {formData.selectedBrand.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Location Details */}
                           <div className="space-y-3 text-sm">
-                            <div className="flex items-start gap-4">
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                            <Image
-                              src={formData.selectedBrand.logo}
-                              alt={formData.selectedBrand.name}
-                              width={64}
-                              height={64}
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-foreground text-lg mb-1">
-                              {formData.selectedBrand.name}
-                            </h4>
-                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                              {formData.selectedBrand.description}
-                            </p>
-                          </div>
-                        </div>
                             <div>
-                              <span className="text-muted-foreground">Address:</span>
-                              <p className="text-foreground font-medium">{formData.location?.address}</p>
+                              <span className="text-muted-foreground text-xs uppercase tracking-wide">Address</span>
+                              <p className="text-foreground font-medium mt-1">{formData.location?.address}</p>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Door Number:</span>
-                              <span className="text-foreground font-medium">{formData.locationDetails?.doorNumber || 'Not specified'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Carpet Area:</span>
-                              <span className="text-foreground font-medium">{formData.locationDetails?.carpetArea} sq ft</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Ownership:</span>
-                              <span className="text-foreground font-medium">{formData.locationDetails?.owned ? 'Owned' : 'Rented'}</span>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="text-muted-foreground text-xs uppercase tracking-wide">Door Number</span>
+                                <p className="text-foreground font-medium mt-1">{formData.locationDetails?.doorNumber || 'Not specified'}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground text-xs uppercase tracking-wide">Area</span>
+                                <p className="text-foreground font-medium mt-1">{formData.locationDetails?.carpetArea} sq ft</p>
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Investment Details */}
-                        <div className="bg-muted/50 rounded-lg p-6">
-                          <h3 className="font-medium text-foreground mb-4">Investment Details</h3>
-                          <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Total Investment:</span>
+                        {/* Investment Breakdown */}
+                        <div className="bg-white dark:bg-stone-800 rounded-lg p-4 md:p-6 border shadow-sm">
+                          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <DollarSign className="h-5 w-5 text-green-600" />
+                            Investment Breakdown
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">Total Investment</span>
                               <span className="font-semibold text-foreground">${(formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea).toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Total Shares:</span>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">Total Shares Available</span>
                               <span className="font-semibold text-foreground">{Math.floor((formData.locationDetails.carpetArea * formData.selectedBrand.costPerArea) / 5.75)}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Share Price:</span>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">Price per Share</span>
                               <span className="font-semibold text-foreground">$5.75</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Your Shares:</span>
-                              <span className="font-semibold text-primary">{selectedShares}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Your Investment:</span>
-                              <span className="font-semibold text-primary">${(selectedShares * 5.75).toLocaleString()}</span>
+                            <div className="border-t border-border pt-3 mt-3">
+                              <div className="flex justify-between items-center py-2">
+                                <span className="text-muted-foreground text-sm">Your Shares</span>
+                                <span className="font-bold text-primary text-lg">{selectedShares}</span>
+                              </div>
+                              <div className="flex justify-between items-center py-2">
+                                <span className="text-muted-foreground text-sm">Your Investment</span>
+                                <span className="font-bold text-primary text-lg">${(selectedShares * 5.75).toLocaleString()}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                      {/* Column 3: Payment Summary */}
-                      <div className="bg-background rounded-lg p-6 border border-border">
-                        <h3 className="font-medium text-foreground mb-4">Payment Summary</h3>
+                      {/* Payment Summary - Enhanced */}
+                      <div className="md:col-span-2 lg:col-span-1 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-4 md:p-6 border border-green-200 dark:border-green-800 shadow-sm">
+                        <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                          <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                          </div>
+                          Payment Summary
+                        </h3>
                         <div className="space-y-4">
-                          <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Selected Shares:</span>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">Selected Shares</span>
                               <span className="font-medium">{selectedShares}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Share Value:</span>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">Share Value</span>
                               <span className="font-medium">₹{(selectedShares * 5.75 * 83).toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Service Fee (15%):</span>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">Service Fee (15%)</span>
                               <span className="font-medium">₹{(selectedShares * 5.75 * 83 * 0.15).toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">GST (5%):</span>
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-muted-foreground text-sm">GST (5%)</span>
                               <span className="font-medium">₹{(selectedShares * 5.75 * 83 * 0.05).toLocaleString()}</span>
                             </div>
                           </div>
 
-                          <div className="border-t border-border pt-4">
+                          <div className="bg-white dark:bg-stone-800 rounded-lg p-4 border-2 border-green-200 dark:border-green-800">
                             <div className="flex justify-between items-center">
-                              <span className="font-semibold text-foreground">Total Amount:</span>
-                              <span className="font-bold text-lg text-primary">₹{(selectedShares * 5.75 * 83 * 1.2).toLocaleString()}</span>
+                              <span className="font-semibold text-foreground">Total Amount</span>
+                              <span className="font-bold text-xl md:text-2xl text-green-600">₹{(selectedShares * 5.75 * 83 * 1.2).toLocaleString()}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 text-center">
+                              All fees included
+                            </div>
+                          </div>
+
+                          {/* Payment Method Preview */}
+                          <div className="pt-4 border-t border-green-200 dark:border-green-800">
+                            <div className="text-xs text-muted-foreground mb-2">Payment Method</div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <div className="w-8 h-5 bg-gradient-to-r from-blue-600 to-purple-600 rounded text-white text-xs flex items-center justify-center font-bold">
+                                CARD
+                              </div>
+                              <span className="text-foreground">Secure payment via Razorpay</span>
                             </div>
                           </div>
                         </div>
@@ -1069,6 +1038,76 @@ export default function CreateFranchisePage() {
               )}
         </motion.div>
       </div>
+       {/* Progress Steps */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex items-center justify-center md:justify-end w-full md:w-auto  p-6"
+        >
+          {[
+            { num: 1, label: "Brand" },
+            { num: 2, label: "Location" },
+            { num: 3, label: "Payment" }
+          ].map((stepInfo, index) => (
+            <div key={stepInfo.num} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm text-white font-medium ${
+                    step >= stepInfo.num
+                      ? "bg-neutral-700 text-primary-foreground"
+                      : "bg-muted-gradient text-muted-foreground"
+                  }`}
+                >
+                  {stepInfo.num}
+                </div>
+                <span className="text-xs text-muted-foreground mt-1 hidden md:block">{stepInfo.label}</span>
+              </div>
+              {index < 2 && (
+                <div
+                  className={`w-8 md:w-16 h-0.5 mx-1 md:mx-2 ${
+                    step > stepInfo.num ? "bg-neutral-700" : "bg-muted-gradient"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </motion.div>
+      <div className="w-full  flex md:flex-row justify-between gap-2 md:gap-4 mt-4 p-6 border md:mt-0">
+          {step === 1 && (
+            <Button variant="outline" onClick={() => router.back()} className="w-auto">
+              Cancel Application
+            </Button>
+          )}
+          {step === 2 && (
+            <Button variant="outline" onClick={() => setStep(1)} className="w-auto">
+              Previous
+            </Button>
+          )}
+          {step === 2 && (
+            <Button
+              onClick={() => setStep(3)}
+              className="bg-yellow-600 text-white hover:bg-yellow-700 w-auto"
+            >
+              Confirm Location
+            </Button>
+          )}
+          {step === 3 && (
+            <>
+              <Button variant="outline" onClick={() => setStep(2)} className="w-auto">
+                Previous
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                className="bg-yellow-600 text-white hover:bg-yellow-700 w-auto"
+              >
+                Make Payment
+              </Button>
+            </>
+          )}
+
+
+        </div>
     </div>
   );
 }

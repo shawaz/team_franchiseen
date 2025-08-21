@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
+import BusinessCard from "@/components/business/BusinessCard";
 import { Calendar, DollarSign, HomeIcon, MapPin, Search, TrendingUp } from "lucide-react";
 
 
@@ -45,7 +46,7 @@ interface Franchise {
 
 export default function Home() {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState("fund");
+  const [activeTab, setActiveTab] = useState("franchise");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch all franchises from the database
@@ -54,8 +55,8 @@ export default function Home() {
 
   // Update active tab based on URL parameter
   useEffect(() => {
-    const tab = searchParams?.get("tab") as "fund" | "launch" | "invest" | null;
-    if (tab && ["fund", "launch", "invest"].includes(tab)) {
+    const tab = searchParams?.get("tab") as "franchise" | "brand" | null;
+    if (tab && ["franchise", "brand"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -77,14 +78,14 @@ export default function Home() {
   const _renderSearchFilters = () => {
     return (
 
-        <div className="sticky top-[60px] z-10 flex flex-col md:flex-row gap-4 p-4 bg-card border border-border">
+        <div className="flex flex-col md:flex-row gap-4 p-4 bg-card border border-border">
           <div className="flex justify-center">
-          <div className="inline-flex bg-secondary p-1 gap-1">
-            {["fund", "launch", "live"].map((tab) => (
+          <div className="inline-flex bg-secondary w-full p-1 gap-1">
+            {["franchise", "brand"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-9 py-2 text-sm uppercase font-bold cursor-pointer  transition-colors ${
+                className={`px-9 py-2 text-sm uppercase font-bold cursor-pointer w-full transition-colors ${
                   activeTab === tab
                     ? "bg-primary text-primary-foreground"
                     : "text-foreground hover:bg-secondary-foreground/10"
@@ -208,17 +209,38 @@ export default function Home() {
     
     const convertedFranchises = convertToDisplayFormat(allFranchises || [], allBusinesses || []);
     
-    // Filter by status/tab
+    // Filter by tab type
     let currentProperties: Franchise[] = [];
+    let uniqueBusinessesForCards: any[] = [];
+
     switch (activeTab) {
-      case "fund":
-        currentProperties = convertedFranchises.filter(f => f.type === "fund");
+      case "franchise":
+        // Show all franchises (individual franchise locations)
+        currentProperties = convertedFranchises;
         break;
-      case "launch":
-        currentProperties = convertedFranchises.filter(f => f.type === "launch");
-        break;
-      case "live":
-        currentProperties = convertedFranchises.filter(f => f.type === "live");
+      case "brand":
+        // Show unique brands/businesses (group by business)
+        const uniqueBusinesses = new Map();
+        convertedFranchises.forEach(franchise => {
+          if (!uniqueBusinesses.has(franchise.businessSlug)) {
+            uniqueBusinesses.set(franchise.businessSlug, franchise);
+          }
+        });
+        currentProperties = Array.from(uniqueBusinesses.values());
+
+        // Create business objects for BusinessCard
+        uniqueBusinessesForCards = Array.from(uniqueBusinesses.values()).map(franchise => {
+          const business = allBusinesses?.find(b => b.slug === franchise.businessSlug);
+          return {
+            id: business?._id || franchise._id,
+            name: business?.name || franchise.title,
+            logo_url: business?.logoUrl || "/logo/logo-2.svg",
+            industry: business?.industry?.name || "Business",
+            category: business?.category?.name || "Franchise",
+            costPerArea: franchise.price,
+            min_area: franchise.size
+          };
+        });
         break;
     }
 
@@ -226,47 +248,69 @@ export default function Home() {
 
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 py-6 gap-6">
-        {filteredProperties.length > 0 ? (
-          filteredProperties.map((franchise) => (
-            <FranchiseCard
-              key={franchise._id.toString()}
-              id={franchise._id.toString()}
-              type={activeTab as "fund" | "launch" | "live"}
-              title={franchise.title}
-              location={franchise.location || "Dubai, UAE"}
-              price={franchise.price}
-              image={
-                franchise.images && franchise.images.length > 0
-                  ? franchise.images[0]
-                  : ""
-              }
-              rating={franchise.rating || 4.5}
-              bedrooms={franchise.bedrooms}
-              bathrooms={franchise.bathrooms}
-              size={franchise.squareFeet}
-              returnRate={franchise.returnRate || 8}
-              investorsCount={franchise.investorsCount || 42}
-              fundingGoal={franchise.fundingGoal || 500000}
-              fundingProgress={franchise.fundingProgress || 250000}
-              startDate={franchise.startDate}
-              endDate={franchise.endDate}
-              launchProgress={franchise.launchProgress}
-              currentBalance={franchise.currentBalance}
-              totalBudget={franchise.totalBudget}
-              activeOutlets={franchise.activeOutlets}
-              brandSlug={franchise.brandSlug}
-              franchiseSlug={franchise.franchiseSlug}
-            />
-          ))
+        {activeTab === "brand" ? (
+          // Render BusinessCard for brand tab
+          uniqueBusinessesForCards.length > 0 ? (
+            uniqueBusinessesForCards.map((business) => (
+              <BusinessCard
+                key={business.id}
+                business={business}
+              />
+            ))
+          ) : (
+            <div className="text-center py-12 col-span-full">
+              <h3 className="text-lg font-medium">No brands found</h3>
+              <p className="text-muted-foreground mt-2">
+                {searchQuery
+                  ? "Try a different search term"
+                  : "No liked brands yet"}
+              </p>
+            </div>
+          )
         ) : (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium">No properties found</h3>
-            <p className="text-muted-foreground mt-2">
-              {searchQuery
-                ? "Try a different search term"
-                : "Try adjusting your search or filters"}
-            </p>
-          </div>
+          // Render FranchiseCard for franchise tab
+          filteredProperties.length > 0 ? (
+            filteredProperties.map((franchise) => (
+              <FranchiseCard
+                key={franchise._id.toString()}
+                id={franchise._id.toString()}
+                type={franchise.type}
+                title={franchise.title}
+                location={franchise.location || "Dubai, UAE"}
+                price={franchise.price}
+                image={
+                  franchise.images && franchise.images.length > 0
+                    ? franchise.images[0]
+                    : ""
+                }
+                rating={franchise.rating || 4.5}
+                bedrooms={franchise.bedrooms}
+                bathrooms={franchise.bathrooms}
+                size={franchise.squareFeet}
+                returnRate={franchise.returnRate || 8}
+                investorsCount={franchise.investorsCount || 42}
+                fundingGoal={franchise.fundingGoal || 500000}
+                fundingProgress={franchise.fundingProgress || 250000}
+                startDate={franchise.startDate}
+                endDate={franchise.endDate}
+                launchProgress={franchise.launchProgress}
+                currentBalance={franchise.currentBalance}
+                totalBudget={franchise.totalBudget}
+                activeOutlets={franchise.activeOutlets}
+                brandSlug={franchise.brandSlug}
+                franchiseSlug={franchise.franchiseSlug}
+              />
+            ))
+          ) : (
+            <div className="text-center py-12 col-span-full">
+              <h3 className="text-lg font-medium">No franchises found</h3>
+              <p className="text-muted-foreground mt-2">
+                {searchQuery
+                  ? "Try a different search term"
+                  : "No liked franchises yet"}
+              </p>
+            </div>
+          )
         )}
       </div>
     );

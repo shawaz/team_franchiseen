@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useModal } from '@/contexts/ModalContext';
 import SendSOLModal from '@/components/wallet/SendSOLModal';
 import SOLPaymentModal from '@/components/franchise/SOLPaymentModal';
+import MobileProfileModal from '@/components/modals/MobileProfileModal';
+import SettingsModal from '@/components/modals/SettingsModal';
 
 /**
  * Centralized Modal Manager
@@ -13,6 +15,8 @@ import SOLPaymentModal from '@/components/franchise/SOLPaymentModal';
  */
 const ModalManager: React.FC = () => {
   const { currentModal, modalData, closeModal } = useModal();
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsModalTab, setSettingsModalTab] = useState<'currency' | 'theme'>('theme');
 
   // Render Send SOL Modal
   if (currentModal === 'sendSOL') {
@@ -39,6 +43,27 @@ const ModalManager: React.FC = () => {
         onClose={closeModal}
         franchiseData={franchiseData}
       />
+    );
+  }
+
+  // Render Mobile Profile Modal
+  if (currentModal === 'mobileProfile') {
+    return (
+      <>
+        <MobileProfileModal
+          isOpen={true}
+          onClose={closeModal}
+          onSettingsClick={() => {
+            setSettingsModalTab('theme');
+            setIsSettingsModalOpen(true);
+          }}
+        />
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          initialTab={settingsModalTab}
+        />
+      </>
     );
   }
 

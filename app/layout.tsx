@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import AppProviders from "@/components/AppProviders";
+import FooterMobile from "@/components/FooterMobile";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
         />
         <AppProviders>
           {children}
+          <FooterMobile />
         </AppProviders>
       </body>
     </html>

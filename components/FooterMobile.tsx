@@ -4,17 +4,19 @@ import { SignedIn, SignedOut } from "@clerk/nextjs";
 import {
   Bell,
   Compass,
-  CreditCard,
-  HeartHandshake,
+  Heart,
+  PlusSquare,
   UserCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import EmailVerificationModal from "./EmailVerificationModal";
+import { useModal } from "@/contexts/ModalContext";
 
 function FooterMobile() {
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
+  const { openMobileProfileModal } = useModal();
   const pathname = usePathname();
 
   // Function to check if a path is active
@@ -43,21 +45,21 @@ function FooterMobile() {
           <Link href={"/"}>
             <Compass className={getIconClasses("/")} color="currentColor" />
           </Link>
-          <Link href={"/deals"}>
-            <HeartHandshake className={getIconClasses("/deals")} />
+          <Link href={"/liked"}>
+            <Heart className={getIconClasses("/liked")} />
           </Link>
-          <Link href={"/card"}>
-            <CreditCard
-              className={getIconClasses("/card")}
+          <Link href={"/create"}>
+            <PlusSquare
+              className={getIconClasses("/create")}
               color="currentColor"
             />
           </Link>
           <Link href={"/notify"}>
             <Bell className={getIconClasses("/notify")} />
           </Link>
-          <Link href={"/profile"}>
+          <button onClick={() => openMobileProfileModal()}>
             <UserCircle className={getIconClasses("/profile")} />
-          </Link>
+          </button>
         </div>
       </SignedIn>
       <SignedOut>
@@ -76,6 +78,8 @@ function FooterMobile() {
           onClose={() => setIsEmailVerificationOpen(false)}
         />
       </SignedOut>
+
+
     </div>
   );
 }

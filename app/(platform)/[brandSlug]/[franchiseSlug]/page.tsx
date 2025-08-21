@@ -116,6 +116,9 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
           </div>
         </div>
 
+         {/* Image Gallery - Desktop Grid / Mobile Slider */}
+        <FranchiseImageGallery />
+
         <div className="max-w-7xl mx-auto p-6">
           <div className=" flex justify-between">
             <div className="flex flex-col">
@@ -154,8 +157,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
           </div>
         </div>
 
-        {/* Image Gallery - Desktop Grid / Mobile Slider */}
-        <FranchiseImageGallery />
+       
 
         
       </section>
