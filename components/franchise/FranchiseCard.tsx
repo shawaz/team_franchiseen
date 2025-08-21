@@ -283,27 +283,24 @@ const FranchiseCard: React.FC<FranchiseCardProps> = ({
               <Image
                 src={business.logoUrl}
                 alt={business.name || title}
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded object-cover"
+                width={46}
+                height={46}
+                className="w-9 h-9 object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded bg-gray-200 dark:bg-stone-700 flex items-center justify-center">
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                  {(business?.name || title).charAt(0)}
-                </span>
+              <div className="">
+               {/* Franchise Title and Location */}
+                <h3 className="font-semibold truncate mb-1">{title}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{location}</p>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
-                {business?.name || 'Brand'}
-              </h4>
+              <h3 className="font-semibold truncate">{business?.name}</h3>
+                <p className="text-sm text-muted-foreground">{location}</p>
             </div>
           </div>
 
-          {/* Franchise Title and Location */}
-          <h3 className="font-semibold truncate mb-1">{title}</h3>
-          <p className="text-sm text-muted-foreground mb-3">{location}</p>
+          
 
           {renderCardContent()}
         </div>
