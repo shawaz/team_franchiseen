@@ -45,7 +45,7 @@ export const create = mutation({
     // Get or create user
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .unique();
 
     let userId: Id<"users">;
@@ -277,7 +277,7 @@ export const update = mutation({
     // Only owner can update
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user || String(user._id) !== String(business.owner_id)) {
       throw new Error("Not authorized");
@@ -307,7 +307,7 @@ export const deleteBusiness = mutation({
     // Only owner can delete
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user || String(user._id) !== String(business.owner_id)) {
       throw new Error("Not authorized");

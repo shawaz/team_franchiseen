@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { CreditCard, Zap, Wallet, RefreshCw } from 'lucide-react';
+import { CreditCard, Zap, Wallet, RefreshCw, ArrowUpDown, Banknote, Coins, CircleArrowOutDownLeftIcon, PlusCircle } from 'lucide-react';
 import { useSolana } from '@/hooks/useSolana';
 import { useModal } from '@/contexts/ModalContext';
 import { formatSol } from '@/lib/coingecko';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
+import { Money } from 'iconsax-reactjs';
 
 interface Business {
   _id: string;
@@ -91,7 +92,7 @@ const BrandWalletWithLocalCurrency: React.FC<BrandWalletWithLocalCurrencyProps> 
 
   return (
     <div >
-      <div className="p-3 sm:p-4 bg-white border border-gray-200 dark:border-stone-700">
+      <div className="p-3 sm:p-4 bg-white dark:bg-stone-800/50 border border-gray-200 dark:border-stone-700">
          <div className="flex items-center gap-3">
             {/* Brand Logo */}
             <div className="w-10 h-10 rounded overflow-hidden bg-white/20 flex items-center justify-center">
@@ -182,26 +183,26 @@ const BrandWalletWithLocalCurrency: React.FC<BrandWalletWithLocalCurrencyProps> 
                 disabled={solanaLoading}
                 className="bg-white/20  border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-2 disabled:opacity-50"
               >
-                <Zap className="h-4 w-4" />
-                <span className="text-md font-medium">
+                <ArrowUpDown className="h-4 w-4" />
+                <span className="text-xs font-medium">
                   {solanaLoading ? 'Loading...' : 'SWAP'}
                 </span>
               </button>
 
               <button
                 onClick={onAddMoney}
-                className="bg-white/20 border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-4"
+                className="bg-white/20 border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-2"
               >
-                <CreditCard className="h-4 w-4" />
-                <span className="text-md font-medium">BUY</span>
+                <PlusCircle className="h-4 w-4" />
+                <span className="text-xs font-medium">BUY</span>
               </button>
               
               <button
                 onClick={handleSendSOL}
-                className="bg-white/20 border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-4"
+                className="bg-white/20 border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-2"
               >
-                <Zap className="h-4 w-4" />
-                <span className="text-md font-medium">WITHDRAW</span>
+                <CreditCard className="h-4 w-4" />
+                <span className="text-xs font-medium">PAY</span>
               </button>
               
               

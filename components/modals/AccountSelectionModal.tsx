@@ -84,6 +84,9 @@ const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({ isOpen, o
             <X className="h-5 w-5" />
           </button>
         </div>
+        
+
+        
 
         {/* Content */}
         <div className="p-6 space-y-6">
@@ -136,7 +139,7 @@ const AccountSelectionModal: React.FC<AccountSelectionModalProps> = ({ isOpen, o
           {/* Create New Business */}
           <div className="pt-4 border-t border-gray-200 dark:border-stone-700">
             <Link
-              href="/create-business"
+              href="/register"
               onClick={onClose}
               className="flex items-center gap-4 p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-stone-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all"
             >

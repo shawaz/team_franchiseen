@@ -462,11 +462,11 @@ function Header() {
                         }`}
                       >
                         <div>
-                          <Link href="/profile">
+                          <Link href="/account">
                             <div className="flex items-center gap-3 px-5 py-2 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors">
                               <div className="relative h-8 w-8 flex-shrink-0 z-0">
                                 <Image
-                                  src={convexUser?.avatar || "/logo/logo-2.svg"}
+                                  src={convexUser?.avatar || "/avatar/avatar-m-1.png"}
                                   alt="Profile"
                                   width={32}
                                   height={32}

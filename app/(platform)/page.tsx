@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import FranchisesListView from "@/components/franchise/FranchisesListView";
 import { Calendar, DollarSign, HomeIcon, MapPin, Search, TrendingUp } from "lucide-react";
@@ -26,6 +27,7 @@ interface Franchise {
   businessSlug?: string;
   brandSlug?: string;
   franchiseSlug?: string;
+  businessId?: Id<"businesses">;
   // funding specific properties
   availableFrom?: string;
   returnRate?: string | number;
@@ -176,6 +178,7 @@ export default function Home() {
           businessSlug: business?.slug || "business",
           brandSlug: business?.slug || "business",
           franchiseSlug: franchise.slug || franchise._id,
+          businessId: franchise.businessId, // Add businessId for brand data
           // Funding specific
           returnRate: 8.5,
           investorsCount: Math.floor(Math.random() * 50) + 10,
@@ -264,6 +267,7 @@ export default function Home() {
                   activeOutlets={franchise.activeOutlets}
                   brandSlug={franchise.brandSlug}
                   franchiseSlug={franchise.franchiseSlug}
+                  businessId={franchise.businessId}
                 />
               ))
             ) : (

@@ -5,6 +5,10 @@ import { X, Settings, Shield, Bell, Power, Globe, Languages, HelpCircle, Newspap
 import Link from 'next/link';
 import Image from 'next/image';
 import { SignOutButton, useUser } from '@clerk/nextjs';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+import { useModal } from '@/contexts/ModalContext';
 
 interface MobileMenuModalProps {
   isOpen: boolean;
@@ -14,31 +18,29 @@ interface MobileMenuModalProps {
 
 const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSettingsClick }) => {
   const { user } = useUser();
+  const { openTypeformRegisterBrandModal } = useModal();
+  const email = user?.primaryEmailAddress?.emailAddress;
+
+  // Get Convex user data
+  const convexUser = useQuery(
+    api.myFunctions.getUserByEmail,
+    email ? { email } : "skip",
+  );
+
+  // Get user businesses
+  const userBusinesses = useQuery(
+    api.businesses.listByOwner,
+    convexUser?._id ? { ownerId: convexUser._id as Id<"users"> } : "skip",
+  ) || [];
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center md:p-4">
-      <div className="bg-white dark:bg-stone-800 md:rounded-lg w-full md:max-w-2xl h-full md:max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+      <div className="bg-white dark:bg-stone-800 w-full h-full overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-stone-700">
-         <div className="flex items-center gap-4 w-2/3">
-                {/* Logo */}
-                <Link href="/" className="flex items-center cursor-pointer ">
-                  <div className="flex items-center cursor-pointer">
-                    <Image
-                      src="/logo.svg"
-                      alt="logo"
-                      width={28}
-                      height={28}
-                      className="z-0"
-                    />
-                    <span className="text-xl ml-4 font-bold">FRANCHISEEN</span>
-                    
-                  </div>
-                </Link>
-                {/* <div className="hidden sm:block">|</div> */}
-              </div>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-stone-700">
+          <h1 className="text-xl font-bold">Menu</h1>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-stone-700 rounded-full transition-colors"
@@ -48,26 +50,76 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Franchiseen Logo Section */}
-          <div className="text-center py-6 bg-gradient-to-br from-stone-50 to-yellow-50 dark:from-stone-950/20 dark:to-yellow-950/20 rounded-lg border border-stone-200 dark:border-stone-800">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-xl overflow-hidden flex items-center justify-center">
-               <Image
-                      src="/logo.svg"
-                      alt="logo"
-                      width={46}
-                      height={46}
-                      className="z-0"
-                    />
-            </div>
-            <h3 className="text-xl font-bold text-foreground">FRANCHISEEN</h3>
-            <p className="text-sm text-muted-foreground">FIND | FUND | FRANCHISE</p>
-          </div>
+        <div className="p-4 space-y-6">
+          {/* User Section - Only show if logged in */}
+          {user && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Your Brands</h3>
 
-          {/* App Settings */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Preferences</h3>
-            <div className="space-y-1">
+              {/* User Businesses */}
+              {userBusinesses.length > 0 && (
+                <div className="space-y-2">
+                  {userBusinesses.map(
+                    (business: {
+                      _id: string;
+                      name: string;
+                      slug?: string;
+                      logoUrl?: string;
+                      industry?: { name: string };
+                    }) => (
+                      <Link
+                        key={business._id}
+                        href={`/${business.slug}/account`}
+                        onClick={onClose}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
+                      >
+                        <div className="relative h-10 w-10 flex-shrink-0">
+                          <Image
+                            src={business.logoUrl || "/logo/logo-2.svg"}
+                            alt={business.name}
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            className="object-cover rounded-lg"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-medium truncate">
+                            {business.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            {business.industry?.name || 'Business'}
+                          </p>
+                        </div>
+                      </Link>
+                    ),
+                  )}
+                </div>
+              )}
+
+              {/* Register New Brand */}
+              <button
+                onClick={() => {
+                  onClose();
+                  openTypeformRegisterBrandModal();
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-gray-300 dark:border-stone-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-stone-700 flex items-center justify-center">
+                  <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="text-base font-medium text-foreground">Register New Brand</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Start your franchise business</p>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* App Preferences */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">App Preferences</h3>
+            <div className="space-y-2">
               <Link
                 href="/currency"
                 onClick={onClose}
@@ -101,11 +153,11 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
           </div>
 
           {/* Information */}
-          <div className="space-y-2">
+          <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Information</h3>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Link
-                href="/company/how"
+                href="/how-it-works"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -114,7 +166,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/resources/help"
+                href="/help"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -123,7 +175,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/blog"
+                href="/news"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -132,7 +184,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/about"
+                href="/company"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -141,7 +193,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/legal/terms"
+                href="/legal"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -151,11 +203,11 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
             </div>
           </div>
 
-           {/* User Section - Only show if logged in */}
+          {/* Account Actions */}
           {user && (
-            <div className="space-y-2">
+            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-stone-700">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Account</h3>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <button
                   onClick={() => {
                     onSettingsClick();
@@ -194,7 +246,6 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>

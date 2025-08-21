@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useModal } from '@/contexts/ModalContext';
 import SendSOLModal from '@/components/wallet/SendSOLModal';
 import SOLPaymentModal from '@/components/franchise/SOLPaymentModal';
-import MobileProfileModal from '@/components/modals/MobileProfileModal';
 import CreateFranchiseModal from '@/components/modals/CreateFranchiseModal';
 import TypeformCreateFranchiseModal from '@/components/modals/TypeformCreateFranchiseModal';
+import TypeformRegisterBrandModal from '@/components/modals/TypeformRegisterBrandModal';
 import MobileMenuModal from '@/components/modals/MobileMenuModal';
 import AccountSelectionModal from '@/components/modals/AccountSelectionModal';
 import SettingsModal from '@/components/modals/SettingsModal';
@@ -50,26 +50,7 @@ const ModalManager: React.FC = () => {
     );
   }
 
-  // Render Mobile Profile Modal
-  if (currentModal === 'mobileProfile') {
-    return (
-      <>
-        <MobileProfileModal
-          isOpen={true}
-          onClose={closeModal}
-          onSettingsClick={() => {
-            setSettingsModalTab('theme');
-            setIsSettingsModalOpen(true);
-          }}
-        />
-        <SettingsModal
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          initialTab={settingsModalTab}
-        />
-      </>
-    );
-  }
+  // Mobile Profile Modal is no longer used - functionality moved to other modals
 
   // Render Create Franchise Modal
   if (currentModal === 'createFranchise') {
@@ -85,6 +66,16 @@ const ModalManager: React.FC = () => {
   if (currentModal === 'typeformCreateFranchise') {
     return (
       <TypeformCreateFranchiseModal
+        isOpen={true}
+        onClose={closeModal}
+      />
+    );
+  }
+
+  // Render Typeform Register Brand Modal
+  if (currentModal === 'typeformRegisterBrand') {
+    return (
+      <TypeformRegisterBrandModal
         isOpen={true}
         onClose={closeModal}
       />

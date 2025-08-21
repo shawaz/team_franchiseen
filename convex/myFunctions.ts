@@ -41,7 +41,7 @@ export const createUser = mutation({
     // Check if user exists
     const existing = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
     if (existing) return existing._id;
     const id = await ctx.db.insert("users", {
@@ -89,7 +89,7 @@ export const upsertUserProfile = mutation({
     // Check if user exists by email
     const existing = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (existing) {
@@ -141,7 +141,7 @@ export const getUserByEmail = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
   },
 });
@@ -158,7 +158,7 @@ export const updateUserProfile = mutation({
     // Check if user exists by email
     const existing = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (!existing) {

@@ -10,6 +10,7 @@ export type ModalType =
   | 'mobileProfile'
   | 'createFranchise'
   | 'typeformCreateFranchise'
+  | 'typeformRegisterBrand'
   | 'mobileMenu'
   | 'accountSelection'
   | null;
@@ -41,6 +42,7 @@ export interface ModalData {
   mobileProfile?: MobileProfileModalData;
   createFranchise?: {};
   typeformCreateFranchise?: {};
+  typeformRegisterBrand?: {};
   mobileMenu?: MobileProfileModalData;
   accountSelection?: {};
 }
@@ -61,6 +63,7 @@ interface ModalContextType {
   openMobileProfileModal: (data?: MobileProfileModalData) => void;
   openCreateFranchiseModal: () => void;
   openTypeformCreateFranchiseModal: () => void;
+  openTypeformRegisterBrandModal: () => void;
   openMobileMenuModal: (data?: MobileProfileModalData) => void;
   openAccountSelectionModal: () => void;
 }
@@ -103,6 +106,10 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     openModal('typeformCreateFranchise', { typeformCreateFranchise: {} });
   };
 
+  const openTypeformRegisterBrandModal = () => {
+    openModal('typeformRegisterBrand', { typeformRegisterBrand: {} });
+  };
+
   const openMobileMenuModal = (data: MobileProfileModalData = {}) => {
     openModal('mobileMenu', { mobileMenu: data });
   };
@@ -121,6 +128,7 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     openMobileProfileModal,
     openCreateFranchiseModal,
     openTypeformCreateFranchiseModal,
+    openTypeformRegisterBrandModal,
     openMobileMenuModal,
     openAccountSelectionModal,
   };

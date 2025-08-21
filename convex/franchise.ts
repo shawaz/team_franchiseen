@@ -43,7 +43,7 @@ export const create = mutation({
     // Get or create user
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
 
     if (!user) {
@@ -132,7 +132,7 @@ export const createInvoice = mutation({
     // Get or create user
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
 
     if (!user) {

@@ -32,6 +32,7 @@ import SolanaTransactions from '@/components/wallet/SolanaTransactions';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 import { Id } from '@/convex/_generated/dataModel';
 import FranchisesListView from '@/components/franchise/FranchisesListView';
+import TeamsTab from '@/components/teams/TeamsTab';
 
 interface Business {
   _id: Id<"businesses">;
@@ -601,80 +602,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
           )}
 
           {activeTab === 'teams' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Team Management</h3>
-                <button className="flex items-center space-x-2 bg-primary text-white px-4 py-2  hover:bg-primary/90 transition-colors">
-                  <Plus className="h-4 w-4" />
-                  <span>Add Member</span>
-                </button>
-              </div>
-
-              <div className="grid gap-4">
-                {teamMembers.map((member) => (
-                  <Card key={member.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Users className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{member.name}</h4>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{member.email}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              member.role === 'owner' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                              member.role === 'brand_manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                              member.role === 'franchise_manager' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                            }`}>
-                              {member.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </span>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              member.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              member.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {member.status}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="text-right text-sm">
-                          <p className="text-gray-500 dark:text-gray-400">
-                            <Phone className="h-3 w-3 inline mr-1" />
-                            {member.phone}
-                          </p>
-                          <p className="text-gray-500 dark:text-gray-400">
-                            Last active: {new Date(member.lastActive).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex space-x-1">
-                          <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          {member.role !== 'owner' && (
-                            <button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        <strong>Permissions:</strong> {member.permissions.join(', ')}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        <strong>Joined:</strong> {new Date(member.joinedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+            <TeamsTab businessId={business._id} />
           )}
 
           {activeTab === 'settings' && (

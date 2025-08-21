@@ -5,6 +5,9 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface FranchiseCardProps {
   type: "fund" | "launch" | "live"; // Keep old tab names for compatibility
@@ -31,6 +34,8 @@ interface FranchiseCardProps {
   id: string;
   brandSlug?: string;
   franchiseSlug?: string;
+  // Business/Brand information
+  businessId?: Id<"businesses">;
 }
 
 const FranchiseCard: React.FC<FranchiseCardProps> = ({
@@ -56,10 +61,17 @@ const FranchiseCard: React.FC<FranchiseCardProps> = ({
   id,
   brandSlug,
   franchiseSlug,
+  businessId,
 }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const router = useRouter();
   const { formatAmount } = useGlobalCurrency();
+
+  // Get business data from Convex
+  const business = useQuery(
+    api.businesses.getById,
+    businessId ? { businessId } : "skip"
+  );
 
   const formatCurrency = (amount: number) => {
     return formatAmount(amount);
@@ -265,8 +277,34 @@ const FranchiseCard: React.FC<FranchiseCardProps> = ({
           </button>
         </div>
         <div className="p-4">
-          <h3 className="font-semibold truncate">{title}</h3>
-          <p className="text-sm text-muted-foreground">{location}</p>
+          {/* Brand Header */}
+          <div className="flex items-center gap-3 mb-3">
+            {business?.logoUrl ? (
+              <Image
+                src={business.logoUrl}
+                alt={business.name || title}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded bg-gray-200 dark:bg-stone-700 flex items-center justify-center">
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  {(business?.name || title).charAt(0)}
+                </span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">
+                {business?.name || 'Brand'}
+              </h4>
+            </div>
+          </div>
+
+          {/* Franchise Title and Location */}
+          <h3 className="font-semibold truncate mb-1">{title}</h3>
+          <p className="text-sm text-muted-foreground mb-3">{location}</p>
+
           {renderCardContent()}
         </div>
       </div>

@@ -171,7 +171,7 @@ export const createDirectPurchaseDeal = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user) throw new Error("User not found");
 
@@ -228,7 +228,7 @@ export const createSecondaryOfferDeal = mutation({
 
     const buyer = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!buyer) throw new Error("Buyer not found");
 
@@ -287,7 +287,7 @@ export const acceptDeal = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user) throw new Error("User not found");
 
@@ -322,7 +322,7 @@ export const rejectDeal = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user) throw new Error("User not found");
 
@@ -357,7 +357,7 @@ export const cancelDeal = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user) throw new Error("User not found");
 
@@ -394,7 +394,7 @@ export const createTestDeal = mutation({
 
     const user = await ctx.db
       .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email as string))
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
     if (!user) throw new Error("User not found");
 

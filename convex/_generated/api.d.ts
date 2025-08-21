@@ -19,6 +19,7 @@ import type * as franchise from "../franchise.js";
 import type * as industries from "../industries.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as shares from "../shares.js";
+import type * as teams from "../teams.js";
 import type * as uploadLogo from "../uploadLogo.js";
 import type * as uploadcare from "../uploadcare.js";
 
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   industries: typeof industries;
   myFunctions: typeof myFunctions;
   shares: typeof shares;
+  teams: typeof teams;
   uploadLogo: typeof uploadLogo;
   uploadcare: typeof uploadcare;
 }>;

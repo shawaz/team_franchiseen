@@ -26,7 +26,8 @@ export default defineSchema({
     stripeCardholderId: v.optional(v.string()),
     roles: v.optional(v.array(v.string())),
     isActivated: v.optional(v.boolean()),
-  }).index("email", ["email"]),
+  })
+    .index("by_email", ["email"]),
   industries: defineTable({
     name: v.string(),
     slug: v.string(),
@@ -115,4 +116,36 @@ export default defineSchema({
     .index("by_seller", ["sellerId"])
     .index("by_status", ["status"])
     .index("by_type", ["type"]),
+
+  // Team management tables
+  teamInvitations: defineTable({
+    businessId: v.id("businesses"),
+    franchiseId: v.optional(v.id("franchise")),
+    invitedEmail: v.string(),
+    role: v.string(), // brand_manager, franchise_manager, franchise_cashier
+    invitedBy: v.id("users"),
+    status: v.string(), // pending, accepted, declined, cancelled, expired
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+    cancelledAt: v.optional(v.number()),
+  })
+    .index("by_business", ["businessId"])
+    .index("by_business_email", ["businessId", "invitedEmail"])
+    .index("by_email", ["invitedEmail"])
+    .index("by_status", ["status"]),
+
+  teamMembers: defineTable({
+    businessId: v.id("businesses"),
+    franchiseId: v.optional(v.id("franchise")),
+    userId: v.id("users"),
+    role: v.string(), // brand_manager, franchise_manager, franchise_cashier
+    joinedAt: v.number(),
+    invitedBy: v.id("users"),
+    permissions: v.optional(v.array(v.string())),
+  })
+    .index("by_business", ["businessId"])
+    .index("by_user", ["userId"])
+    .index("by_franchise", ["franchiseId"])
+    .index("by_role", ["role"]),
 });

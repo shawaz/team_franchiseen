@@ -7,6 +7,7 @@ import {
   Heart,
   PlusSquare,
   UserCircle,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,7 +17,7 @@ import { useModal } from "@/contexts/ModalContext";
 
 function FooterMobile() {
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
-  const { openAccountSelectionModal, openTypeformCreateFranchiseModal } = useModal();
+  const { openAccountSelectionModal, openMobileProfileModal } = useModal();
   const pathname = usePathname();
 
   // Function to check if a path is active
@@ -48,7 +49,7 @@ function FooterMobile() {
           <Link href={"/liked"}>
             <Heart className={getIconClasses("/liked")} />
           </Link>
-          <button onClick={() => openTypeformCreateFranchiseModal()}>
+          <button onClick={() => openMobileProfileModal()}>
             <PlusSquare
               className={getIconClasses("/create")}
               color="currentColor"
@@ -57,9 +58,9 @@ function FooterMobile() {
           <Link href={"/notify"}>
             <Bell className={getIconClasses("/notify")} />
           </Link>
-          <button onClick={() => openAccountSelectionModal()}>
-            <UserCircle className={getIconClasses("/profile")} />
-          </button>
+          <Link href={"/account"}>
+            <Wallet className={getIconClasses("/account")} />
+          </Link>
         </div>
       </SignedIn>
       <SignedOut>
