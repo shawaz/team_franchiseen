@@ -33,6 +33,8 @@ import CreateBusinessModal from "./business/CreateBusinessModal";
 import { Id } from "../convex/_generated/dataModel";
 import LanguageCurrencyModal from "./LanguageCurrencyModal";
 import SettingsModal from "./modals/SettingsModal";
+import FilterModal, { FilterOptions } from "./modals/FilterModal";
+import { ThemeSwitcher } from "./theme-switcher";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 
 function Header() {
@@ -44,6 +46,7 @@ function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileSearchMode, setIsMobileSearchMode] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Use global currency context
   const { selectedCurrency, currencies } = useGlobalCurrency();
@@ -167,6 +170,12 @@ function Header() {
     }
   };
 
+  // Handle filter application
+  const handleApplyFilters = (filters: FilterOptions) => {
+    console.log('Applied filters:', filters);
+    // TODO: Implement filter logic - pass to parent component or context
+  };
+
   return (
     <>
       <header className="fixed w-full bg-background-light dark:bg-stone-800/50 bg-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 py-3 border-b border-stone-200 dark:border-stone-700">
@@ -181,7 +190,8 @@ function Header() {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleMobileSearchKeyDown}
-                  className="w-full py-2 px-4 border-2 border-stone-200 dark:border-stone-600 outline-none text-sm bg-white dark:bg-stone-700 focus:border-stone-300 dark:focus:bg-stone-800 transition-colors"
+                  className="w-full py-2 px-4 border-2 border-stone-200 dark:border-stone-600 outline-none text-base bg-white dark:bg-stone-700 focus:border-stone-300 dark:focus:bg-stone-800 transition-colors"
+                  style={{ fontSize: '16px' }} // Prevents zoom on iOS
                   autoFocus
                 />
                 {searchQuery && (
@@ -251,6 +261,13 @@ function Header() {
                 )}
               </div>
               <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                aria-label="Filter"
+              >
+                <Filter className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+              </button>
+              <button
                 onClick={handleMobileSearchToggle}
                 className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
                 aria-label="Close search"
@@ -289,9 +306,13 @@ function Header() {
                       onChange={handleSearchChange}
                       className="w-[300px] py-1.5 pl-4 pr-10 dark:bg-stone-800 outline-none text-sm md:focus:w-[400px] transition-all duration-300 bg-white dark:bg-stone-800"
                     />
-                    <div className="absolute right-1.5 p-2 dark:bg-stone-800 dark:bg-stone-800 cursor-pointer hover:bg-primary-dark transition-colors">
+                    <button
+                      onClick={() => setIsFilterModalOpen(true)}
+                      className="absolute right-1.5 p-2 dark:bg-stone-800 cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors rounded"
+                      aria-label="Filter"
+                    >
                       <Filter className="h-4 w-4" />
-                    </div>
+                    </button>
                   </div>
 
                   {/* Search Results Dropdown */}
@@ -349,6 +370,10 @@ function Header() {
               {/* Right Navigation */}
               <div className="flex items-center justify-end w-full md:w-2/3">
                 <div className="flex items-center gap-2">
+                  {/* Theme Switcher - Mobile */}
+                  <div className="sm:hidden">
+                    <ThemeSwitcher />
+                  </div>
                   <button
                     className="p-2 rounded-full sm:hidden block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
                     aria-label="Search"
@@ -356,7 +381,20 @@ function Header() {
                   >
                     <Search className="h-5 w-5 text-stone-700 dark:text-stone-300" />
                   </button>
+                  <button
+                    className="p-2 rounded-full sm:hidden block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    aria-label="Filter"
+                    onClick={() => setIsFilterModalOpen(true)}
+                  >
+                    <Filter className="h-5 w-5 text-stone-700 dark:text-stone-300" />
+                  </button>
                 </div>
+
+                {/* Theme Switcher - Desktop */}
+                <div className="hidden sm:block mr-2">
+                  <ThemeSwitcher />
+                </div>
+
                 <SignedIn>
                   <div className="flex items-center gap-3 ml-2">
                     <Link
@@ -556,6 +594,11 @@ function Header() {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         initialTab={settingsModalTab}
+      />
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApplyFilters={handleApplyFilters}
       />
     </>
   );

@@ -195,9 +195,11 @@ export default function CountryDocumentsTable({
     { key: 'franchiseCertificate' as const, label: 'Franchise Certificate' },
   ];
 
+  const uniqueCountries = Array.from(new Set(countries));
+
   return (
     <div className="space-y-6">
-      {countries.map((countryCode) => {
+      {uniqueCountries.map((countryCode) => {
         const countryDoc = countryDocuments[countryCode];
         const countryName = countryNames[countryCode] || countryCode;
         const flag = getCountryFlag(countryCode);

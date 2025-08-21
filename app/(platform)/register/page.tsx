@@ -27,6 +27,9 @@ import { useUser } from "@clerk/nextjs";
 import { Keypair } from '@solana/web3.js';
 import CountryDocumentsTable from '@/components/CountryDocumentsTable';
 import ImageCropModal from '@/components/ImageCropModal';
+import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { waitForUploadcare } from '@/utils/uploadcare-test';
 
 interface UploadcareWindow extends Window {
   uploadcare: {
@@ -127,7 +130,7 @@ const selectStylesIndustry = makeSelectStyles<IndustryOption, false>();
 const selectStylesCategory = makeSelectStyles<CategoryOption, false>();
 
 export default function RegisterBrandPage() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
   const { selectedCurrency, currencies } = useGlobalCurrency();
 
   // Get current currency info with symbol
@@ -309,7 +312,7 @@ export default function RegisterBrandPage() {
   };
 
   const handleCountryChange = (selected: MultiValue<CountryOption>) => {
-    const selectedCountries = selected.map((opt) => opt.value);
+    const selectedCountries = Array.from(new Set(selected.map((opt) => opt.value)));
 
     // Initialize country documents for new countries
     const newCountryDocuments = { ...formData.countryDocuments };
@@ -429,6 +432,21 @@ export default function RegisterBrandPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log('[Register] Submit clicked. canSubmit =', !isLoading && isSignedIn && isStepValid(4), {
+      isLoading,
+      isSignedIn,
+      isLoaded,
+      step4Valid: isStepValid(4),
+    });
+    console.log('[Register] Submit clicked. Form data snapshot:', {
+      name: formData.name,
+      slug: formData.slug,
+      industry_id: formData.industry_id,
+      category_id: formData.category_id,
+      costPerArea: formData.costPerArea,
+      min_area: formData.min_area,
+      serviceable_countries: formData.serviceable_countries,
+    });
     e.preventDefault();
 
     if (!isSignedIn) {
@@ -486,30 +504,64 @@ export default function RegisterBrandPage() {
         }
       }
 
+      console.log('[Register] Proceeding to logo upload. hasLogoFile:', !!logoFile);
       // Upload logo to Uploadcare
       let logoUrl = '';
       if (logoFile) {
         try {
-          const { signature, expire } = await getUploadSignature();
-
-          const uploadcareWindow = window as unknown as UploadcareWindow;
-          if (!uploadcareWindow.uploadcare) {
-            throw new Error('Uploadcare not loaded');
+          // Wait for Uploadcare to be ready
+          const isUploadcareReady = await waitForUploadcare(5000);
+          if (!isUploadcareReady) {
+            throw new Error('Uploadcare script failed to load. Please refresh the page and try again.');
           }
 
+          const { publicKey, signature, expire } = await getUploadSignature();
+          console.log('[Register] Received upload signature:', {
+            publicKey,
+            expire,
+            hasSignature: !!signature,
+            expireType: typeof expire
+          });
+
+          const uploadcareWindow = window as unknown as UploadcareWindow;
+          console.log('[Register] Checking Uploadcare availability:', {
+            hasUploadcare: !!uploadcareWindow.uploadcare,
+            windowKeys: Object.keys(window).filter(k => k.includes('upload')),
+            uploadcareType: typeof uploadcareWindow.uploadcare
+          });
+
+          if (!uploadcareWindow.uploadcare) {
+            console.error('[Register] Uploadcare not available. Window object keys:', Object.keys(window).slice(0, 20));
+            throw new Error('Uploadcare widget is not loaded. Please refresh the page and try again.');
+          }
+
+          console.log('[Register] Uploading file with credentials:', {
+            fileName: logoFile.name,
+            fileSize: logoFile.size,
+            fileType: logoFile.type,
+            publicKey,
+            expire
+          });
+
           const file = await uploadcareWindow.uploadcare.fileFrom('object', logoFile, {
-            publicKey: process.env.NEXT_PUBLIC_UPLOADCARE_PUBLIC_KEY!,
+            publicKey,
             signature,
             expire,
           });
 
           logoUrl = file.cdnUrl;
+          console.log('[Register] Logo uploaded successfully:', logoUrl);
         } catch (uploadError) {
-          console.error('Upload error:', uploadError);
-          throw 'upload';
+          console.error('[Register] Logo upload failed:', uploadError);
+          if (uploadError instanceof Error) {
+            console.error('[Register] Error details:', uploadError.message, uploadError.stack);
+          }
+          throw new Error(`Failed to upload logo: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}. Please try again.`);
         }
       }
 
+      console.log('[Register] Calling Convex mutation: businesses.create');
+      console.log('[Register] Calling Convex mutation: businesses.create');
       const result = await createBusiness({
         name: formData.name,
         slug: formData.slug,
@@ -521,6 +573,7 @@ export default function RegisterBrandPage() {
         serviceable_countries: formData.serviceable_countries,
         currency: currentCurrency.code,
       });
+      console.log('[Register] Convex mutation result received');
 
       toast.success('Brand registered successfully with Solana wallet for royalty payments!');
       resetForm();
@@ -560,11 +613,42 @@ export default function RegisterBrandPage() {
 
 
 
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={() => router.back()}>
-            Cancel
-          </Button>
-        </div>
+
+          {/* Navigation Buttons */}
+            <div className="flex gap-2 justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              {currentStep < 4 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!isStepValid(currentStep)}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Next
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={isLoading || !isStepValid(4) || !isSignedIn || !isLoaded}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!isLoaded ? 'Auth loading' : !isSignedIn ? 'Sign in required' : !isStepValid(4) ? 'Generate wallet first' : isLoading ? 'Submitting…' : ''}
+                >
+                  {isLoading ? 'Creating Brand...' : 'Register Brand'}
+                </Button>
+              )}
+            </div>
+
       </header>
 
 
@@ -635,7 +719,7 @@ export default function RegisterBrandPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Brand Name <span className="text-red-500">*</span>
+                        Brand Namez<span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
@@ -859,12 +943,6 @@ export default function RegisterBrandPage() {
                         countryDocuments={formData.countryDocuments}
                         onDocumentChange={handleCountryDocumentChange}
                       />
-
-                      <CountryDocumentsTable
-                        countries={formData.serviceable_countries}
-                        countryDocuments={formData.countryDocuments}
-                        onDocumentChange={handleCountryDocumentChange}
-                      />
                     </div>
                   )}
                 </div>
@@ -1080,39 +1158,6 @@ export default function RegisterBrandPage() {
               </motion.div>
             )}
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Previous
-              </Button>
-
-              {currentStep < 4 ? (
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={!isStepValid(currentStep)}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Next
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={isLoading || !isStepValid(4) || !isSignedIn}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Creating Brand...' : 'Register Brand'}
-                </Button>
-              )}
-            </div>
           </form>
         </motion.div>
 

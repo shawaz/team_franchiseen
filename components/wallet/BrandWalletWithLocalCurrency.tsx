@@ -178,31 +178,33 @@ const BrandWalletWithLocalCurrency: React.FC<BrandWalletWithLocalCurrencyProps> 
             {/* Action Buttons */}
             <div className="grid grid-cols-3 gap-2">
               <button
+                onClick={handleAirdrop}
+                disabled={solanaLoading}
+                className="bg-white/20  border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-2 disabled:opacity-50"
+              >
+                <Zap className="h-4 w-4" />
+                <span className="text-md font-medium">
+                  {solanaLoading ? 'Loading...' : 'SWAP'}
+                </span>
+              </button>
+
+              <button
                 onClick={onAddMoney}
-                className="bg-white/20 border border-white/30 rounded-lg p-2 hover:bg-white/30 transition flex flex-col items-center gap-1"
+                className="bg-white/20 border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-4"
               >
                 <CreditCard className="h-4 w-4" />
-                <span className="text-xs font-medium">Add Money</span>
+                <span className="text-md font-medium">BUY</span>
               </button>
               
               <button
                 onClick={handleSendSOL}
-                className="bg-white/20 border border-white/30 rounded-lg p-2 hover:bg-white/30 transition flex flex-col items-center gap-1"
+                className="bg-white/20 border border-white/30 p-2 hover:bg-white/30 transition flex justify-center items-center gap-4"
               >
                 <Zap className="h-4 w-4" />
-                <span className="text-xs font-medium">Send</span>
+                <span className="text-md font-medium">WITHDRAW</span>
               </button>
               
-              <button
-                onClick={handleAirdrop}
-                disabled={solanaLoading}
-                className="bg-white/20 border border-white/30 rounded-lg p-2 hover:bg-white/30 transition flex flex-col items-center gap-1 disabled:opacity-50"
-              >
-                <Zap className="h-4 w-4" />
-                <span className="text-xs font-medium">
-                  {solanaLoading ? 'Loading...' : 'Airdrop'}
-                </span>
-              </button>
+              
             </div>
           </>
         )}

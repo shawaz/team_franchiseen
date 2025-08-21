@@ -272,11 +272,13 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
           filePromise = uploadcare.fileFrom('object', logoFile, {
             publicKey,
             signature,
-            expire: expire.toString(),
+            expire,
           })
           file = await filePromise
           logoUrl = (file as { cdnUrl: string }).cdnUrl
+          console.log('Upload successful:', { logoUrl });
         } catch (uploadErr: unknown) {
+          console.error('Uploadcare upload failed:', uploadErr);
           if (typeof uploadErr === 'string') {
             console.error('Uploadcare upload error (string):', uploadErr)
           } else if (uploadErr instanceof Error) {
@@ -284,7 +286,7 @@ export default function CreateBusinessModal({ isOpen, onClose }: CreateBusinessM
           } else {
             console.error('Uploadcare upload error (unknown):', uploadErr)
           }
-          throw uploadErr;
+          throw new Error(`Upload failed: ${uploadErr instanceof Error ? uploadErr.message : 'Unknown error'}`);
         }
       }
 

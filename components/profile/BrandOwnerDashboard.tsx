@@ -31,8 +31,7 @@ import BrandWalletWithLocalCurrency from '@/components/wallet/BrandWalletWithLoc
 import SolanaTransactions from '@/components/wallet/SolanaTransactions';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 import { Id } from '@/convex/_generated/dataModel';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import FranchisesListView from '@/components/franchise/FranchisesListView';
 
 interface Business {
   _id: Id<"businesses">;
@@ -263,7 +262,7 @@ const generateMockBrandSettings = (business: Business): BrandSettings => {
 
 export default function BrandOwnerDashboard({ business, franchises, brandSlug }: BrandOwnerDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'franchises' | 'contracts' | 'invoices' | 'earnings' | 'payouts' | 'transactions' | 'teams' | 'settings'>('overview');
-  const router = useRouter();
+  // const router = useRouter();
 
   // Use global currency context for formatting
   const { formatAmount } = useGlobalCurrency();
@@ -431,57 +430,8 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
           )}
 
           {activeTab === 'franchises' && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold">Your Franchises</h3>
-              <div className="space-y-4">
-                {franchises.map((franchise) => (
-                  <Card
-                    key={franchise._id}
-                    className="p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 hover:border-primary/30"
-                    onClick={() => router.push(`/${brandSlug}/${franchise.slug || franchise._id}/manage`)}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden relative bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        {business?.logoUrl ? (
-                          <Image
-                            src={business.logoUrl}
-                            alt={business.name}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <Store className="h-6 w-6 text-gray-500" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{franchise.building}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {franchise.locationAddress}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {franchise.carpetArea} sq ft • {formatAmount(franchise.costPerArea)}/sq ft
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">{franchise.selectedShares}/{franchise.totalShares} shares sold</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {formatAmount(franchise.totalInvestment)}
-                        </p>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          franchise.status === 'Active' ? 'bg-green-100 text-green-800' :
-                          franchise.status === 'Launching' ? 'bg-blue-100 text-blue-800' :
-                          franchise.status === 'Funding' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {franchise.status}
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
+                              <FranchisesListView franchises={franchises as any} brandSlug={brandSlug} />
+
           )}
 
           {activeTab === 'contracts' && (
@@ -654,7 +604,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Team Management</h3>
-                <button className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                <button className="flex items-center space-x-2 bg-primary text-white px-4 py-2  hover:bg-primary/90 transition-colors">
                   <Plus className="h-4 w-4" />
                   <span>Add Member</span>
                 </button>
@@ -733,7 +683,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                 <h3 className="text-lg font-semibold">Brand Settings</h3>
                 <button
                   onClick={() => setIsEditingSettings(!isEditingSettings)}
-                  className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                  className="flex items-center space-x-2 bg-primary text-white px-4 py-2  hover:bg-primary/90 transition-colors"
                 >
                   <Edit className="h-4 w-4" />
                   <span>{isEditingSettings ? 'Cancel' : 'Edit Settings'}</span>
@@ -754,7 +704,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                         ...prev,
                         general: { ...prev.general, name: e.target.value }
                       }))}
-                      className="w-full p-2 border border-gray-300 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
+                      className="w-full p-2 border border-gray-300  disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
                     />
                   </div>
                   <div>
@@ -767,7 +717,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                         ...prev,
                         general: { ...prev.general, website: e.target.value }
                       }))}
-                      className="w-full p-2 border border-gray-300 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
+                      className="w-full p-2 border border-gray-300  disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
                     />
                   </div>
                   <div>
@@ -780,7 +730,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                         ...prev,
                         general: { ...prev.general, email: e.target.value }
                       }))}
-                      className="w-full p-2 border border-gray-300 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
+                      className="w-full p-2 border border-gray-300  disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
                     />
                   </div>
                   <div>
@@ -793,7 +743,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                         ...prev,
                         general: { ...prev.general, phone: e.target.value }
                       }))}
-                      className="w-full p-2 border border-gray-300 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
+                      className="w-full p-2 border border-gray-300  disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -806,7 +756,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                         general: { ...prev.general, address: e.target.value }
                       }))}
                       rows={3}
-                      className="w-full p-2 border border-gray-300 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
+                      className="w-full p-2 border border-gray-300  disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -819,7 +769,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                         general: { ...prev.general, description: e.target.value }
                       }))}
                       rows={3}
-                      className="w-full p-2 border border-gray-300 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
+                      className="w-full p-2 border border-gray-300  disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:border-gray-600 dark:bg-gray-900"
                     />
                   </div>
                 </div>
@@ -1030,7 +980,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                 <div className="flex justify-end space-x-4">
                   <button
                     onClick={() => setIsEditingSettings(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 transition-colors"
+                    className="px-4 py-2 border border-gray-300  hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 transition-colors"
                   >
                     Cancel
                   </button>
@@ -1040,7 +990,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
                       // Here you would typically save to backend
                       alert('Settings saved successfully!');
                     }}
-                    className="flex items-center space-x-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                    className="flex items-center space-x-2 bg-primary text-white px-4 py-2  hover:bg-primary/90 transition-colors"
                   >
                     <Save className="h-4 w-4" />
                     <span>Save Changes</span>

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
+import FranchisesListView from "@/components/franchise/FranchisesListView";
 import { Calendar, DollarSign, HomeIcon, MapPin, Search, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -48,6 +49,7 @@ export default function Home() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("fund");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => 'card');
 
   // Fetch all franchises from the database
   const allFranchises = useQuery(api.franchise.list, {});
@@ -80,30 +82,44 @@ export default function Home() {
 
         <div className="sticky top-[60px] z-10 flex flex-col justify-between items-center md:flex-row gap-4 py-3 px-5 bg-card border border-border">
 
-            <div className="w-1/4 flex">
-            <h2 className=" font-medium text-lg">Showing 45,495 Franchises</h2>
+            <div className="w-1/4 md:flex hidden">
+              <h2 className=" font-medium text-lg">Showing 45,495 Franchises</h2>
 
 
             </div>
 
-            <div className="inline-flex bg-secondary p-1 gap-1">
-              {["fund", "launch", "live"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-9 py-2 text-sm uppercase font-bold cursor-pointer  transition-colors ${
-                    activeTab === tab
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-secondary-foreground/10"
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="inline-flex bg-secondary p-1 gap-1">
+                {["fund", "launch", "live"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-9 py-2 text-sm uppercase font-bold cursor-pointer  transition-colors ${
+                      activeTab === tab
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-secondary-foreground/10"
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+              {/* <div className="inline-flex bg-secondary p-1 gap-1">
+                {(["card","list"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`px-5 py-2 text-sm uppercase font-bold cursor-pointer transition-colors ${
+                      viewMode === mode ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-secondary-foreground/10"
+                    }`}
+                  >
+                    {mode === "card" ? "Card" : "List"}
+                  </button>
+                ))}
+              </div> */}
             </div>
-            <div className="w-1/4 justify-end flex">
-            <Button variant={"outline"}>Filter Franchise</Button>
-
+            <div className="w-1/4 justify-end hidden md:flex">
+              <Button variant={"outline"}>Filter Franchise</Button>
             </div>
 
 
@@ -197,47 +213,69 @@ export default function Home() {
     const filteredProperties = getFilteredProperties(currentProperties);
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 py-6 gap-6">
-        {filteredProperties.length > 0 ? (
-          filteredProperties.map((franchise) => (
-            <FranchiseCard
-              key={franchise._id.toString()}
-              id={franchise._id.toString()}
-              type={activeTab as "fund" | "launch" | "live"}
-              title={franchise.title}
-              location={franchise.location || "Dubai, UAE"}
-              price={franchise.price}
-              image={
-                franchise.images && franchise.images.length > 0
-                  ? franchise.images[0]
-                  : ""
-              }
-              rating={franchise.rating || 4.5}
-              bedrooms={franchise.bedrooms}
-              bathrooms={franchise.bathrooms}
-              size={franchise.squareFeet}
-              returnRate={franchise.returnRate || 8}
-              investorsCount={franchise.investorsCount || 42}
-              fundingGoal={franchise.fundingGoal || 500000}
-              fundingProgress={franchise.fundingProgress || 250000}
-              startDate={franchise.startDate}
-              endDate={franchise.endDate}
-              launchProgress={franchise.launchProgress}
-              currentBalance={franchise.currentBalance}
-              totalBudget={franchise.totalBudget}
-              activeOutlets={franchise.activeOutlets}
-              brandSlug={franchise.brandSlug}
-              franchiseSlug={franchise.franchiseSlug}
-            />
-          ))
+      <div className="py-6">
+        {viewMode === 'list' ? (
+          <FranchisesListView
+            franchises={filteredProperties.map(f => ({
+              _id: f._id.toString(),
+              building: f.title,
+              locationAddress: f.location,
+              carpetArea: (f.size as number) || 0,
+              totalInvestment: f.fundingGoal || f.totalBudget || 0,
+              status: f.type === 'launch' ? 'Launching' : f.type === 'live' ? 'Active' : 'Funding',
+              owner_id: '',
+              costPerArea: f.price,
+              selectedShares: Math.floor((f.fundingProgress || 0) / Math.max(1, f.price)),
+              totalShares: 100,
+              slug: f.franchiseSlug,
+              costPerShare: f.price,
+              brandSlug: f.brandSlug,
+            }))}
+          />
         ) : (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium">No properties found</h3>
-            <p className="text-muted-foreground mt-2">
-              {searchQuery
-                ? "Try a different search term"
-                : "Try adjusting your search or filters"}
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {filteredProperties.length > 0 ? (
+              filteredProperties.map((franchise) => (
+                <FranchiseCard
+                  key={franchise._id.toString()}
+                  id={franchise._id.toString()}
+                  type={activeTab as "fund" | "launch" | "live"}
+                  title={franchise.title}
+                  location={franchise.location || "Dubai, UAE"}
+                  price={franchise.price}
+                  image={
+                    franchise.images && franchise.images.length > 0
+                      ? franchise.images[0]
+                      : ""
+                  }
+                  rating={franchise.rating || 4.5}
+                  bedrooms={franchise.bedrooms}
+                  bathrooms={franchise.bathrooms}
+                  size={franchise.squareFeet}
+                  returnRate={franchise.returnRate || 8}
+                  investorsCount={franchise.investorsCount || 42}
+                  fundingGoal={franchise.fundingGoal || 500000}
+                  fundingProgress={franchise.fundingProgress || 250000}
+                  startDate={franchise.startDate}
+                  endDate={franchise.endDate}
+                  launchProgress={franchise.launchProgress}
+                  currentBalance={franchise.currentBalance}
+                  totalBudget={franchise.totalBudget}
+                  activeOutlets={franchise.activeOutlets}
+                  brandSlug={franchise.brandSlug}
+                  franchiseSlug={franchise.franchiseSlug}
+                />
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium">No properties found</h3>
+                <p className="text-muted-foreground mt-2">
+                  {searchQuery
+                    ? "Try a different search term"
+                    : "Try adjusting your search or filters"}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -246,10 +284,8 @@ export default function Home() {
 
   return (
     <div className="py-6">
-    
-     {_renderSearchFilters()}
-
-    {renderTabContent()}
+      {_renderSearchFilters()}
+      {renderTabContent()}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import FranchiseInvestmentWithAnchor from "@/components/franchise/FranchiseInvestmentWithAnchor";
 import RevenueDistribution from "@/components/franchise/RevenueDistribution";
+import FranchiseImageGallery from "@/components/franchise/FranchiseImageGallery";
 
 interface FranchisePageProps {
   params: Promise<{
@@ -66,33 +67,27 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
 
   return (
     <div className="lg:col-span-2 space-y-1 py-6">
-      <section className="bg-white dark:bg-stone-800">
+      <section className="bg-white dark:bg-stone-800/50">
         {/* Brand Header */}
         <div className="flex items-center px-6 py-4 border-b border-stone-200 dark:border-stone-700">
-          <Link href={`/${brandSlug}`}>
+          <Link href={`/`}>
             <div className="flex items-center">
               <MoveLeft className="mr-3" />
             </div>
           </Link>
 
-          <div className="flex items-center ml-4">
-            <div className="relative h-10 w-10 mr-3">
-              <Image
-                src={business?.logoUrl || "/logo/logo-2.svg"}
-                alt={business?.name || "Brand"}
-                fill
-                className="object-cover rounded-lg"
-              />
+          {/* Status badge overlay */}
+          {franchise?.status && (
+            <div className=" z-10">
+              <span
+                className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusBadge(franchise.status)}`}
+              >
+                {franchise.status}
+              </span>
             </div>
-            <div>
-              <h2 className="font-semibold text-lg dark:text-white">
-                {business?.name || "Brand"}
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {business?.industry?.name || "Business"}
-              </p>
-            </div>
-          </div>
+          )}
+
+          
 
           <div className="flex items-center ml-auto">
             <Button
@@ -121,80 +116,30 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
           </div>
         </div>
 
-        {/* Airbnb-style Image Grid */}
-        <div className="relative">
-          <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] rounded-xl overflow-hidden m-6">
-            {/* Main large image */}
-            <div className="col-span-2 row-span-2 relative">
-              <Image
-                src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop&crop=center"
-                alt="Main franchise view"
-                fill
-                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer rounded-l-xl"
-              />
-            </div>
-
-            {/* Top right images */}
-            <div className="relative">
-              <Image
-                src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=200&fit=crop&crop=center"
-                alt="Franchise interior"
-                fill
-                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
-              />
-            </div>
-            <div className="relative">
-              <Image
-                src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=400&h=200&fit=crop&crop=center"
-                alt="Franchise workspace"
-                fill
-                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer rounded-tr-xl"
-              />
-            </div>
-
-            {/* Bottom right images */}
-            <div className="relative">
-              <Image
-                src="https://images.unsplash.com/photo-1497366412874-3415097a27e7?w=400&h=200&fit=crop&crop=center"
-                alt="Franchise amenities"
-                fill
-                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer"
-              />
-            </div>
-            <div className="relative">
-              <Image
-                src="https://images.unsplash.com/photo-1497366858526-0766cadbe8fa?w=400&h=200&fit=crop&crop=center"
-                alt="Franchise location"
-                fill
-                className="object-cover hover:brightness-110 transition-all duration-300 cursor-pointer rounded-br-xl"
-              />
-              {/* Show all photos button overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-br-xl">
-                <button className="bg-white text-black px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Show all photos
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Status badge overlay */}
-          {franchise?.status && (
-            <div className="absolute top-10 left-10 z-10">
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusBadge(franchise.status)}`}
-              >
-                {franchise.status}
-              </span>
-            </div>
-          )}
-        </div>
-
         <div className="max-w-7xl mx-auto p-6">
           <div className=" flex justify-between">
             <div className="flex flex-col">
+              <Link href={`/${brandSlug}`}>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="relative h-10 w-10 mr-3">
+                    <Image
+                      src={business?.logoUrl || "/logo/logo-2.svg"}
+                      alt={business?.name || "Brand"}
+                      fill
+                      className="object-cover "
+                    />
+                  </div>
+                    <h3 className="font-bold  text-xl">
+                      {business?.name || "Brand"}
+                    </h3>
+                    
+                  </div>
+                  
+                  <Button> View Brand </Button>
+                  
+                </div>
+              </Link>
               <h1 className="text-2xl font-bold dark:text-white">
                 {franchise?.building || "Franchise"}
               </h1>
@@ -208,10 +153,15 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
             </div>
           </div>
         </div>
+
+        {/* Image Gallery - Desktop Grid / Mobile Slider */}
+        <FranchiseImageGallery />
+
+        
       </section>
       {/* Fundraising Card */}
       {franchise?.status === "Funding" && (
-        <section className="bg-white dark:bg-stone-800 p-6 ">
+        <section className="bg-white dark:bg-stone-800/50 p-6 ">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold dark:text-white">
               Fundraising
@@ -263,7 +213,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
 
       {/* Revenue Distribution - Only for franchise owners */}
       {convexUser && franchise && franchise.owner_id === convexUser._id && (
-        <section className="bg-white dark:bg-stone-800 p-6">
+        <section className="bg-white dark:bg-stone-800/50 p-6">
           <h2 className="text-2xl font-semibold mb-4 dark:text-white">
             Revenue Management
           </h2>
@@ -275,7 +225,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
       )}
 
       {/* Franchisee List */}
-      <section className="bg-white dark:bg-stone-800 p-6 ">
+      <section className="bg-white dark:bg-stone-800/50 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">
           Current Franchisees
         </h2>
@@ -318,7 +268,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
       </section>
 
       {/* Product List */}
-      <section className="bg-white dark:bg-stone-800 p-6 ">
+      <section className="bg-white dark:bg-stone-800/50 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">
           Products & Services
         </h2>
@@ -386,7 +336,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
       </section>
 
       {/* Financial Projections */}
-      <section className="bg-white dark:bg-stone-800 p-6 ">
+      <section className="bg-white dark:bg-stone-800/50 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">
           Financial Projections
         </h2>
@@ -451,7 +401,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
       </section>
 
       {/* Location Analysis */}
-      <section className="bg-white dark:bg-stone-800 p-6 ">
+      <section className="bg-white dark:bg-stone-800/50 p-6 ">
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">Location Analysis</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -504,7 +454,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
         </section>
 
       {/* Reviews */}
-      <section className="bg-white dark:bg-stone-800 p-6 ">
+      <section className="bg-white dark:bg-stone-800/50 p-6 ">
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold dark:text-white">Reviews</h2>
             <div className="flex items-center">

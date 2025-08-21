@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import AppProviders from "@/components/AppProviders";
 
@@ -31,6 +32,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Script
+          src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"
+          strategy="beforeInteractive"
+        />
         <AppProviders>
           {children}
         </AppProviders>

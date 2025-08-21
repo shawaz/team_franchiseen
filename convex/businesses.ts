@@ -30,6 +30,7 @@ export const create = mutation({
     slug: v.string(),
   }),
   handler: async (ctx, args) => {
+    console.log('[convex] businesses.create called with args:', args);
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Not authenticated");
@@ -92,6 +93,7 @@ export const create = mutation({
     if (args.currency) businessData.currency = args.currency;
 
     const businessId = await ctx.db.insert("businesses", businessData);
+    console.log('[convex] businesses.create inserted:', { businessId, slug });
 
     return { businessId, slug };
   },

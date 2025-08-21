@@ -119,25 +119,25 @@ export default function BusinessPageClient({
 
   return (
       <div className=" h-space-y-8 py-6">
-        <section className="bg-white dark:bg-stone-800  border border-stone-200 dark:border-stone-700">
+        <section className="bg-white dark:bg-stone-800/50  border border-stone-200 dark:border-stone-700">
           <div className="flex px-4 py-4 space-x-4 justify-between">
             <div className="flex items-center space-x-4">
-              <Image src={business?.logoUrl || "/logo/logo-2.svg"} alt="Business Logo" width={60} height={60} className="rounded text-center" />
+              <Image src={business?.logoUrl || "/logo/logo-2.svg"} alt="Business Logo" width={70} height={70} className="rounded text-center" />
               <div className="flex flex-col ">
-                <h1 className="text-2xl font-bold  text-stone-900 dark:text-white">{business?.name}</h1>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.industry?.name}</p>
-                  <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.category?.name}</p>
-                </div>
+                <h1 className="text-xl font-bold  text-stone-900 dark:text-white">{business?.name}</h1>
+                <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.industry?.name}</p>
+                <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.category?.name}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="bg-stone-900 text-white font-medium px-5 py-2 transition-colors hover:bg-stone-700">Follow Franchise</button>
-            </div>
+            
           </div>
+          <div className="flex items-center justify-center gap-2 px-4 pb-4">
+              <button className="bg-stone-900  w-full text-white font-medium px-5 py-2 transition-colors hover:bg-stone-700">FOLLOWING</button>
+              <button className="bg-yellow-900  w-full text-white font-medium px-5 py-2 transition-colors hover:bg-yellow-700">START NEW</button>
+            </div>
 
         </section>
-        <section className="bg-white dark:bg-stone-800  border border-stone-200 dark:border-stone-700">
+        <section className="bg-white dark:bg-stone-800/50  border border-stone-200 dark:border-stone-700">
           <div className="">
             <div className="flex items-center px-4 py-4 justify-between">
               <nav className="flex gap-4 overflow-x-auto no-scrollbar">
