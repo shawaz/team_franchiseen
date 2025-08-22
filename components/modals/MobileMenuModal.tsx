@@ -8,7 +8,6 @@ import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
-import { useModal } from '@/contexts/ModalContext';
 
 interface MobileMenuModalProps {
   isOpen: boolean;
@@ -18,7 +17,6 @@ interface MobileMenuModalProps {
 
 const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSettingsClick }) => {
   const { user } = useUser();
-  const { openTypeformRegisterBrandModal, openTypeformCreateFranchiseModal } = useModal();
   const email = user?.primaryEmailAddress?.emailAddress;
 
   // Get Convex user data

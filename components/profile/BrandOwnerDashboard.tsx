@@ -32,6 +32,7 @@ import SolanaTransactions from '@/components/wallet/SolanaTransactions';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 import { Id } from '@/convex/_generated/dataModel';
 import FranchisesListView from '@/components/franchise/FranchisesListView';
+import FranchiseApprovalTab from '@/components/franchise/FranchiseApprovalTab';
 import TeamsTab from '@/components/teams/TeamsTab';
 
 interface Business {
@@ -262,7 +263,7 @@ const generateMockBrandSettings = (business: Business): BrandSettings => {
 };
 
 export default function BrandOwnerDashboard({ business, franchises, brandSlug }: BrandOwnerDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'franchises' | 'contracts' | 'invoices' | 'earnings' | 'payouts' | 'transactions' | 'teams' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'franchises' | 'approvals' | 'contracts' | 'invoices' | 'earnings' | 'payouts' | 'transactions' | 'teams' | 'settings'>('overview');
   // const router = useRouter();
 
   // Use global currency context for formatting
@@ -298,6 +299,7 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
   const tabs = [
     { id: 'overview', label: 'Overview', icon: TrendingUp },
     { id: 'franchises', label: 'Franchises', icon: Store },
+    { id: 'approvals', label: 'Approvals', icon: CheckCircle },
     { id: 'contracts', label: 'Contracts', icon: LinkIcon },
     { id: 'invoices', label: 'Invoices', icon: FileText },
     { id: 'earnings', label: 'Earnings', icon: DollarSign },
@@ -433,6 +435,10 @@ export default function BrandOwnerDashboard({ business, franchises, brandSlug }:
           {activeTab === 'franchises' && (
                               <FranchisesListView franchises={franchises as any} brandSlug={brandSlug} />
 
+          )}
+
+          {activeTab === 'approvals' && (
+            <FranchiseApprovalTab business={business} />
           )}
 
           {activeTab === 'contracts' && (

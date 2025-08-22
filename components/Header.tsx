@@ -423,19 +423,16 @@ function Header() {
                     <Link
                       href="/liked"
                       className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                      aria-label="Create New Franchise"
                     >
                       <Heart className="h-5 w-5 text-stone-700 dark:text-stone-300" />
                     </Link>
-                 
-
-                  <button
-                      onClick={handleCreateFranchiseClick}
+                    <Link
+                      href="/create"
                       className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                      aria-label="Create New Franchise"
                     >
                       <PlusSquare className="h-5 w-5 text-stone-700 dark:text-stone-300" />
-                    </button>
+                    </Link>
+                 
 
                     <Link
                       href="/notify"

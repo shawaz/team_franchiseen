@@ -13,6 +13,7 @@ import {
   Building,
   DollarSign,
   CreditCard,
+  Coins,
   ChevronRight
 } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
@@ -95,10 +96,22 @@ const managementTabs = [
     description: 'View earnings and revenue reports'
   },
   {
+    id: 'balance',
+    label: 'Balance',
+    icon: Wallet,
+    description: 'Manage franchise balance and transactions'
+  },
+  {
     id: 'payouts',
     label: 'Payouts',
     icon: CreditCard,
     description: 'Manage payouts and distributions'
+  },
+  {
+    id: 'token',
+    label: 'Token Management',
+    icon: Coins,
+    description: 'Manage franchise tokens and shares'
   }
 ];
 

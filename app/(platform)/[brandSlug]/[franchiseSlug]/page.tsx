@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import FranchiseInvestmentWithAnchor from "@/components/franchise/FranchiseInvestmentWithAnchor";
+import FranchiseTokenInvestmentView from "@/components/franchise/FranchiseTokenInvestmentView";
 import RevenueDistribution from "@/components/franchise/RevenueDistribution";
 import FranchiseImageGallery from "@/components/franchise/FranchiseImageGallery";
 
@@ -212,6 +213,14 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
           </div>
         </section>
       )}
+
+      {/* Franchise Token Investment View */}
+      <section className="bg-white dark:bg-stone-800/50 p-6">
+        <FranchiseTokenInvestmentView
+          franchise={franchise}
+          business={business}
+        />
+      </section>
 
       {/* Revenue Distribution - Only for franchise owners */}
       {convexUser && franchise && franchise.owner_id === convexUser._id && (

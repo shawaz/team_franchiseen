@@ -66,6 +66,14 @@ export default defineSchema({
     status: v.string(),
     launchStartDate: v.optional(v.number()),
     launchEndDate: v.optional(v.number()),
+    // Approval fields
+    tokenMint: v.optional(v.string()),
+    transactionSignature: v.optional(v.string()),
+    approvedAt: v.optional(v.number()),
+    approvedBy: v.optional(v.id("users")),
+    rejectedAt: v.optional(v.number()),
+    rejectedBy: v.optional(v.id("users")),
+    rejectionReason: v.optional(v.string()),
   }),
   invoice: defineTable({
     franchiseId: v.id("franchise"),

@@ -113,7 +113,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
                     : user?.firstName || 'User'}
                 </h3>
                 {connected && publicKey && (
-                  <p className="text-purple-100 text-xs font-mono">
+                  <p className="text-xs font-mono">
                     {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
                   </p>
                 )}
@@ -122,7 +122,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
             <Button 
               size="sm"
             variant={"outline"} 
-            className="text-sm"
+            className="text-sm "
             
             onClick={() => {
               if (publicKey) {
@@ -222,7 +222,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
                   disabled={!connected || balance === 0}
                 >
                   <CreditCard className="h-3 w-3" />
-                  Withdraw
+                  Transfer
                 </button>
               </div>
             </>

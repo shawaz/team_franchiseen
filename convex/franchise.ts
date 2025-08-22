@@ -354,3 +354,121 @@ export const listByBusiness = query({
       .collect();
   },
 });
+
+// Get pending franchise proposals for approval
+export const getPendingByBusiness = query({
+  args: {
+    businessId: v.id("businesses"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("franchise")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("businessId"), args.businessId),
+          q.or(
+            q.eq(q.field("status"), "Pending Approval"),
+            q.eq(q.field("status"), "Under Review")
+          )
+        )
+      )
+      .collect();
+  },
+});
+
+// Approve a franchise proposal and create token
+export const approveFranchise = mutation({
+  args: {
+    franchiseId: v.id("franchise"),
+    tokenMint: v.string(),
+    transactionSignature: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get the franchise
+    const franchise = await ctx.db.get(args.franchiseId);
+    if (!franchise) {
+      throw new Error("Franchise not found");
+    }
+
+    // Get the business to verify ownership
+    const business = await ctx.db.get(franchise.businessId);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+
+    // Get the current user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
+      .unique();
+
+    if (!user || business.owner_id !== user._id) {
+      throw new Error("Not authorized to approve this franchise");
+    }
+
+    // Update franchise status and add token information
+    await ctx.db.patch(args.franchiseId, {
+      status: "Approved",
+      tokenMint: args.tokenMint,
+      transactionSignature: args.transactionSignature,
+      approvedAt: Date.now(),
+      approvedBy: user._id,
+    });
+
+    return { success: true };
+  },
+});
+
+// Reject a franchise proposal
+export const rejectFranchise = mutation({
+  args: {
+    franchiseId: v.id("franchise"),
+    rejectionReason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get the franchise
+    const franchise = await ctx.db.get(args.franchiseId);
+    if (!franchise) {
+      throw new Error("Franchise not found");
+    }
+
+    // Get the business to verify ownership
+    const business = await ctx.db.get(franchise.businessId);
+    if (!business) {
+      throw new Error("Business not found");
+    }
+
+    // Get the current user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
+      .unique();
+
+    if (!user || business.owner_id !== user._id) {
+      throw new Error("Not authorized to reject this franchise");
+    }
+
+    // Update franchise status
+    await ctx.db.patch(args.franchiseId, {
+      status: "Rejected",
+      rejectionReason: args.rejectionReason,
+      rejectedAt: Date.now(),
+      rejectedBy: user._id,
+    });
+
+    // TODO: Implement refund logic here
+    // This would involve returning the investment to the franchise proposer
+
+    return { success: true };
+  },
+});

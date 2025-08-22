@@ -819,6 +819,26 @@ export default function RegisterBrandPage() {
                     </div>
                   </div>
 
+                  {/* About Brand */}
+                  <div>
+                    <label htmlFor="about" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      About This Brand <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="about"
+                      name="about"
+                      value={formData.about}
+                      onChange={handleInputChange}
+                      rows={4}
+                      className="w-full bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600  focus:ring-2 focus:ring-primary focus:border-primary p-3 resize-none"
+                      placeholder="Describe your brand, its mission, values, and what makes it unique..."
+                      required
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      This will be shown to potential franchisees
+                    </p>
+                  </div>
+
                   {/* Industry and Category */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -937,26 +957,6 @@ export default function RegisterBrandPage() {
                         />
                       </div>
                     </div>
-                  </div>
-
-                  {/* About Brand */}
-                  <div>
-                    <label htmlFor="about" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      About This Brand <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      id="about"
-                      name="about"
-                      value={formData.about}
-                      onChange={handleInputChange}
-                      rows={4}
-                      className="w-full bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600  focus:ring-2 focus:ring-primary focus:border-primary p-3 resize-none"
-                      placeholder="Describe your brand, its mission, values, and what makes it unique..."
-                      required
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      This will be shown to potential franchisees
-                    </p>
                   </div>
                 </div>
               </motion.div>
