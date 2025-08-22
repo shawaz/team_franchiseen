@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { X, Settings, Shield, Bell, Power, Globe, Languages, HelpCircle, Newspaper, Building, FileText } from 'lucide-react';
+import { X, Settings, Shield, Bell, Power, Globe, Languages, HelpCircle, Newspaper, Building, FileText, Users } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SignOutButton, useUser } from '@clerk/nextjs';
@@ -18,7 +18,7 @@ interface MobileMenuModalProps {
 
 const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSettingsClick }) => {
   const { user } = useUser();
-  const { openTypeformRegisterBrandModal } = useModal();
+  const { openTypeformRegisterBrandModal, openTypeformCreateFranchiseModal } = useModal();
   const email = user?.primaryEmailAddress?.emailAddress;
 
   // Get Convex user data
@@ -113,6 +113,23 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
                   <p className="text-sm text-gray-500 dark:text-gray-400">Start your franchise business</p>
                 </div>
               </button>
+
+              {/* Create Franchise */}
+              <button
+                onClick={() => {
+                  onClose();
+                  openTypeformCreateFranchiseModal();
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-green-300 dark:border-green-600 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-stone-700 flex items-center justify-center">
+                  <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="text-base font-medium text-foreground">Create Franchise</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Launch a new franchise location</p>
+                </div>
+              </button>
             </div>
           )}
 
@@ -121,7 +138,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">App Preferences</h3>
             <div className="space-y-2">
               <Link
-                href="/currency"
+                href="/account"
                 onClick={onClose}
                 className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -136,7 +153,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/language"
+                href="/account"
                 onClick={onClose}
                 className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -157,7 +174,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Information</h3>
             <div className="space-y-2">
               <Link
-                href="/how-it-works"
+                href="/company/how"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -166,7 +183,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/help"
+                href="/resources/help"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
@@ -175,30 +192,39 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
               </Link>
 
               <Link
-                href="/news"
+                href="/blog"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
                 <Newspaper className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <span className="font-medium">News</span>
+                <span className="font-medium">News & Blog</span>
               </Link>
 
               <Link
-                href="/company"
+                href="/about"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
                 <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <span className="font-medium">Company</span>
+                <span className="font-medium">About Us</span>
               </Link>
 
               <Link
-                href="/legal"
+                href="/careers"
+                onClick={onClose}
+                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
+              >
+                <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <span className="font-medium">Careers</span>
+              </Link>
+
+              <Link
+                href="/legal/terms"
                 onClick={onClose}
                 className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
               >
                 <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                <span className="font-medium">Legal</span>
+                <span className="font-medium">Legal & Terms</span>
               </Link>
             </div>
           </div>
@@ -220,7 +246,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
                 </button>
 
                 <Link
-                  href="/security"
+                  href="/account"
                   onClick={onClose}
                   className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
                 >
@@ -229,7 +255,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
                 </Link>
 
                 <Link
-                  href="/notifications"
+                  href="/notify"
                   onClick={onClose}
                   className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
                 >

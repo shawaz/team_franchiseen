@@ -599,9 +599,9 @@ export default function RegisterBrandPage() {
   return (
     <div className="max-w-4xl mx-auto dark:bg-stone-800/50 bg-white text-foreground my-6 dark:text-foreground border">
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 justify-between pr-6 border-b">
-        <div className="flex items-center gap-2 px-5">
+        {/* <div className="flex items-center gap-2 px-5">
           <h1 className="text-lg font-semibold text-foreground">Register Your Brand</h1>
-        </div>
+        </div> */}
         <div>
           <p className="text-sm text-muted-foreground">Step {currentStep} of 4: {
               currentStep === 1 ? 'Brand Information' :

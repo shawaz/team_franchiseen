@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { X, ArrowLeft, ArrowRight, Check, Building, DollarSign, Globe, Users, Briefcase, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ArrowLeft, ArrowRight, Check, Building, DollarSign, Globe, Users, Briefcase, MapPin, Wallet, Eye, EyeOff, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { Keypair } from '@solana/web3.js';
 
 interface TypeformRegisterBrandModalProps {
   isOpen: boolean;
@@ -35,6 +36,11 @@ interface FormData {
   experienceRequired: boolean;
   minNetWorth: number;
   liquidCapital: number;
+  // Wallet information
+  walletAddress: string;
+  privateKey: string;
+  seedPhrase: string[];
+  seedPhraseVerification: string[];
 }
 
 const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({ isOpen, onClose }) => {
@@ -61,6 +67,11 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
     experienceRequired: false,
     minNetWorth: 150000,
     liquidCapital: 75000,
+    // Wallet information
+    walletAddress: '',
+    privateKey: '',
+    seedPhrase: [],
+    seedPhraseVerification: [],
   });
 
   // Get industries and categories
@@ -72,6 +83,42 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
 
   const createBusiness = useMutation(api.businesses.create);
 
+  // Wallet generation functions
+  const generateSeedPhrase = (): string[] => {
+    // Generate 12 random words for seed phrase
+    const words = [
+      'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 'absurd', 'abuse',
+      'access', 'accident', 'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire', 'across', 'act',
+      'action', 'actor', 'actress', 'actual', 'adapt', 'add', 'addict', 'address', 'adjust', 'admit',
+      'adult', 'advance', 'advice', 'aerobic', 'affair', 'afford', 'afraid', 'again', 'agent', 'agree',
+      'ahead', 'aim', 'air', 'airport', 'aisle', 'alarm', 'album', 'alcohol', 'alert', 'alien',
+      'all', 'alley', 'allow', 'almost', 'alone', 'alpha', 'already', 'also', 'alter', 'always',
+      'amateur', 'amazing', 'among', 'amount', 'amused', 'analyst', 'anchor', 'ancient', 'anger', 'angle',
+      'angry', 'animal', 'ankle', 'announce', 'annual', 'another', 'answer', 'antenna', 'antique', 'anxiety'
+    ];
+
+    const seedPhrase: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const randomIndex = Math.floor(Math.random() * words.length);
+      seedPhrase.push(words[randomIndex]);
+    }
+    return seedPhrase;
+  };
+
+  const generateWalletFromSeed = (seedPhrase: string[]) => {
+    try {
+      // For demo purposes, generate a random keypair
+      // In production, you'd derive from the actual seed phrase
+      const keypair = Keypair.generate();
+      return {
+        publicKey: keypair.publicKey.toString(),
+        privateKey: Array.from(keypair.secretKey).join(',')
+      };
+    } catch (error) {
+      console.error('Error generating wallet:', error);
+      return null;
+    }
+  };
 
   const steps = [
     {
@@ -103,6 +150,18 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
       title: 'Target Markets',
       subtitle: 'Where you want to expand',
       icon: Globe,
+    },
+    {
+      id: 'wallet',
+      title: 'Jupiter Wallet Setup',
+      subtitle: 'Create your business wallet',
+      icon: Wallet,
+    },
+    {
+      id: 'seed-verify',
+      title: 'Verify Seed Phrase',
+      subtitle: 'Confirm your seed phrase',
+      icon: Check,
     },
     {
       id: 'review',
@@ -148,6 +207,47 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
       
       return updated;
     });
+  };
+
+  const handleGenerateWallet = () => {
+    const seedPhrase = generateSeedPhrase();
+    const wallet = generateWalletFromSeed(seedPhrase);
+
+    if (wallet) {
+      setFormData(prev => ({
+        ...prev,
+        seedPhrase,
+        walletAddress: wallet.publicKey,
+        privateKey: wallet.privateKey,
+        seedPhraseVerification: []
+      }));
+      toast.success('Wallet generated successfully!');
+    } else {
+      toast.error('Failed to generate wallet. Please try again.');
+    }
+  };
+
+  const handleSeedPhraseVerification = (index: number, word: string) => {
+    setFormData(prev => {
+      const newVerification = [...prev.seedPhraseVerification];
+      newVerification[index] = word;
+      return {
+        ...prev,
+        seedPhraseVerification: newVerification
+      };
+    });
+  };
+
+  const isSeedPhraseValid = () => {
+    if (formData.seedPhrase.length !== 12 || formData.seedPhraseVerification.length !== 3) {
+      return false;
+    }
+
+    // Check 3 random words (indices 2, 5, 8)
+    const indicesToCheck = [2, 5, 8];
+    return indicesToCheck.every((index, verifyIndex) =>
+      formData.seedPhraseVerification[verifyIndex] === formData.seedPhrase[index]
+    );
   };
 
   const handleNext = () => {
@@ -205,7 +305,11 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
         return formData.supportProvided.length > 0;
       case 4: // Markets
         return formData.countries.length > 0;
-      case 5: // Review
+      case 5: // Wallet
+        return formData.walletAddress && formData.seedPhrase.length === 12;
+      case 6: // Seed Verification
+        return isSeedPhraseValid();
+      case 7: // Review
         return true;
       default:
         return false;
@@ -229,27 +333,24 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
                   <X className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-xl font-bold">Register Your Brand</h1>
+                  {/* <h1 className="text-xl font-bold">Register Your Brand</h1> */}
                   <p className="text-sm text-muted-foreground">
                     Step {currentStep + 1} of {steps.length}: {steps[currentStep].subtitle}
                   </p>
                 </div>
               </div>
               
-              {/* Progress */}
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-muted-foreground">
-                  {Math.round(((currentStep + 1) / steps.length) * 100)}%
-                </div>
-                <div className="w-32 h-2 bg-gray-200 dark:bg-stone-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-600 transition-all duration-300"
-                    style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-                  />
-                </div>
-              </div>
+             
             </div>
           </div>
+           {/* Progress */}
+
+              <div className="w-full bg-gray-200 dark:bg-stone-700 h-1">
+        <div 
+          className="bg-yellow-600 h-1 transition-all duration-300 ease-out"
+          style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+        />
+      </div>
 
           {/* Content */}
           <div className="max-w-2xl mx-auto p-6">
@@ -262,17 +363,6 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
-                {/* Step Icon and Title */}
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {React.createElement(steps[currentStep].icon, {
-                      className: "h-8 w-8 text-blue-600"
-                    })}
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
-                  <p className="text-muted-foreground">{steps[currentStep].subtitle}</p>
-                </div>
-
                 {/* Step Content */}
                 {currentStep === 0 && (
                   <div className="space-y-6">
@@ -462,6 +552,115 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
 
                 {currentStep === 5 && (
                   <div className="space-y-6">
+                    <div className="text-center">
+                      <Wallet className="h-16 w-16 mx-auto mb-4 text-blue-600" />
+                      <h3 className="text-xl font-semibold mb-2">Create Your Jupiter Wallet</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Generate a secure wallet for your business transactions
+                      </p>
+                    </div>
+
+                    {!formData.walletAddress ? (
+                      <div className="text-center">
+                        <Button
+                          onClick={handleGenerateWallet}
+                          className="flex items-center gap-2 mx-auto"
+                          size="lg"
+                        >
+                          <RefreshCw className="h-5 w-5" />
+                          Generate Wallet
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                          <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">Wallet Generated Successfully!</h4>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-sm font-medium text-green-700 dark:text-green-300">Wallet Address:</label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <code className="flex-1 p-2 bg-white dark:bg-stone-800 rounded text-xs font-mono">
+                                  {formData.walletAddress}
+                                </code>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => navigator.clipboard.writeText(formData.walletAddress)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                          <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Your Seed Phrase</h4>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+                            Write down these 12 words in order. You'll need them to verify your wallet.
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {formData.seedPhrase.map((word, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-stone-800 rounded">
+                                <span className="text-xs text-muted-foreground w-6">{index + 1}.</span>
+                                <span className="font-mono text-sm">{word}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === 6 && (
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <Check className="h-16 w-16 mx-auto mb-4 text-green-600" />
+                      <h3 className="text-xl font-semibold mb-2">Verify Your Seed Phrase</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Enter the requested words from your seed phrase to confirm you've saved it
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {[2, 5, 8].map((wordIndex, verifyIndex) => (
+                        <div key={wordIndex}>
+                          <label className="block text-sm font-medium mb-2">
+                            Word #{wordIndex + 1}
+                          </label>
+                          <Input
+                            value={formData.seedPhraseVerification[verifyIndex] || ''}
+                            onChange={(e) => handleSeedPhraseVerification(verifyIndex, e.target.value)}
+                            placeholder={`Enter word #${wordIndex + 1}`}
+                            className="font-mono"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {formData.seedPhraseVerification.length === 3 && (
+                      <div className={`p-4 rounded-lg ${
+                        isSeedPhraseValid()
+                          ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                          : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                      }`}>
+                        <p className={`text-sm ${
+                          isSeedPhraseValid()
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-red-700 dark:text-red-300'
+                        }`}>
+                          {isSeedPhraseValid()
+                            ? '✓ Seed phrase verified successfully!'
+                            : '✗ Incorrect words. Please check your seed phrase.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === 7 && (
+                  <div className="space-y-6">
                     <div className="bg-gray-50 dark:bg-stone-800 rounded-lg p-6">
                       <h3 className="text-lg font-semibold mb-4">Review Your Brand Registration</h3>
 
@@ -480,6 +679,10 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
                         </div>
                         <div>
                           <span className="font-medium">Support Provided:</span> {formData.supportProvided.join(', ')}
+                        </div>
+                        <div>
+                          <span className="font-medium">Wallet Address:</span>
+                          <code className="ml-2 text-xs font-mono">{formData.walletAddress}</code>
                         </div>
                       </div>
                     </div>
