@@ -38,6 +38,7 @@ import FilterModal, { FilterOptions } from "./modals/FilterModal";
 import { ThemeSwitcher } from "./theme-switcher";
 import { useModal } from "@/contexts/ModalContext";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
+import { SearchSkeleton } from "@/components/skeletons/FormSkeleton";
 
 function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);

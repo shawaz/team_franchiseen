@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { CreditCard, Zap, Wallet, RefreshCw } from 'lucide-react';
+import { CreditCard, Zap, Wallet, RefreshCw, PlusCircle, ArrowUpDown } from 'lucide-react';
 import { useSolana } from '@/hooks/useSolana';
 import { useModal } from '@/contexts/ModalContext';
 import { formatSol } from '@/lib/coingecko';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
+import { Button } from '../ui/button';
 
 interface SolanaWalletWithLocalCurrencyProps {
   onAddMoney?: () => void;
@@ -86,31 +87,9 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
   return (
     <div>
       {/* Business Header */}
-      <section className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700">
-        <div className="flex px-4 py-4 space-x-4 justify-between">
-          <div className="flex items-center space-x-4">
-            <Image 
-              src={user?.imageUrl || "/logo/logo-2.svg"} 
-              alt="Business Logo" 
-              width={60} 
-              height={60} 
-              className="rounded text-center" 
-            />
-            <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-stone-900 dark:text-white">{user?.firstName || 'User'}</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-stone-500 dark:text-stone-400">{user?.firstName}</p>
-                <p className="text-sm text-stone-500 dark:text-stone-400">{user?.lastName}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <div className={`bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-800 text-white overflow-hidden ${className}`}>
-        {/* Header with Avatar and Controls */}
-        <div className="p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+      <section className="bg-white dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+        <div className="flex px-4 py-3 space-x-4 justify-between items-center">
+          <div className="flex items-center gap-3">
               {/* User Avatar */}
               <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
                 {user?.imageUrl ? (
@@ -140,18 +119,24 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
                 )}
               </div>
             </div>
-
-            {/* Refresh Button */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                disabled={currencyLoading}
-                className="bg-white/20 border border-white/30 rounded-md p-1.5 hover:bg-white/30 transition"
-              >
-                <RefreshCw className={`h-3 w-3 text-white ${currencyLoading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
+            <Button 
+              size="sm"
+            variant={"outline"} 
+            className="text-sm"
+            
+            onClick={() => {
+              if (publicKey) {
+                navigator.clipboard.writeText(publicKey?.toString());
+              }
+              
+            }}>
+              Copy Address
+            </Button>
+        </div>
+      </section>
+      <div className={`bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-800 text-white overflow-hidden ${className}`}>
+        {/* Header with Avatar and Controls */}
+        <div className="p-3 sm:p-4">
 
           {/* Wallet Status */}
           {!connected ? (
@@ -163,7 +148,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
               <p className="text-purple-100 text-xs mb-3">Connect your Phantom wallet to view your SOL balance</p>
               <button
                 onClick={() => setVisible(true)}
-                className="bg-white text-purple-600 font-semibold px-4 py-2 rounded-lg hover:bg-purple-50 transition text-sm"
+                className="bg-white text-purple-600 font-semibold px-4 py-2 hover:bg-purple-50 transition text-sm"
               >
                 Connect Wallet
               </button>
@@ -206,9 +191,9 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
                 <button
                   onClick={onAddMoney || handleAirdrop}
                   disabled={loading || solanaLoading}
-                  className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs disabled:opacity-50 rounded-md"
+                  className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs disabled:opacity-50 "
                 >
-                  <Zap className="h-3 w-3" />
+                  <ArrowUpDown className="h-3 w-3" />
                   {loading ? 'Loading...' : 'Deposit'}
                 </button>
 
@@ -219,11 +204,11 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
                       refreshBalance();
                     }
                   })}
-                  className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs rounded-md"
+                  className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs "
                   disabled={!connected || balance === 0}
                 >
-                  <CreditCard className="h-3 w-3" />
-                  Send
+                  <PlusCircle className="h-3 w-3" />
+                  Buy
                 </button>
 
                 <button
@@ -233,7 +218,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
                       refreshBalance();
                     }
                   })}
-                  className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs rounded-md"
+                  className="bg-white/20 text-white font-medium px-3 py-2 border border-white/30 hover:bg-white/30 transition flex items-center justify-center gap-1.5 text-xs "
                   disabled={!connected || balance === 0}
                 >
                   <CreditCard className="h-3 w-3" />

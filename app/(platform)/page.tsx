@@ -9,6 +9,7 @@ import FranchiseCard from "@/components/franchise/FranchiseCard";
 import FranchisesListView from "@/components/franchise/FranchisesListView";
 import { Calendar, DollarSign, HomeIcon, MapPin, Search, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GridSkeleton } from "@/components/skeletons/GridSkeleton";
 
 
 interface Franchise {
@@ -82,21 +83,16 @@ export default function Home() {
   const _renderSearchFilters = () => {
     return (
 
-        <div className="sticky top-[60px] z-10 flex flex-col justify-between items-center md:flex-row gap-4 py-3 px-5 bg-card border border-border">
-
-            <div className="w-1/4 md:flex hidden">
-              <h2 className=" font-medium text-lg">Showing 45,495 Franchises</h2>
+        <div className="sticky top-[60px] z-10 flex flex-col justify-between items-center md:flex-row gap-4 md:px-1 bg-white dark:bg-stone-800 md:border border-border">
 
 
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="inline-flex bg-secondary p-1 gap-1">
+            <div className="flex items-center w-full md:w-auto gap-2">
+              <div className="inline-flex bg-white dark:bg-stone-800 md:dark:bg-stone-900 border md:border-none w-full md:w-auto p-1 gap-1">
                 {["fund", "launch", "live"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-9 py-2 text-sm uppercase font-bold cursor-pointer  transition-colors ${
+                    className={`px-9 py-2 text-sm uppercase font-bold cursor-pointer w-full md:w-auto transition-colors ${
                       activeTab === tab
                         ? "bg-primary text-primary-foreground"
                         : "text-foreground hover:bg-secondary-foreground/10"
@@ -120,7 +116,8 @@ export default function Home() {
                 ))}
               </div> */}
             </div>
-            <div className="w-1/4 justify-end hidden md:flex">
+            <div className=" items-center gap-3 hidden md:flex">
+              <h2 className=" font-semibold text-sm ml-2">RESULTS: 45,495 </h2>
               <Button variant={"outline"}>Filter Franchise</Button>
             </div>
 
@@ -135,11 +132,7 @@ export default function Home() {
     const isLoading = allFranchises === undefined || allBusinesses === undefined;
 
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      );
+      return <GridSkeleton count={12} columns={3} type="franchise" />;
     }
 
     // Convert database franchises to display format

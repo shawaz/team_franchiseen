@@ -114,7 +114,7 @@ export default function AccountDashboard({
       case "Closed":
         return "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-500";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-stone-100 text-stone-800";
     }
   };
 
@@ -136,7 +136,7 @@ export default function AccountDashboard({
       case "Closed":
         return { percent: 0, color: "bg-red-500" };
       default:
-        return { percent: 0, color: "bg-gray-300" };
+        return { percent: 0, color: "bg-stone-300" };
     }
   };
 
@@ -161,7 +161,7 @@ export default function AccountDashboard({
 
       {/* Main Navigation Tabs */}
       <Card className="p-0">
-        <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="border-b border-stone-200 dark:border-stone-700">
           <nav className="flex space-x-8 px-6 overflow-x-auto">
             {mainTabs.map((tab) => {
               const Icon = tab.icon;
@@ -172,7 +172,7 @@ export default function AccountDashboard({
                   className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      : 'border-transparent text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-300'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -240,13 +240,13 @@ export default function AccountDashboard({
                   if (filteredFranchises.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center py-12 px-4">
-                        <div className="bg-gray-100 dark:bg-stone-700 p-4 mb-4">
-                          <Building2 className="h-8 w-8 text-gray-400" />
+                        <div className="bg-stone-100 dark:bg-stone-700 p-4 mb-4">
+                          <Building2 className="h-8 w-8 text-stone-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                        <h3 className="text-lg font-medium text-stone-900 dark:text-white mb-1">
                           No Franchises Found
                         </h3>
-                        <p className="text-gray-500 dark:text-gray-400">
+                        <p className="text-stone-500 dark:text-stone-400">
                           There are no franchises in the {selectedStatus.toLowerCase()} status.
                         </p>
                       </div>
@@ -258,7 +258,7 @@ export default function AccountDashboard({
                       {filteredFranchises.map((franchise) => (
                         <div
                           key={franchise._id}
-                          className="p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-stone-700/50 transition-colors duration-200 border-b border-gray-100 dark:border-stone-700 last:border-b-0"
+                          className="p-6 cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors duration-200 border-b border-stone-100 dark:border-stone-700 last:border-b-0"
                           onClick={() =>
                             router.push(`/${brandSlug}/${franchise.slug}`)
                           }
@@ -304,25 +304,25 @@ export default function AccountDashboard({
                                   </div>
                                   <div className="flex items-center justify-between mb-2">
                                     <div>
-                                      <p className="text-sm text-gray-500">
+                                      <p className="text-sm text-stone-500">
                                         {franchise.locationAddress}
                                       </p>
 
                                       <div className="hidden md:flex items-center justify-between mt-2">
                                         <div className="hidden md:flex items-center space-x-2">
-                                          <div className="text-sm dark:text-gray-400 text-gray-500">
+                                          <div className="text-sm dark:text-stone-400 text-stone-500">
                                             Share Price: {formatAmount(franchise.costPerShare)}
                                           </div>
-                                          <div className="text-sm hidden md:block dark:text-gray-400 text-gray-500">
+                                          <div className="text-sm hidden md:block dark:text-stone-400 text-stone-500">
                                             •
                                           </div>
-                                          <div className="text-sm dark:text-gray-400 text-gray-500">
+                                          <div className="text-sm dark:text-stone-400 text-stone-500">
                                             Area: {franchise.carpetArea} sq ft
                                           </div>
-                                          <div className="text-sm hidden md:block dark:text-gray-400 text-gray-500">
+                                          <div className="text-sm hidden md:block dark:text-stone-400 text-stone-500">
                                             •
                                           </div>
-                                          <div className="text-sm dark:text-gray-400 text-gray-500">
+                                          <div className="text-sm dark:text-stone-400 text-stone-500">
                                             Investment: {formatAmount(franchise.totalInvestment)}
                                           </div>
                                         </div>
@@ -332,7 +332,7 @@ export default function AccountDashboard({
                                 </div>
                               </div>
                               <div className="mt-4">
-                                <div className="my-3 pt-2 border-t border-dashed border-gray-300 dark:border-stone-600">
+                                <div className="my-3 pt-2 border-t border-dashed border-stone-300 dark:border-stone-600">
                                   <span className="font-semibold text-base text-stone-900 dark:text-white">
                                     {(() => {
                                       switch (franchise.status) {
@@ -388,7 +388,7 @@ export default function AccountDashboard({
                                 {(() => {
                                   const { percent, color } = getProgress(franchise);
                                   return (
-                                    <div className="w-full h-2 bg-gray-200 overflow-hidden mt-2">
+                                    <div className="w-full h-2 bg-stone-200 overflow-hidden mt-2">
                                       <div
                                         className={`h-full ${color} transition-all duration-500 ease-in-out`}
                                         style={{ width: `${percent}%` }}
@@ -412,9 +412,9 @@ export default function AccountDashboard({
             <div className="space-y-6">
               <h3 className="text-lg font-semibold">Team Management</h3>
               <div className="text-center py-12">
-                <Users className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No team members</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by inviting team members to your organization.</p>
+                <Users className="mx-auto h-12 w-12 text-stone-400" />
+                <h3 className="mt-2 text-sm font-medium text-stone-900 dark:text-white">No team members</h3>
+                <p className="mt-1 text-sm text-stone-500">Get started by inviting team members to your organization.</p>
                 <div className="mt-6">
                   <button
                     type="button"
@@ -446,10 +446,10 @@ export default function AccountDashboard({
                     />
                     <div>
                       <h5 className="font-medium">{user.firstName} {user.lastName}</h5>
-                      <p className="text-sm text-gray-500">{user.emailAddresses?.[0]?.emailAddress}</p>
+                      <p className="text-sm text-stone-500">{user.emailAddresses?.[0]?.emailAddress}</p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <button className="px-4 py-2 border border-stone-300 rounded-md text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-800">
                     Edit Profile
                   </button>
                 </div>
@@ -462,14 +462,14 @@ export default function AccountDashboard({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Email notifications</p>
-                      <p className="text-sm text-gray-500">Receive email updates about your franchises</p>
+                      <p className="text-sm text-stone-500">Receive email updates about your franchises</p>
                     </div>
                     <input type="checkbox" className="rounded" defaultChecked />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Push notifications</p>
-                      <p className="text-sm text-gray-500">Receive push notifications on your device</p>
+                      <p className="text-sm text-stone-500">Receive push notifications on your device</p>
                     </div>
                     <input type="checkbox" className="rounded" />
                   </div>
@@ -480,10 +480,10 @@ export default function AccountDashboard({
               <Card className="p-6">
                 <h4 className="text-md font-medium mb-4">Security</h4>
                 <div className="space-y-4">
-                  <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <button className="px-4 py-2 border border-stone-300 rounded-md text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-800">
                     Change Password
                   </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <button className="px-4 py-2 border border-stone-300 rounded-md text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-800">
                     Two-Factor Authentication
                   </button>
                 </div>

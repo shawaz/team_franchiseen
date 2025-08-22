@@ -30,6 +30,7 @@ import ImageCropModal from '@/components/ImageCropModal';
 import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { waitForUploadcare } from '@/utils/uploadcare-test';
+import { RegisterFormSkeleton } from '@/components/skeletons/FormSkeleton';
 
 interface UploadcareWindow extends Window {
   uploadcare: {
@@ -148,11 +149,6 @@ export default function RegisterBrandPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const router = useRouter();
 
-  const industries = useQuery(api.industries.listIndustries, {}) || [];
-  const categories = useQuery(api.myFunctions.listCategories, selectedIndustry ? { industry_id: selectedIndustry } : 'skip') as Category[] || [];
-  const industryOptions: IndustryOption[] = industries.map((i: { _id: string; name: string }) => ({ label: i.name, value: i._id }));
-  const categoryOptions: CategoryOption[] = categories.map((c: Category) => ({ label: c.name, value: c._id, industry_id: c.industry_id }));
-
   const [isLoading, setIsLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -187,6 +183,16 @@ export default function RegisterBrandPage() {
     about: '',
     countryDocuments: {},
   });
+
+  const industries = useQuery(api.industries.listIndustries, {}) || [];
+  const categories = useQuery(api.myFunctions.listCategories, selectedIndustry ? { industry_id: selectedIndustry } : 'skip') as Category[] || [];
+  const industryOptions: IndustryOption[] = industries.map((i: { _id: string; name: string }) => ({ label: i.name, value: i._id }));
+  const categoryOptions: CategoryOption[] = categories.map((c: Category) => ({ label: c.name, value: c._id, industry_id: c.industry_id }));
+
+  // Show loading skeleton while data is loading
+  if (!isLoaded || industries === undefined) {
+    return <RegisterFormSkeleton />;
+  }
 
   // Generate seed phrase
   const generateSeedPhrase = (): string[] => {

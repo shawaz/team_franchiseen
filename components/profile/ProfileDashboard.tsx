@@ -24,6 +24,7 @@ import SolanaTransactions from '@/components/wallet/SolanaTransactions';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 import { Id } from '@/convex/_generated/dataModel';
 import Image from 'next/image';
+import { ProfileSkeleton } from '@/components/skeletons/DashboardSkeleton';
 
 interface Business {
   _id: Id<"businesses">;

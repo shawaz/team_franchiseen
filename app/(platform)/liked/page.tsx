@@ -8,6 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import BusinessCard from "@/components/business/BusinessCard";
 import { Calendar, DollarSign, HomeIcon, MapPin, Search, TrendingUp } from "lucide-react";
+import { GridSkeleton } from "@/components/skeletons/GridSkeleton";
 
 
 interface Franchise {
@@ -148,11 +149,7 @@ export default function Home() {
     const isLoading = allFranchises === undefined || allBusinesses === undefined;
 
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      );
+      return <GridSkeleton count={8} columns={3} type={activeTab === "franchise" ? "franchise" : "business"} />;
     }
 
     // Convert database franchises to display format

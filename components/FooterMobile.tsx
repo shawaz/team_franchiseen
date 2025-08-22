@@ -6,6 +6,7 @@ import {
   Compass,
   Heart,
   PlusSquare,
+  User,
   UserCircle,
   Wallet,
 } from "lucide-react";
@@ -17,7 +18,7 @@ import { useModal } from "@/contexts/ModalContext";
 
 function FooterMobile() {
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
-  const { openAccountSelectionModal, openMobileProfileModal } = useModal();
+  const { openTypeformRegisterBrandModal, openTypeformCreateFranchiseModal } = useModal();
   const pathname = usePathname();
 
   // Function to check if a path is active
@@ -49,7 +50,7 @@ function FooterMobile() {
           <Link href={"/liked"}>
             <Heart className={getIconClasses("/liked")} />
           </Link>
-          <button onClick={() => openMobileProfileModal()}>
+          <button onClick={() => openTypeformCreateFranchiseModal()}>
             <PlusSquare
               className={getIconClasses("/create")}
               color="currentColor"
@@ -59,7 +60,7 @@ function FooterMobile() {
             <Bell className={getIconClasses("/notify")} />
           </Link>
           <Link href={"/account"}>
-            <Wallet className={getIconClasses("/account")} />
+            <UserCircle className={getIconClasses("/account")} />
           </Link>
         </div>
       </SignedIn>

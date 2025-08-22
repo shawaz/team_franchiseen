@@ -217,7 +217,7 @@ function NotifyPage() {
   return (
     <div className="pb-20 md:pb-8 min-h-screen ">
         {/* Mobile-optimized Header */}
-        <div className="sticky top-[60px] px-6 z-10 bg-stone-50 dark:bg-stone-900 py-4 border-b border-stone-200 dark:border-stone-700 mb-6">
+        <div className="sticky top-[60px] mt-4 md:mt-0 md:px-6 z-10 bg-stone-50 dark:bg-stone-900 md:py-4 md:border-b border-stone-200 dark:border-stone-700 mb-6">
           <div className="flex flex-col space-y-4">
 
 

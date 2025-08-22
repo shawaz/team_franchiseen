@@ -19,6 +19,7 @@ import TableCell from "@/components/ui/table/TableCell";
 import TableHeaderCell from "@/components/ui/table/TableHeaderCell";
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
+import { AdminTableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 type BusinessStatus = "all" | "Active" | "Inactive" | "Rejected" | "Deleted";
 
@@ -132,6 +133,13 @@ function AdminBusiness() {
     { value: "Rejected", label: "Rejected" },
     { value: "Deleted", label: "Deleted" },
   ];
+
+  // Check if data is loading
+  const isLoading = businessesData === undefined || franchisesDataRaw === undefined;
+
+  if (isLoading) {
+    return <AdminTableSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

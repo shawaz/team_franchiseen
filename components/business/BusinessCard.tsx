@@ -5,6 +5,7 @@ import { Card } from "../ui/card";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { BusinessCardSkeleton } from "@/components/skeletons/CardSkeleton";
 
 const BusinessCard: React.FC<{
   business: {
@@ -23,6 +24,11 @@ const BusinessCard: React.FC<{
   );
   const statusCountsError =
     statusCounts === undefined && business.id ? "..." : null;
+
+  // Show skeleton while loading
+  if (statusCounts === undefined && business.id) {
+    return <BusinessCardSkeleton />;
+  }
   // const totalShares = useQuery(api.franchise.getTotalSharesByBusiness, {
   //   businessId: business.id as Id<"businesses">,
   // });
@@ -44,7 +50,7 @@ const BusinessCard: React.FC<{
   //     : 0;
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 ">
       <Link href={`/business/${business.id}/franchise`} className="block">
         <div className="flex justify-center items-center gap-4 mb-5">
           <div className="relative overflow-hidden h-14 w-14 border border-stone-200 dark:border-stone-800/50">

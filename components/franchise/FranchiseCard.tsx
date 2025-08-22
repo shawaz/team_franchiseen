@@ -8,6 +8,7 @@ import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { FranchiseCardSkeleton } from "@/components/skeletons/CardSkeleton";
 
 interface FranchiseCardProps {
   type: "fund" | "launch" | "live"; // Keep old tab names for compatibility

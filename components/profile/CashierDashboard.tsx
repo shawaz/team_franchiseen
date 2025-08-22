@@ -27,6 +27,7 @@ import {
   Eye
 } from 'lucide-react';
 import { Money2 } from 'iconsax-reactjs';
+import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 
 // Interfaces for cashier operations
 interface MenuItem {
