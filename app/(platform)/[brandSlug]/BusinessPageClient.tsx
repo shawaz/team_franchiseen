@@ -10,6 +10,7 @@ import { useModal } from "@/contexts/ModalContext";
 import EmailVerificationModal from "@/components/EmailVerificationModal";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Franchise {
   _id: string;
@@ -39,6 +40,7 @@ export default function BusinessPageClient({
 }) {
   const router = useRouter();
   const { isSignedIn } = useUser();
+  const { openTypeformRegisterBrandModal, openTypeformCreateFranchiseModal } = useModal();
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] =
     React.useState(false);
   const { formatAmount } = useGlobalCurrency();
@@ -122,7 +124,7 @@ export default function BusinessPageClient({
         <section className="bg-white dark:bg-stone-800/50  border border-stone-200 dark:border-stone-700">
           <div className="flex px-4 py-4 space-x-4 justify-between">
             <div className="flex items-center space-x-4">
-              <Image src={business?.logoUrl || "/logo/logo-2.svg"} alt="Business Logo" width={70} height={70} className="rounded text-center" />
+              <Image src={business?.logoUrl || "/logo/logo-2.svg"} alt="Business Logo" width={70} height={70} className="text-center" />
               <div className="flex flex-col ">
                 <h1 className="text-xl font-bold  text-stone-900 dark:text-white">{business?.name}</h1>
                 <p className="text-sm  text-stone-500 dark:text-stone-400">{business?.industry?.name}</p>
@@ -132,8 +134,9 @@ export default function BusinessPageClient({
             
           </div>
           <div className="flex items-center justify-center gap-2 px-4 pb-4">
-              <button className="bg-stone-900  w-full text-white font-medium px-5 py-2 transition-colors hover:bg-stone-700">FOLLOWING</button>
-              <button className="bg-yellow-900  w-full text-white font-medium px-5 py-2 transition-colors hover:bg-yellow-700">START NEW</button>
+              <button className="bg-stone-900 text-sm w-full text-white font-medium px-5 py-2 transition-colors hover:bg-stone-700">FOLLOWING</button>
+              <button onClick={() => openTypeformCreateFranchiseModal(brandSlug)} className="bg-yellow-900 w-full text-sm text-white font-medium px-5 py-2 transition-colors hover:bg-yellow-600">START NEW</button>
+
             </div>
 
         </section>

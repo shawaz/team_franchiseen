@@ -68,6 +68,7 @@ const ModalManager: React.FC = () => {
       <TypeformCreateFranchiseModal
         isOpen={true}
         onClose={closeModal}
+        brandSlug={modalData.typeformCreateFranchise?.brandSlug}
       />
     );
   }

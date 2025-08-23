@@ -41,7 +41,7 @@ export interface ModalData {
   solPayment?: SOLPaymentModalData;
   mobileProfile?: MobileProfileModalData;
   createFranchise?: {};
-  typeformCreateFranchise?: {};
+  typeformCreateFranchise?: { brandSlug?: string };
   typeformRegisterBrand?: {};
   mobileMenu?: MobileProfileModalData;
   accountSelection?: {};
@@ -62,7 +62,7 @@ interface ModalContextType {
   openSOLPaymentModal: (data: SOLPaymentModalData) => void;
   openMobileProfileModal: (data?: MobileProfileModalData) => void;
   openCreateFranchiseModal: () => void;
-  openTypeformCreateFranchiseModal: () => void;
+  openTypeformCreateFranchiseModal: (brandSlug?: string) => void;
   openTypeformRegisterBrandModal: () => void;
   openMobileMenuModal: (data?: MobileProfileModalData) => void;
   openAccountSelectionModal: () => void;
@@ -102,8 +102,8 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     openModal('createFranchise', { createFranchise: {} });
   };
 
-  const openTypeformCreateFranchiseModal = () => {
-    openModal('typeformCreateFranchise', { typeformCreateFranchise: {} });
+  const openTypeformCreateFranchiseModal = (brandSlug?: string) => {
+    openModal('typeformCreateFranchise', { typeformCreateFranchise: { brandSlug } });
   };
 
   const openTypeformRegisterBrandModal = () => {

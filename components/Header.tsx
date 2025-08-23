@@ -229,8 +229,8 @@ function Header() {
                     {searchResults && searchResults.length > 0 ? (
                       searchResults.map((business) => (
                         <Link
-                          key={business._id}
-                          href={`/business/${business._id}`}
+                          key={business.slug}
+                          href={`${business.slug}`}
                           className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-stone-700 transition-colors"
                           onClick={() => {
                             setIsMobileSearchMode(false);
@@ -337,8 +337,8 @@ function Header() {
                       {searchResults && searchResults.length > 0 ? (
                         searchResults.map((business) => (
                           <Link
-                            key={business._id}
-                            href={`/business/${business._id}`}
+                            key={business.slug}
+                            href={`${business.slug}`}
                             className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-stone-700 transition-colors"
                           >
                             <div className="relative h-10 w-10 flex-shrink-0 z-0">
