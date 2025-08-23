@@ -26,6 +26,33 @@ export default defineSchema({
     stripeCardholderId: v.optional(v.string()),
     roles: v.optional(v.array(v.string())),
     isActivated: v.optional(v.boolean()),
+    // Verification fields
+    verificationStatus: v.optional(v.string()), // "pending", "verified", "rejected"
+    adminNotes: v.optional(v.string()),
+    // Wallet fields
+    walletAddress: v.optional(v.string()),
+    seedPhraseVerified: v.optional(v.boolean()),
+    // Document fields
+    documents: v.optional(v.object({
+      identityProof: v.optional(v.object({
+        url: v.string(),
+        status: v.string(), // "pending", "approved", "rejected"
+        adminNotes: v.optional(v.string()),
+        uploadedAt: v.number(),
+      })),
+      addressProof: v.optional(v.object({
+        url: v.string(),
+        status: v.string(),
+        adminNotes: v.optional(v.string()),
+        uploadedAt: v.number(),
+      })),
+      incomeProof: v.optional(v.object({
+        url: v.string(),
+        status: v.string(),
+        adminNotes: v.optional(v.string()),
+        uploadedAt: v.number(),
+      })),
+    })),
   })
     .index("by_email", ["email"]),
   industries: defineTable({
@@ -50,6 +77,30 @@ export default defineSchema({
     min_area: v.optional(v.number()),
     serviceable_countries: v.optional(v.array(v.string())),
     currency: v.optional(v.string()),
+    // Verification fields
+    verificationStatus: v.optional(v.string()), // "pending", "verified", "rejected"
+    adminNotes: v.optional(v.string()),
+    // Document fields
+    documents: v.optional(v.object({
+      businessLicense: v.optional(v.object({
+        url: v.string(),
+        status: v.string(), // "pending", "approved", "rejected"
+        adminNotes: v.optional(v.string()),
+        uploadedAt: v.number(),
+      })),
+      taxCertificate: v.optional(v.object({
+        url: v.string(),
+        status: v.string(),
+        adminNotes: v.optional(v.string()),
+        uploadedAt: v.number(),
+      })),
+      ownershipProof: v.optional(v.object({
+        url: v.string(),
+        status: v.string(),
+        adminNotes: v.optional(v.string()),
+        uploadedAt: v.number(),
+      })),
+    })),
   }),
   franchise: defineTable({
     businessId: v.id("businesses"),

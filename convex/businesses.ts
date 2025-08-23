@@ -366,3 +366,98 @@ export const updateVerificationStatus = mutation({
     return true;
   },
 });
+
+// Update document verification status
+export const updateDocumentStatus = mutation({
+  args: {
+    businessId: v.id("businesses"),
+    documentType: v.string(), // "businessLicense", "taxCertificate", "ownershipProof"
+    status: v.string(), // "pending", "approved", "rejected"
+    adminNotes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const business = await ctx.db.get(args.businessId);
+    if (!business) throw new Error("Business not found");
+
+    const documents = business.documents || {};
+    const document = documents[args.documentType as keyof typeof documents];
+
+    if (!document) throw new Error("Document not found");
+
+    const updatedDocument = {
+      ...document,
+      status: args.status,
+      adminNotes: args.adminNotes,
+    };
+
+    const updatedDocuments = {
+      ...documents,
+      [args.documentType]: updatedDocument,
+    };
+
+    // Check if all documents are approved
+    const allDocuments = Object.values(updatedDocuments);
+    const allApproved = allDocuments.length >= 3 && allDocuments.every(doc => doc?.status === 'approved');
+
+    const updateFields: any = {
+      documents: updatedDocuments,
+      updatedAt: Date.now(),
+    };
+
+    // If all documents are approved, update verification status
+    if (allApproved) {
+      updateFields.verificationStatus = 'verified';
+    }
+
+    await ctx.db.patch(args.businessId, updateFields);
+    return true;
+  },
+});
+
+// Upload business document
+export const uploadDocument = mutation({
+  args: {
+    businessId: v.id("businesses"),
+    documentType: v.string(),
+    url: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const business = await ctx.db.get(args.businessId);
+    if (!business) throw new Error("Business not found");
+
+    // Check if user owns the business
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
+      .unique();
+
+    if (!user || String(user._id) !== String(business.owner_id)) {
+      throw new Error("Not authorized");
+    }
+
+    const documents = business.documents || {};
+    const newDocument = {
+      url: args.url,
+      status: 'pending',
+      uploadedAt: Date.now(),
+    };
+
+    const updatedDocuments = {
+      ...documents,
+      [args.documentType]: newDocument,
+    };
+
+    await ctx.db.patch(args.businessId, {
+      documents: updatedDocuments,
+      updatedAt: Date.now(),
+    });
+
+    return true;
+  },
+});

@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search, CheckCircle, XCircle, AlertTriangle, Eye } from "lucide-react";
+import { Search, CheckCircle, XCircle, AlertTriangle, Eye, FileText, Upload } from "lucide-react";
 import Table from "@/components/ui/table/Table";
 import TableHead from "@/components/ui/table/TableHead";
 import TableBody from "@/components/ui/table/TableBody";
@@ -37,6 +37,26 @@ type Business = {
   status: string;
   verificationStatus?: string;
   adminNotes?: string;
+  documents?: {
+    businessLicense?: {
+      url: string;
+      status: string;
+      adminNotes?: string;
+      uploadedAt: number;
+    };
+    taxCertificate?: {
+      url: string;
+      status: string;
+      adminNotes?: string;
+      uploadedAt: number;
+    };
+    ownershipProof?: {
+      url: string;
+      status: string;
+      adminNotes?: string;
+      uploadedAt: number;
+    };
+  };
   _creationTime: number;
   updatedAt: number;
 };
@@ -67,8 +87,9 @@ function AdminBusiness() {
   // Cast the businesses data to the correct type
   const businesses = businessesData as unknown as Business[];
 
-  // Verification mutation
+  // Verification mutations
   const updateVerificationStatus = useMutation(api.businesses.updateVerificationStatus);
+  const updateDocumentStatus = useMutation(api.businesses.updateDocumentStatus);
 
   // Handle business verification
   const handleVerifyBusiness = async (businessId: string, action: 'verify' | 'reject') => {
@@ -90,11 +111,42 @@ function AdminBusiness() {
     }
   };
 
+  // Handle document verification
+  const handleDocumentVerification = async (businessId: string, documentType: string, action: 'approve' | 'reject') => {
+    setLoading(businessId);
+    try {
+      await updateDocumentStatus({
+        businessId: businessId as any,
+        documentType,
+        status: action === 'approve' ? 'approved' : 'rejected',
+      });
+
+      toast.success(`Document ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+    } catch (error) {
+      console.error('Error updating document status:', error);
+      toast.error(`Failed to ${action} document`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   // Get verification status badge
   const getVerificationBadge = (verificationStatus?: string) => {
     switch (verificationStatus) {
       case 'verified':
         return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Verified</span>;
+      case 'rejected':
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Rejected</span>;
+      default:
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><AlertTriangle className="w-3 h-3 mr-1" />Pending</span>;
+    }
+  };
+
+  // Get document status badge
+  const getDocumentBadge = (status?: string) => {
+    switch (status) {
+      case 'approved':
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</span>;
       case 'rejected':
         return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Rejected</span>;
       default:
@@ -368,6 +420,10 @@ function AdminBusiness() {
                             <Eye className="w-4 h-4 mr-2" />
                             Review Details
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSelectedBusiness(business)}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            View Documents
+                          </DropdownMenuItem>
                           {(!business.verificationStatus || business.verificationStatus === 'pending') && (
                             <>
                               <DropdownMenuItem
@@ -455,6 +511,147 @@ function AdminBusiness() {
                       <label className="text-sm font-medium text-gray-500">Created</label>
                       <p className="text-base">{new Date(selectedBusiness._creationTime).toLocaleDateString()}</p>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Verification */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Document Verification</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Business License */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Business License</h4>
+                      {selectedBusiness.documents?.businessLicense ?
+                        getDocumentBadge(selectedBusiness.documents.businessLicense.status) :
+                        <span className="text-sm text-gray-500">Not uploaded</span>
+                      }
+                    </div>
+                    {selectedBusiness.documents?.businessLicense && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(selectedBusiness.documents?.businessLicense?.url, '_blank')}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        {selectedBusiness.documents.businessLicense.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDocumentVerification(selectedBusiness._id, 'businessLicense', 'approve')}
+                              disabled={loading === selectedBusiness._id}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDocumentVerification(selectedBusiness._id, 'businessLicense', 'reject')}
+                              disabled={loading === selectedBusiness._id}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tax Certificate */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Tax Certificate</h4>
+                      {selectedBusiness.documents?.taxCertificate ?
+                        getDocumentBadge(selectedBusiness.documents.taxCertificate.status) :
+                        <span className="text-sm text-gray-500">Not uploaded</span>
+                      }
+                    </div>
+                    {selectedBusiness.documents?.taxCertificate && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(selectedBusiness.documents?.taxCertificate?.url, '_blank')}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        {selectedBusiness.documents.taxCertificate.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDocumentVerification(selectedBusiness._id, 'taxCertificate', 'approve')}
+                              disabled={loading === selectedBusiness._id}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDocumentVerification(selectedBusiness._id, 'taxCertificate', 'reject')}
+                              disabled={loading === selectedBusiness._id}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ownership Proof */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Ownership Proof</h4>
+                      {selectedBusiness.documents?.ownershipProof ?
+                        getDocumentBadge(selectedBusiness.documents.ownershipProof.status) :
+                        <span className="text-sm text-gray-500">Not uploaded</span>
+                      }
+                    </div>
+                    {selectedBusiness.documents?.ownershipProof && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(selectedBusiness.documents?.ownershipProof?.url, '_blank')}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        {selectedBusiness.documents.ownershipProof.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDocumentVerification(selectedBusiness._id, 'ownershipProof', 'approve')}
+                              disabled={loading === selectedBusiness._id}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDocumentVerification(selectedBusiness._id, 'ownershipProof', 'reject')}
+                              disabled={loading === selectedBusiness._id}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

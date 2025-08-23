@@ -22,6 +22,7 @@ import type * as shares from "../shares.js";
 import type * as teams from "../teams.js";
 import type * as uploadLogo from "../uploadLogo.js";
 import type * as uploadcare from "../uploadcare.js";
+import type * as users from "../users.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   teams: typeof teams;
   uploadLogo: typeof uploadLogo;
   uploadcare: typeof uploadcare;
+  users: typeof users;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

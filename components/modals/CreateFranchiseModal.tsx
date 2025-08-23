@@ -146,13 +146,22 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   }, [existingFranchiseLocations]);
 
   const initializeGoogleMaps = () => {
-    if (!mapRef.current || !window.google) {
+    if (!mapRef.current) return;
+
+    if (!window.google) {
       // Load Google Maps script if not already loaded
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
       script.async = true;
       script.defer = true;
-      script.onload = () => initMap();
+      script.onload = () => {
+        console.log('Google Maps script loaded');
+        initMap();
+      };
+      script.onerror = () => {
+        console.error('Failed to load Google Maps script');
+        toast.error('Failed to load Google Maps. Please check your API key.');
+      };
       document.head.appendChild(script);
     } else {
       initMap();
@@ -402,9 +411,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     }));
   };
 
-  const selectLocation = (location: { address: string; lat: number; lng: number }) => {
-    setFormData(prev => ({ ...prev, location }));
-  };
+  // Remove unused selectLocation function
 
   const updateLocationDetails = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -607,13 +614,9 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               className="h-full flex flex-col"
             >
               <div className="p-6 border-b border-gray-200 dark:border-stone-700">
-                <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold">Choose your location</h1>
-                  <p className="text-muted-foreground">Click on the map to select your franchise location</p>
-                </div>
 
                 {/* Search Bar */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -621,28 +624,12 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                       value={mapSearchQuery}
                       onChange={(e) => setMapSearchQuery(e.target.value)}
                       className="pl-10"
-                      onKeyPress={(e) => e.key === 'Enter' && handleMapSearch()}
+                      onKeyDown={(e) => e.key === 'Enter' && handleMapSearch()}
                     />
                   </div>
                   <Button onClick={handleMapSearch} variant="outline">
                     <Search className="h-4 w-4" />
                   </Button>
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center justify-center gap-6 mt-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span>Existing Franchises</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span>Available Location</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-                    <span>Too Close (Unavailable)</span>
-                  </div>
                 </div>
               </div>
 
@@ -653,7 +640,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 {/* Center Map Pin */}
                 {map && !formData.location && (
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                    <MapPin className="h-8 w-8 text-blue-600 drop-shadow-lg" />
+                    <MapPin className="h-8 w-8 text-stone-600 drop-shadow-lg" />
                   </div>
                 )}
 
@@ -667,7 +654,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                           handleLocationSelect(center.lat(), center.lng());
                         }
                       }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                      className="bg-stone-600 hover:bg-stone-700 text-white shadow-lg"
                     >
                       <MapPin className="h-4 w-4 mr-2" />
                       Select This Location
@@ -735,10 +722,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               exit={{ opacity: 0, x: -20 }}
               className="p-6 space-y-6"
             >
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Location details</h1>
-                <p className="text-muted-foreground">Tell us more about your property</p>
-              </div>
 
               <div className="space-y-6">
                 {/* Franchise Details */}
@@ -916,10 +899,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               exit={{ opacity: 0, x: -20 }}
               className="p-6 space-y-6"
             >
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Choose your investment</h1>
-                <p className="text-muted-foreground">Select how much you want to invest</p>
-              </div>
 
               {/* Investment Amount Display */}
               <div className="bg-gradient-to-br from-stone-50 to-indigo-50 dark:from-stone-950/20 dark:to-yellow-950/20 p-6 text-center border border-stone-200 dark:border-stone-800">
@@ -1044,10 +1023,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               exit={{ opacity: 0, x: -20 }}
               className="p-6 space-y-6"
             >
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Create Franchise On-Chain</h1>
-                <p className="text-muted-foreground">Submit your franchise proposal to the blockchain</p>
-              </div>
 
               <div className="space-y-6">
                 {/* Investment Summary */}
@@ -1096,9 +1071,9 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 )}
 
                 {/* Terms and Conditions */}
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800  p-4">
-                  <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Important Information</h4>
-                  <div className="text-sm text-blue-600 dark:text-blue-400 space-y-2">
+                <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800  p-4">
+                  <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">Important Information</h4>
+                  <div className="text-sm text-stone-600 dark:text-stone-400 space-y-2">
                     <p>• Your franchise proposal will be submitted for brand owner approval</p>
                     <p>• Investment funds will be held in escrow until approval</p>
                     <p>• If rejected, funds will be automatically refunded</p>
@@ -1119,13 +1094,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               exit={{ opacity: 0, x: -20 }}
               className="p-6 space-y-6"
             >
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-8 w-8 text-green-600" />
-                </div>
-                <h1 className="text-2xl font-bold">Proposal Submitted!</h1>
-                <p className="text-muted-foreground">Your franchise proposal has been submitted for approval</p>
-              </div>
 
               {/* Invoice */}
               <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700  p-6">
@@ -1166,9 +1134,9 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               </div>
 
               {/* Next Steps */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800  p-4">
-                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">What happens next?</h4>
-                <div className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
+              <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800  p-4">
+                <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">What happens next?</h4>
+                <div className="text-sm text-stone-600 dark:text-stone-400 space-y-1">
                   <p>1. Brand owner will review your proposal</p>
                   <p>2. You'll receive notification of approval/rejection</p>
                   <p>3. If approved, franchise tokens will be created</p>
