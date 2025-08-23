@@ -355,6 +355,29 @@ export const listByBusiness = query({
   },
 });
 
+// Get franchises by business with location data for map display
+export const getLocationsByBusiness = query({
+  args: { businessId: v.id("businesses") },
+  handler: async (ctx, args) => {
+    const franchises = await ctx.db
+      .query("franchise")
+      .filter((q) => q.eq(q.field("businessId"), args.businessId))
+      .filter((q) => q.neq(q.field("status"), "Rejected"))
+      .collect();
+
+    return franchises.map(franchise => ({
+      _id: franchise._id,
+      slug: franchise.slug,
+      locationAddress: franchise.locationAddress,
+      building: franchise.building,
+      status: franchise.status,
+      totalShares: franchise.totalShares,
+      selectedShares: franchise.selectedShares,
+      createdAt: franchise.createdAt,
+    }));
+  },
+});
+
 // Get pending franchise proposals for approval
 export const getPendingByBusiness = query({
   args: {

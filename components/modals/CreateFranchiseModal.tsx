@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { X, ArrowLeft, ArrowRight, Check, MapPin, Building, DollarSign, Star, TrendingUp, Search, Wallet, Calculator } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ArrowLeft, ArrowRight, Check, MapPin, Building, DollarSign, Star, TrendingUp, Search, Wallet, Calculator, AlertTriangle, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -103,11 +103,26 @@ interface FormData {
   };
 }
 
+// Declare global Google Maps types
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
 const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> = ({ isOpen, onClose, brandSlug }) => {
   const [currentStep, setCurrentStep] = useState(brandSlug ? 2 : 1); // Skip step 1 if brandSlug provided
   const [searchQuery, setSearchQuery] = useState('');
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [invoice, setInvoice] = useState<any>(null);
+
+  // Map related state
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<any>(null);
+  const [marker, setMarker] = useState<any>(null);
+  const [existingFranchises, setExistingFranchises] = useState<any[]>([]);
+  const [conflictingLocation, setConflictingLocation] = useState<boolean>(false);
 
   const { connected } = useWallet();
   const { createFranchise } = useFranchiseProgram();
@@ -144,6 +159,12 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     }
   });
 
+  // Get existing franchise locations for the selected business
+  const existingFranchiseLocations = useQuery(
+    api.franchise.getLocationsByBusiness,
+    formData.selectedBusiness ? { businessId: formData.selectedBusiness._id } : "skip"
+  );
+
   // Auto-select business if brandSlug provided
   useEffect(() => {
     if (specificBusiness && brandSlug) {
@@ -154,7 +175,199 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     }
   }, [specificBusiness, brandSlug]);
 
-  const totalSteps = brandSlug ? 5 : 6; // Skip step 1 if brandSlug provided
+  // Initialize Google Maps when step 2 is reached
+  useEffect(() => {
+    if (currentStep === 2 && formData.selectedBusiness) {
+      initializeGoogleMaps();
+    }
+  }, [currentStep, formData.selectedBusiness]);
+
+  // Update existing franchises when locations are loaded
+  useEffect(() => {
+    if (existingFranchiseLocations) {
+      setExistingFranchises(existingFranchiseLocations);
+    }
+  }, [existingFranchiseLocations]);
+
+  const initializeGoogleMaps = () => {
+    if (!mapRef.current || !window.google) {
+      // Load Google Maps script if not already loaded
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => initMap();
+      document.head.appendChild(script);
+    } else {
+      initMap();
+    }
+  };
+
+  const initMap = () => {
+    if (!mapRef.current || !window.google) return;
+
+    const defaultCenter = { lat: 19.0760, lng: 72.8777 }; // Mumbai default
+
+    const mapInstance = new window.google.maps.Map(mapRef.current, {
+      center: defaultCenter,
+      zoom: 12,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    setMap(mapInstance);
+
+    // Add click listener to map
+    mapInstance.addListener('click', (event: any) => {
+      if (event.latLng) {
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
+        handleLocationSelect(lat, lng);
+      }
+    });
+
+    // Add existing franchise markers
+    if (existingFranchiseLocations) {
+      addExistingFranchiseMarkers(mapInstance);
+    }
+  };
+
+  const addExistingFranchiseMarkers = async (mapInstance: any) => {
+    if (!existingFranchiseLocations || !window.google) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+
+    for (const franchise of existingFranchiseLocations) {
+      try {
+        const result = await geocoder.geocode({ address: franchise.locationAddress });
+        if (result.results[0]) {
+          const location = result.results[0].geometry.location;
+
+          new window.google.maps.Marker({
+            position: location,
+            map: mapInstance,
+            title: `${formData.selectedBusiness?.name} - ${franchise.building}`,
+            icon: {
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EF4444"/>
+                  <circle cx="12" cy="9" r="2.5" fill="white"/>
+                </svg>
+              `),
+              scaledSize: new window.google.maps.Size(24, 24),
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error geocoding franchise location:', error);
+      }
+    }
+  };
+
+  const handleLocationSelect = async (lat: number, lng: number) => {
+    if (!map || !window.google) return;
+
+    // Remove existing marker
+    if (marker) {
+      marker.setMap(null);
+    }
+
+    // Check for conflicts with existing franchises
+    const isConflicting = await checkLocationConflict(lat, lng);
+    setConflictingLocation(isConflicting);
+
+    // Add new marker
+    const newMarker = new window.google.maps.Marker({
+      position: { lat, lng },
+      map: map,
+      title: 'Selected Location',
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${isConflicting ? '#EF4444' : '#10B981'}"/>
+            <circle cx="12" cy="9" r="2.5" fill="white"/>
+          </svg>
+        `),
+        scaledSize: new window.google.maps.Size(32, 32),
+      }
+    });
+
+    setMarker(newMarker);
+
+    // Reverse geocoding to get address
+    const geocoder = new window.google.maps.Geocoder();
+    try {
+      const result = await geocoder.geocode({ location: { lat, lng } });
+      if (result.results[0]) {
+        const address = result.results[0].formatted_address;
+        setFormData(prev => ({
+          ...prev,
+          location: { address, lat, lng }
+        }));
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setFormData(prev => ({
+        ...prev,
+        location: { address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`, lat, lng }
+      }));
+    }
+  };
+
+  const checkLocationConflict = async (lat: number, lng: number): Promise<boolean> => {
+    if (!existingFranchiseLocations || !window.google) return false;
+
+    const geocoder = new window.google.maps.Geocoder();
+    const minDistance = 1000; // 1km minimum distance
+
+    for (const franchise of existingFranchiseLocations) {
+      try {
+        const result = await geocoder.geocode({ address: franchise.locationAddress });
+        if (result.results[0]) {
+          const existingLocation = result.results[0].geometry.location;
+          const distance = window.google.maps.geometry.spherical.computeDistanceBetween(
+            new window.google.maps.LatLng(lat, lng),
+            existingLocation
+          );
+
+          if (distance < minDistance) {
+            return true; // Conflict found
+          }
+        }
+      } catch (error) {
+        console.error('Error checking location conflict:', error);
+      }
+    }
+
+    return false;
+  };
+
+  const handleMapSearch = async () => {
+    if (!map || !window.google || !mapSearchQuery.trim()) return;
+
+    const service = new window.google.maps.places.PlacesService(map);
+    const request = {
+      query: mapSearchQuery,
+      fields: ['name', 'geometry', 'formatted_address'],
+    };
+
+    service.textSearch(request, (results: any, status: any) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && results[0]) {
+        const place = results[0];
+        const location = place.geometry.location;
+
+        map.setCenter(location);
+        map.setZoom(15);
+
+        const lat = location.lat();
+        const lng = location.lng();
+        handleLocationSelect(lat, lng);
+      }
+    });
+  };
+
+  const totalSteps = 5; // Total steps: 1(Business), 2(Location), 3(Details), 4(Investment), 5(OnChain)
   const progress = (currentStep / totalSteps) * 100;
 
   const nextStep = async () => {
@@ -259,7 +472,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
   const calculateTotalInvestment = () => {
     const area = parseFloat(formData.locationDetails.sqft) || 0;
-    const cost = parseFloat(formData.locationDetails.costPerArea) || 0;
+    const cost = formData.selectedBusiness?.costPerArea || 0;
     return area * cost;
   };
 
@@ -281,10 +494,10 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
       case 1:
         return formData.selectedBusiness !== null;
       case 2:
-        return formData.location !== null;
+        return formData.location !== null && !conflictingLocation;
       case 3:
         const { doorNumber, sqft, isOwned, landlordNumber, landlordEmail, userNumber, userEmail, franchiseSlug, buildingName } = formData.locationDetails;
-        const basicFields = doorNumber && sqft && franchiseSlug && buildingName;
+        const basicFields = doorNumber && sqft && franchiseSlug && buildingName && formData.selectedBusiness?.costPerArea;
         if (isOwned) {
           return basicFields && userNumber && userEmail;
         } else {
@@ -344,66 +557,70 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="p-6 space-y-6"
+              className="h-full flex flex-col"
             >
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Choose your franchise brand</h1>
-                <p className="text-muted-foreground">Select from available franchise opportunities</p>
+              <div className="p-6 pb-4 border-b border-gray-200 dark:border-stone-700">
+                <div className="text-center space-y-2">
+                  <h1 className="text-2xl font-bold">Choose your franchise brand</h1>
+                  <p className="text-muted-foreground">Select from available franchise opportunities</p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative mt-6">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search businesses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search businesses..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <div className="flex-1 p-6 pt-4 overflow-hidden flex flex-col">
 
               {/* Business List */}
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-3 flex-1 overflow-y-auto">
                 {filteredBusinesses.map((business) => (
                   <button
                     key={business._id}
                     onClick={() => selectBusiness(business)}
-                    className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
+                    className={`w-full p-6 border-2 rounded-lg text-left transition-all ${
                       formData.selectedBusiness?._id === business._id
                         ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'
                         : 'border-gray-200 dark:border-stone-700 hover:border-gray-300 dark:hover:border-stone-600'
                     }`}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-stone-700 flex-shrink-0">
+                    <div className="flex items-start gap-6">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-stone-700 flex-shrink-0">
                         <Image
                           src={business.logoUrl || "/logo/logo-2.svg"}
                           alt={business.name}
-                          width={64}
-                          height={64}
+                          width={80}
+                          height={80}
                           className="object-contain"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-lg">{business.name}</h3>
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="font-semibold text-xl">{business.name}</h3>
                           {formData.selectedBusiness?._id === business._id && (
-                            <Check className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                            <Check className="h-6 w-6 text-yellow-600 flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-3">
+                        <p className="text-base text-muted-foreground mb-4">
                           {business.category?.name} • {business.industry?.name}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
                           {business.costPerArea && (
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              <span>{formatAmount(business.costPerArea)}/sq ft</span>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4" />
+                              <span className="font-medium">{formatAmount(business.costPerArea)}/sq ft</span>
                             </div>
                           )}
                           {business.min_area && (
-                            <div className="flex items-center gap-1">
-                              <Building className="h-3 w-3" />
+                            <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4" />
                               <span>Min: {business.min_area} sq ft</span>
                             </div>
                           )}
@@ -420,6 +637,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                   </div>
                 )}
               </div>
+              </div>
             </motion.div>
           )}
 
@@ -435,43 +653,75 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               <div className="p-6 border-b border-gray-200 dark:border-stone-700">
                 <div className="text-center space-y-2">
                   <h1 className="text-2xl font-bold">Choose your location</h1>
-                  <p className="text-muted-foreground">Tap on the map to select your franchise location</p>
+                  <p className="text-muted-foreground">Click on the map to select your franchise location</p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="flex gap-2 mt-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search for a location..."
+                      value={mapSearchQuery}
+                      onChange={(e) => setMapSearchQuery(e.target.value)}
+                      className="pl-10"
+                      onKeyPress={(e) => e.key === 'Enter' && handleMapSearch()}
+                    />
+                  </div>
+                  <Button onClick={handleMapSearch} variant="outline">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Existing Franchises</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span>Available Location</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                    <span>Too Close (Unavailable)</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex-1 relative bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20">
-                {/* Map placeholder - you can integrate Google Maps here */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <MapPin className="h-16 w-16 mx-auto text-blue-600" />
-                    <div>
-                      <h3 className="text-lg font-semibold">Interactive Map</h3>
-                      <p className="text-sm text-muted-foreground">Google Maps integration would go here</p>
-                      {!formData.location && (
-                        <Button
-                          onClick={() => selectLocation({
-                            address: "123 Main Street, City, State 12345",
-                            lat: 40.7128,
-                            lng: -74.0060
-                          })}
-                          className="mt-4"
-                        >
-                          Select Sample Location
-                        </Button>
-                      )}
+              {/* Google Maps Container */}
+              <div className="flex-1 relative">
+                <div ref={mapRef} className="w-full h-full" />
+
+                {/* Loading overlay */}
+                {!map && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-stone-800">
+                    <div className="text-center space-y-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto"></div>
+                      <p className="text-sm text-muted-foreground">Loading map...</p>
                     </div>
                   </div>
-                </div>
+                )}
 
+                {/* Selected Location Info */}
                 {formData.location && (
-                  <div className="absolute bottom-4 left-4 right-4 bg-white dark:bg-stone-800 rounded-lg p-4 shadow-lg">
+                  <div className="absolute bottom-4 left-4 right-4 bg-white dark:bg-stone-800 rounded-lg p-4 shadow-lg border">
                     <div className="flex items-start gap-3">
-                      <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-medium">Selected Location</h4>
+                      <MapPin className={`h-5 w-5 flex-shrink-0 mt-0.5 ${conflictingLocation ? 'text-red-600' : 'text-green-600'}`} />
+                      <div className="flex-1">
+                        <h4 className="font-medium">
+                          {conflictingLocation ? 'Location Unavailable' : 'Selected Location'}
+                        </h4>
                         <p className="text-sm text-muted-foreground">{formData.location.address}</p>
+                        {conflictingLocation && (
+                          <p className="text-sm text-red-600 mt-1">
+                            <AlertTriangle className="h-4 w-4 inline mr-1" />
+                            Too close to existing franchise (min 1km required)
+                          </p>
+                        )}
                       </div>
-                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      {!conflictingLocation && <Check className="h-5 w-5 text-green-600 flex-shrink-0" />}
                     </div>
                   </div>
                 )}
@@ -544,19 +794,21 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Cost per Sq Ft</label>
-                    <Input
-                      type="number"
-                      value={formData.locationDetails.costPerArea}
-                      onChange={(e) => updateLocationDetails('costPerArea', e.target.value)}
-                      placeholder="e.g., 100"
-                      className="h-12 text-lg"
-                    />
+                    <label className="text-sm font-medium mb-2 block">Cost per Sq Ft (Set by Brand Owner)</label>
+                    <div className="h-12 px-3 py-2 bg-gray-50 dark:bg-stone-800 border border-gray-200 dark:border-stone-700 rounded-md flex items-center text-lg">
+                      {formData.selectedBusiness?.costPerArea ?
+                        formatAmount(formData.selectedBusiness.costPerArea) :
+                        'Not set by brand owner'
+                      }
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This rate is configured by the brand owner in their account settings
+                    </p>
                   </div>
                 </div>
 
                 {/* Investment Calculation */}
-                {formData.locationDetails.sqft && formData.locationDetails.costPerArea && (
+                {formData.locationDetails.sqft && formData.selectedBusiness?.costPerArea && (
                   <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Calculator className="h-5 w-5 text-yellow-600" />
@@ -566,8 +818,23 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                       Total Investment: {formatAmount(calculateTotalInvestment())}
                     </div>
                     <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
-                      {formData.locationDetails.sqft} sq ft × {formatAmount(parseFloat(formData.locationDetails.costPerArea))} per sq ft
+                      {formData.locationDetails.sqft} sq ft × {formatAmount(formData.selectedBusiness.costPerArea)} per sq ft
                     </p>
+                  </div>
+                )}
+
+                {/* Warning if no cost per area set */}
+                {formData.locationDetails.sqft && !formData.selectedBusiness?.costPerArea && (
+                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <h4 className="font-medium text-orange-800 dark:text-orange-200">Cost Per Area Not Set</h4>
+                        <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                          The brand owner needs to set the cost per square foot in their account settings before you can proceed.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
