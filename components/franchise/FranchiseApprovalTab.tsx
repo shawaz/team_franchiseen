@@ -4,17 +4,21 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  MapPin, 
-  Building, 
-  DollarSign, 
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  MapPin,
+  Building,
+  DollarSign,
   User,
   Calendar,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  Map,
+  List,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
@@ -60,6 +64,10 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
   const { formatAmount } = useGlobalCurrency();
   const [selectedFranchise, setSelectedFranchise] = useState<PendingFranchise | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'requests' | 'map'>('requests');
+  const [restrictedAreas, setRestrictedAreas] = useState<any[]>([]);
+  const [mapRef, setMapRef] = useState<HTMLDivElement | null>(null);
+  const [map, setMap] = useState<any>(null);
   
   // Get Gill franchise token hook
   const { createFranchiseToken, connected } = useGillFranchiseToken();
@@ -136,6 +144,84 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
     }
   };
 
+  // Initialize Google Maps for area management
+  const initializeMap = () => {
+    if (!mapRef || !window.google) return;
+
+    const defaultCenter = { lat: 19.0760, lng: 72.8777 }; // Mumbai default
+
+    const mapInstance = new window.google.maps.Map(mapRef, {
+      center: defaultCenter,
+      zoom: 12,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    setMap(mapInstance);
+
+    // Add drawing manager for area restrictions
+    const drawingManager = new window.google.maps.drawing.DrawingManager({
+      drawingMode: null,
+      drawingControl: true,
+      drawingControlOptions: {
+        position: window.google.maps.ControlPosition.TOP_CENTER,
+        drawingModes: ['circle', 'polygon']
+      },
+      circleOptions: {
+        fillColor: '#ff0000',
+        fillOpacity: 0.3,
+        strokeWeight: 2,
+        strokeColor: '#ff0000',
+        clickable: true,
+        editable: true,
+        zIndex: 1
+      },
+      polygonOptions: {
+        fillColor: '#ff0000',
+        fillOpacity: 0.3,
+        strokeWeight: 2,
+        strokeColor: '#ff0000',
+        clickable: true,
+        editable: true,
+        zIndex: 1
+      }
+    });
+
+    drawingManager.setMap(mapInstance);
+
+    // Handle area creation
+    drawingManager.addListener('overlaycomplete', (event: any) => {
+      const newArea = {
+        id: Date.now(),
+        type: event.type,
+        overlay: event.overlay,
+        restricted: true
+      };
+      setRestrictedAreas(prev => [...prev, newArea]);
+    });
+  };
+
+  const toggleAreaRestriction = (areaId: number) => {
+    setRestrictedAreas(prev =>
+      prev.map(area =>
+        area.id === areaId
+          ? { ...area, restricted: !area.restricted }
+          : area
+      )
+    );
+  };
+
+  const removeArea = (areaId: number) => {
+    setRestrictedAreas(prev => {
+      const area = prev.find(a => a.id === areaId);
+      if (area && area.overlay) {
+        area.overlay.setMap(null);
+      }
+      return prev.filter(a => a.id !== areaId);
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -146,23 +232,122 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
             Review and approve franchise proposals for {business.name}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {/* View Toggle */}
+          <div className="flex items-center bg-stone-100 dark:bg-stone-800 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'requests' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('requests')}
+              className="flex items-center gap-2"
+            >
+              <List className="h-4 w-4" />
+              Requests
+            </Button>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                setViewMode('map');
+                setTimeout(() => initializeMap(), 100);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Map className="h-4 w-4" />
+              Map View
+            </Button>
+          </div>
+
           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
             {pendingFranchises.filter(f => f.status === "Pending Approval").length} Pending
           </Badge>
         </div>
       </div>
 
-      {/* Pending Proposals */}
-      {pendingFranchises.length === 0 ? (
-        <Card className="p-8 text-center">
-          <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-          <h3 className="text-lg font-semibold mb-2">No Pending Proposals</h3>
-          <p className="text-stone-600 dark:text-stone-400">
-            All franchise proposals have been reviewed. New proposals will appear here.
-          </p>
-        </Card>
-      ) : (
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <div className="space-y-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Territory Management</h3>
+              <div className="flex items-center gap-2 text-sm text-stone-600">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded-full opacity-60"></div>
+                  <span>Available Areas</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full opacity-60"></div>
+                  <span>Restricted Areas</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Map Container */}
+            <div className="h-96 bg-gray-100 dark:bg-stone-800 rounded-lg relative">
+              <div
+                ref={setMapRef}
+                className="w-full h-full rounded-lg"
+              />
+
+              {!map && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center space-y-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto"></div>
+                    <p className="text-sm text-muted-foreground">Loading map...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Area Management Controls */}
+            {restrictedAreas.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">Restricted Areas</h4>
+                <div className="space-y-2">
+                  {restrictedAreas.map((area) => (
+                    <div key={area.id} className="flex items-center justify-between p-2 bg-stone-50 dark:bg-stone-800 rounded">
+                      <span className="text-sm">
+                        {area.type === 'circle' ? 'Circular Area' : 'Polygon Area'} #{area.id}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={area.restricted ? "destructive" : "outline"}
+                          onClick={() => toggleAreaRestriction(area.id)}
+                        >
+                          {area.restricted ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                          {area.restricted ? 'Remove Restriction' : 'Add Restriction'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeArea(area.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Requests View */}
+      {viewMode === 'requests' && (
+        <>
+          {/* Pending Proposals */}
+          {pendingFranchises.length === 0 ? (
+            <Card className="p-8 text-center">
+              <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+              <h3 className="text-lg font-semibold mb-2">No Pending Proposals</h3>
+              <p className="text-stone-600 dark:text-stone-400">
+                All franchise proposals have been reviewed. New proposals will appear here.
+              </p>
+            </Card>
+          ) : (
         <div className="grid gap-6">
           {pendingFranchises.map((franchise) => (
             <Card key={franchise._id} className="p-6">
@@ -285,6 +470,8 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
             </Card>
           ))}
         </div>
+          )}
+        </>
       )}
     </div>
   );

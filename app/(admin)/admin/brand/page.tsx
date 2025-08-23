@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, CheckCircle, XCircle, AlertTriangle, Eye } from "lucide-react";
 import Table from "@/components/ui/table/Table";
 import TableHead from "@/components/ui/table/TableHead";
 import TableBody from "@/components/ui/table/TableBody";
@@ -18,7 +18,8 @@ import TableRow from "@/components/ui/table/TableRow";
 import TableCell from "@/components/ui/table/TableCell";
 import TableHeaderCell from "@/components/ui/table/TableHeaderCell";
 import { api } from "@/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { toast } from "sonner";
 import { AdminTableSkeleton } from "@/components/skeletons/TableSkeleton";
 
 type BusinessStatus = "all" | "Active" | "Inactive" | "Rejected" | "Deleted";
@@ -34,6 +35,8 @@ type Business = {
   costPerArea?: number;
   min_area?: number;
   status: string;
+  verificationStatus?: string;
+  adminNotes?: string;
   _creationTime: number;
   updatedAt: number;
 };
@@ -48,6 +51,8 @@ type Franchise = {
 function AdminBusiness() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<BusinessStatus>("all");
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [loading, setLoading] = useState<string | null>(null);
 
   // Fetch all data using useQuery for real-time updates
   const businessesData = useQuery(api.businesses.listAll, {}) || [];
@@ -61,6 +66,41 @@ function AdminBusiness() {
 
   // Cast the businesses data to the correct type
   const businesses = businessesData as unknown as Business[];
+
+  // Verification mutation
+  const updateVerificationStatus = useMutation(api.businesses.updateVerificationStatus);
+
+  // Handle business verification
+  const handleVerifyBusiness = async (businessId: string, action: 'verify' | 'reject') => {
+    setLoading(businessId);
+    try {
+      await updateVerificationStatus({
+        businessId: businessId as any,
+        verificationStatus: action === 'verify' ? 'verified' : 'rejected',
+        status: action === 'verify' ? 'Active' : 'Inactive'
+      });
+
+      toast.success(`Business ${action === 'verify' ? 'verified' : 'rejected'} successfully`);
+      setSelectedBusiness(null);
+    } catch (error) {
+      console.error('Error updating business verification:', error);
+      toast.error(`Failed to ${action} business`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // Get verification status badge
+  const getVerificationBadge = (verificationStatus?: string) => {
+    switch (verificationStatus) {
+      case 'verified':
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Verified</span>;
+      case 'rejected':
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Rejected</span>;
+      default:
+        return <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><AlertTriangle className="w-3 h-3 mr-1" />Pending</span>;
+    }
+  };
 
   // Filter and sort businesses
   const filteredBusinesses = useMemo(() => {
@@ -199,6 +239,7 @@ function AdminBusiness() {
               </TableHeaderCell>
               <TableHeaderCell>Business</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
+              <TableHeaderCell>Verification</TableHeaderCell>
               <TableHeaderCell>Approval</TableHeaderCell>
               <TableHeaderCell>Fundraising</TableHeaderCell>
               <TableHeaderCell>Launching</TableHeaderCell>
@@ -269,6 +310,9 @@ function AdminBusiness() {
                         {businessStatus}
                       </span>
                     </TableCell>
+                    <TableCell className="px-4 py-3 align-middle text-center">
+                      {getVerificationBadge(business.verificationStatus)}
+                    </TableCell>
                     {[
                       "Pending Approval",
                       "Funding",
@@ -320,11 +364,30 @@ function AdminBusiness() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Archive</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            Delete
+                          <DropdownMenuItem onClick={() => setSelectedBusiness(business)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Review Details
                           </DropdownMenuItem>
+                          {(!business.verificationStatus || business.verificationStatus === 'pending') && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleVerifyBusiness(business._id, 'verify')}
+                                disabled={loading === business._id}
+                                className="text-green-600"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Verify Business
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleVerifyBusiness(business._id, 'reject')}
+                                disabled={loading === business._id}
+                                className="text-red-600"
+                              >
+                                <XCircle className="w-4 h-4 mr-2" />
+                                Reject Business
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -335,6 +398,100 @@ function AdminBusiness() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Business Detail Modal */}
+      {selectedBusiness && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-stone-800 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Business Review: {selectedBusiness.name}</h2>
+                <Button variant="outline" onClick={() => setSelectedBusiness(null)}>
+                  Close
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Business Name</label>
+                      <p className="text-base">{selectedBusiness.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Category</label>
+                      <p className="text-base">{selectedBusiness.category?.name || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Industry</label>
+                      <p className="text-base">{selectedBusiness.industry?.name || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Current Status</label>
+                      <p className="text-base">{selectedBusiness.status}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verification Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Verification Status</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Verification Status</label>
+                      <div className="mt-1">{getVerificationBadge(selectedBusiness.verificationStatus)}</div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Cost per Area</label>
+                      <p className="text-base">${selectedBusiness.costPerArea || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Minimum Area</label>
+                      <p className="text-base">{selectedBusiness.min_area || 'Not set'} sq ft</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Created</label>
+                      <p className="text-base">{new Date(selectedBusiness._creationTime).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin Notes */}
+              {selectedBusiness.adminNotes && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-2">Admin Notes</h3>
+                  <p className="text-base bg-gray-50 dark:bg-stone-700 p-3 rounded">{selectedBusiness.adminNotes}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {(!selectedBusiness.verificationStatus || selectedBusiness.verificationStatus === 'pending') && (
+                <div className="flex items-center gap-4 mt-6 pt-6 border-t">
+                  <Button
+                    onClick={() => handleVerifyBusiness(selectedBusiness._id, 'verify')}
+                    disabled={loading === selectedBusiness._id}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Verify Business
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleVerifyBusiness(selectedBusiness._id, 'reject')}
+                    disabled={loading === selectedBusiness._id}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Reject Business
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

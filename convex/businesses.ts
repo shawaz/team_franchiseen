@@ -324,4 +324,45 @@ export const deleteBusiness = mutation({
     await ctx.db.delete(args.businessId);
     return true;
   },
-}); 
+});
+
+// Admin function to update business verification status
+export const updateVerificationStatus = mutation({
+  args: {
+    businessId: v.id("businesses"),
+    verificationStatus: v.string(), // "pending", "verified", "rejected"
+    status: v.optional(v.string()), // "active", "inactive"
+    adminNotes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    // TODO: Add admin role check here
+    // For now, we'll allow any authenticated user (should be restricted to admins)
+
+    const business = await ctx.db.get(args.businessId);
+    if (!business) throw new Error("Business not found");
+
+    const updateFields: any = {
+      verificationStatus: args.verificationStatus,
+      updatedAt: Date.now(),
+    };
+
+    if (args.status) {
+      updateFields.status = args.status;
+    }
+
+    if (args.adminNotes) {
+      updateFields.adminNotes = args.adminNotes;
+    }
+
+    // If verified, set default status to active
+    if (args.verificationStatus === "verified" && !args.status) {
+      updateFields.status = "active";
+    }
+
+    await ctx.db.patch(args.businessId, updateFields);
+    return true;
+  },
+});

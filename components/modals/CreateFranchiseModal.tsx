@@ -22,50 +22,6 @@ interface TypeformCreateFranchiseModalProps {
   brandSlug?: string; // If provided, skip step 1 and use this business
 }
 
-// Mock data for popular franchises
-const popularFranchises = [
-  {
-    id: 1,
-    name: "McDonald's",
-    logo: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop&crop=center",
-    category: "Fast Food",
-    investment: "$1.5M - $2.3M",
-    outlets: "39,000+",
-    rating: 4.5,
-    description: "World's largest fast-food restaurant chain"
-  },
-  {
-    id: 2,
-    name: "Subway",
-    logo: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=100&h=100&fit=crop&crop=center",
-    category: "Fast Food",
-    investment: "$116K - $263K",
-    outlets: "37,000+",
-    rating: 4.2,
-    description: "Fresh sandwiches and healthy options"
-  },
-  {
-    id: 3,
-    name: "Starbucks",
-    logo: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=100&h=100&fit=crop&crop=center",
-    category: "Coffee",
-    investment: "$315K - $700K",
-    outlets: "33,000+",
-    rating: 4.6,
-    description: "Premium coffee and beverages"
-  },
-  {
-    id: 4,
-    name: "KFC",
-    logo: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop&crop=center",
-    category: "Fast Food",
-    investment: "$1.4M - $2.7M",
-    outlets: "24,000+",
-    rating: 4.3,
-    description: "Finger lickin' good chicken"
-  }
-];
-
 interface Business {
   _id: Id<"businesses">;
   name: string;
@@ -560,13 +516,13 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               className="h-full flex flex-col"
             >
               <div className="p-6 pb-4 border-b border-gray-200 dark:border-stone-700">
-                <div className="text-center space-y-2">
+                {/* <div className="text-center space-y-2">
                   <h1 className="text-2xl font-bold">Choose your franchise brand</h1>
                   <p className="text-muted-foreground">Select from available franchise opportunities</p>
-                </div>
+                </div> */}
 
                 {/* Search Bar */}
-                <div className="relative mt-6">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search businesses..."
@@ -585,30 +541,30 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                   <button
                     key={business._id}
                     onClick={() => selectBusiness(business)}
-                    className={`w-full p-6 border-2 rounded-lg text-left transition-all ${
+                    className={`w-full p-4 border-2 text-left transition-all ${
                       formData.selectedBusiness?._id === business._id
                         ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20'
                         : 'border-gray-200 dark:border-stone-700 hover:border-gray-300 dark:hover:border-stone-600'
                     }`}
                   >
-                    <div className="flex items-start gap-6">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-stone-700 flex-shrink-0">
+                    <div className="flex items-center gap-6">
+                      <div className="w-16 h-16  overflow-hidden bg-gray-100 dark:bg-stone-700 flex-shrink-0">
                         <Image
                           src={business.logoUrl || "/logo/logo-2.svg"}
                           alt={business.name}
-                          width={80}
-                          height={80}
+                          width={120}
+                          height={120}
                           className="object-contain"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-semibold text-xl">{business.name}</h3>
+                        <div className="flex items-start justify-between">
+                          <h3 className="font-semibold text-lg">{business.name}</h3>
                           {formData.selectedBusiness?._id === business._id && (
                             <Check className="h-6 w-6 text-yellow-600 flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-base text-muted-foreground mb-4">
+                        <p className="text-base text-muted-foreground mb-1">
                           {business.category?.name} • {business.industry?.name}
                         </p>
                         <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -694,6 +650,31 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               <div className="flex-1 relative">
                 <div ref={mapRef} className="w-full h-full" />
 
+                {/* Center Map Pin */}
+                {map && !formData.location && (
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <MapPin className="h-8 w-8 text-blue-600 drop-shadow-lg" />
+                  </div>
+                )}
+
+                {/* Select Location Button */}
+                {map && !formData.location && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <Button
+                      onClick={() => {
+                        const center = map.getCenter();
+                        if (center) {
+                          handleLocationSelect(center.lat(), center.lng());
+                        }
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                    >
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Select This Location
+                    </Button>
+                  </div>
+                )}
+
                 {/* Loading overlay */}
                 {!map && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-stone-800">
@@ -721,7 +702,23 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                           </p>
                         )}
                       </div>
-                      {!conflictingLocation && <Check className="h-5 w-5 text-green-600 flex-shrink-0" />}
+                      <div className="flex items-center gap-2">
+                        {!conflictingLocation && <Check className="h-5 w-5 text-green-600 flex-shrink-0" />}
+                        <Button
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, location: null }));
+                            if (marker) {
+                              marker.setMap(null);
+                              setMarker(null);
+                            }
+                            setConflictingLocation(false);
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Change
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -794,22 +791,22 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Cost per Sq Ft (Set by Brand Owner)</label>
+                    <label className="text-sm font-medium mb-2 block">Cost per Sq Ft</label>
                     <div className="h-12 px-3 py-2 bg-gray-50 dark:bg-stone-800 border border-gray-200 dark:border-stone-700 rounded-md flex items-center text-lg">
                       {formData.selectedBusiness?.costPerArea ?
                         formatAmount(formData.selectedBusiness.costPerArea) :
                         'Not set by brand owner'
                       }
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    {/* <p className="text-xs text-muted-foreground mt-1">
                       This rate is configured by the brand owner in their account settings
-                    </p>
+                    </p> */}
                   </div>
                 </div>
 
                 {/* Investment Calculation */}
                 {formData.locationDetails.sqft && formData.selectedBusiness?.costPerArea && (
-                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800  p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Calculator className="h-5 w-5 text-yellow-600" />
                       <h3 className="font-medium text-yellow-800 dark:text-yellow-200">Investment Calculation</h3>
@@ -825,7 +822,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
                 {/* Warning if no cost per area set */}
                 {formData.locationDetails.sqft && !formData.selectedBusiness?.costPerArea && (
-                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                  <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800  p-4">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-orange-600" />
                       <div>
@@ -839,7 +836,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 )}
 
                 {/* Ownership Toggle */}
-                <div className="bg-gray-50 dark:bg-stone-800 rounded-lg p-4">
+                <div className="bg-gray-50 dark:bg-stone-800  p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium">Property Ownership</h3>
@@ -925,7 +922,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               </div>
 
               {/* Investment Amount Display */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 text-center border border-blue-200 dark:border-blue-800">
+              <div className="bg-gradient-to-br from-stone-50 to-indigo-50 dark:from-stone-950/20 dark:to-yellow-950/20 p-6 text-center border border-stone-200 dark:border-stone-800">
                 <div className="text-4xl font-bold text-primary mb-2">
                   ₹{(formData.investment.selectedShares * formData.investment.sharePrice * 83 * 1.2).toLocaleString()}
                 </div>
@@ -936,7 +933,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
               {/* Investment Details */}
               <div className="space-y-6">
-                <div className="bg-white dark:bg-stone-800 rounded-lg p-4 border shadow-sm">
+                <div className="bg-white dark:bg-stone-800  p-4 border shadow-sm">
                   <h3 className="font-medium mb-4">Investment Breakdown</h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
@@ -969,7 +966,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-stone-800 rounded-lg p-4 border shadow-sm">
+                  <div className="bg-white dark:bg-stone-800  p-4 border shadow-sm">
                     <Slider
                       value={[formData.investment.selectedShares]}
                       onValueChange={(value) => updateInvestment(value[0])}
@@ -1023,7 +1020,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 </div>
 
                 {/* Summary */}
-                <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                <div className="bg-green-50 dark:bg-green-950/20  p-4 border border-green-200 dark:border-green-800">
                   <div className="flex items-start gap-3">
                     <TrendingUp className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
@@ -1054,7 +1051,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
               <div className="space-y-6">
                 {/* Investment Summary */}
-                <div className="bg-stone-50 dark:bg-stone-800 rounded-lg p-6">
+                <div className="bg-stone-50 dark:bg-stone-800  p-6">
                   <h3 className="text-lg font-semibold mb-4">Final Investment Summary</h3>
 
                   <div className="space-y-3">
@@ -1085,7 +1082,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
                 {/* Wallet Connection */}
                 {!connected && (
-                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800  p-4">
                     <div className="flex items-center gap-3">
                       <Wallet className="h-5 w-5 text-yellow-600" />
                       <div>
@@ -1099,7 +1096,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 )}
 
                 {/* Terms and Conditions */}
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800  p-4">
                   <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Important Information</h4>
                   <div className="text-sm text-blue-600 dark:text-blue-400 space-y-2">
                     <p>• Your franchise proposal will be submitted for brand owner approval</p>
@@ -1131,7 +1128,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               </div>
 
               {/* Invoice */}
-              <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg p-6">
+              <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700  p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold">Franchise Proposal Invoice</h3>
                   <span className="text-sm text-muted-foreground">#{invoice.id}</span>
@@ -1169,7 +1166,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               </div>
 
               {/* Next Steps */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800  p-4">
                 <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">What happens next?</h4>
                 <div className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
                   <p>1. Brand owner will review your proposal</p>
