@@ -39,7 +39,6 @@ export default function RootLayout({
         />
         <AppProviders>
           {children}
-          <FooterMobile />
         </AppProviders>
       </body>
     </html>

@@ -163,7 +163,7 @@ Always be friendly and professional. If you can't answer something, offer to con
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-96 max-w-[calc(100vw-2rem)] p-6">
+      <div className="bg-white shadow-2xl w-96 max-w-[calc(100vw-2rem)] p-6">
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Voice Assistant</h2>

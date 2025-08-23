@@ -40,98 +40,121 @@ export default function LocationMapStep({ onNext, selectedBrand, location }: Loc
   // Initialize Google Maps
   useEffect(() => {
     const initMap = () => {
-      if (!mapRef.current || !window.google) return;
+      if (!mapRef.current || !window.google) {
+        console.error('Map initialization failed: mapRef or google not available');
+        return;
+      }
 
-      const defaultCenter = selectedLocation?.coordinates || { lat: 19.0760, lng: 72.8777 }; // Mumbai
-      
-      const mapInstance = new google.maps.Map(mapRef.current, {
-        center: defaultCenter,
-        zoom: 12,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }]
+      try {
+        const defaultCenter = selectedLocation?.coordinates || { lat: 19.0760, lng: 72.8777 }; // Mumbai
+
+        const mapInstance = new google.maps.Map(mapRef.current, {
+          center: defaultCenter,
+          zoom: 12,
+          styles: [
+            {
+              featureType: 'poi',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }]
+            }
+          ]
+        });
+
+        setMap(mapInstance);
+        console.log('Google Maps initialized successfully');
+
+        // Add click listener to map
+        mapInstance.addListener('click', (event: google.maps.MapMouseEvent) => {
+          if (event.latLng) {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            handleLocationSelect(lat, lng);
           }
-        ]
-      });
+        });
 
-      setMap(mapInstance);
+        // Add existing outlets as markers
+        const outlets = sampleOutlets.map(outlet => {
+          const outletMarker = new google.maps.Marker({
+            position: { lat: outlet.lat, lng: outlet.lng },
+            map: mapInstance,
+            title: `${selectedBrand?.name} - ${outlet.name}`,
+            icon: {
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
+                  <circle cx="12" cy="9" r="2.5" fill="white"/>
+                </svg>
+              `),
+              scaledSize: new google.maps.Size(24, 24),
+            }
+          });
 
-      // Add click listener to map
-      mapInstance.addListener('click', (event: google.maps.MapMouseEvent) => {
-        if (event.latLng) {
-          const lat = event.latLng.lat();
-          const lng = event.latLng.lng();
-          handleLocationSelect(lat, lng);
+          // Add info window
+          const infoWindow = new google.maps.InfoWindow({
+            content: `
+              <div class="p-2">
+                <h3 class="font-semibold">${selectedBrand?.name}</h3>
+                <p class="text-sm text-gray-600">${outlet.name}</p>
+              </div>
+            `
+          });
+
+          outletMarker.addListener('click', () => {
+            infoWindow.open(mapInstance, outletMarker);
+          });
+
+          return outletMarker;
+        });
+
+        setOutletMarkers(outlets);
+
+        // Add selected location marker if exists
+        if (selectedLocation) {
+          const locationMarker = new google.maps.Marker({
+            position: selectedLocation.coordinates,
+            map: mapInstance,
+            title: 'Selected Location',
+            icon: {
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EF4444"/>
+                  <circle cx="12" cy="9" r="2.5" fill="white"/>
+                </svg>
+              `),
+              scaledSize: new google.maps.Size(32, 32),
+            }
+          });
+          setMarker(locationMarker);
         }
-      });
-
-      // Add existing outlets as markers
-      const outlets = sampleOutlets.map(outlet => {
-        const outletMarker = new google.maps.Marker({
-          position: { lat: outlet.lat, lng: outlet.lng },
-          map: mapInstance,
-          title: `${selectedBrand?.name} - ${outlet.name}`,
-          icon: {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#10B981"/>
-                <circle cx="12" cy="9" r="2.5" fill="white"/>
-              </svg>
-            `),
-            scaledSize: new google.maps.Size(24, 24),
-          }
-        });
-
-        // Add info window
-        const infoWindow = new google.maps.InfoWindow({
-          content: `
-            <div class="p-2">
-              <h3 class="font-semibold">${selectedBrand?.name}</h3>
-              <p class="text-sm text-gray-600">${outlet.name}</p>
-            </div>
-          `
-        });
-
-        outletMarker.addListener('click', () => {
-          infoWindow.open(mapInstance, outletMarker);
-        });
-
-        return outletMarker;
-      });
-
-      setOutletMarkers(outlets);
-
-      // Add selected location marker if exists
-      if (selectedLocation) {
-        const locationMarker = new google.maps.Marker({
-          position: selectedLocation.coordinates,
-          map: mapInstance,
-          title: 'Selected Location',
-          icon: {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EF4444"/>
-                <circle cx="12" cy="9" r="2.5" fill="white"/>
-              </svg>
-            `),
-            scaledSize: new google.maps.Size(32, 32),
-          }
-        });
-        setMarker(locationMarker);
+      } catch (error) {
+        console.error('Error initializing Google Maps:', error);
       }
     };
 
     // Load Google Maps script if not already loaded
     if (!window.google) {
+      console.log('Loading Google Maps script...');
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+      if (!apiKey) {
+        console.error('Google Maps API key is not configured');
+        return;
+      }
+
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onload = initMap;
+      script.onload = () => {
+        console.log('Google Maps script loaded successfully');
+        initMap();
+      };
+      script.onerror = (error) => {
+        console.error('Failed to load Google Maps script:', error);
+      };
       document.head.appendChild(script);
     } else {
+      console.log('Google Maps already loaded, initializing map...');
       initMap();
     }
   }, [selectedBrand, selectedLocation]);

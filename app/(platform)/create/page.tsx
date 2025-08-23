@@ -187,35 +187,55 @@ export default function CreateFranchisePage() {
   useEffect(() => {
     const loadGoogleMaps = () => {
       if (window.google) {
+        console.log('Google Maps already loaded, initializing...');
         initializeMap();
         return;
       }
 
+      console.log('Loading Google Maps script...');
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+      if (!apiKey) {
+        console.error('Google Maps API key is not configured');
+        return;
+      }
+
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onload = initializeMap;
+      script.onload = () => {
+        console.log('Google Maps script loaded successfully');
+        initializeMap();
+      };
+      script.onerror = (error) => {
+        console.error('Failed to load Google Maps script:', error);
+      };
       document.head.appendChild(script);
     };
 
     const initializeMap = () => {
-      if (!mapRef.current || !window.google) return;
+      if (!mapRef.current || !window.google) {
+        console.error('Map initialization failed: mapRef or google not available');
+        return;
+      }
 
-      // DIFC coordinates (Dubai International Financial Centre)
-      const difcLocation = { lat: 25.2048, lng: 55.2708 };
+      try {
+        // DIFC coordinates (Dubai International Financial Centre)
+        const difcLocation = { lat: 25.2048, lng: 55.2708 };
 
-      const mapInstance = new window.google.maps.Map(mapRef.current, {
-        center: difcLocation,
-        zoom: 13,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      });
+        const mapInstance = new window.google.maps.Map(mapRef.current, {
+          center: difcLocation,
+          zoom: 13,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+        });
 
-      setMap(mapInstance);
+        setMap(mapInstance);
+        console.log('Google Maps initialized successfully');
 
-      // Add existing franchise locations with custom mappin icon
+        // Add existing franchise locations with custom mappin icon
       const existingLocations = [
         { lat: 25.2048, lng: 55.2708, name: "Sharif - DIFC" },
         { lat: 25.1972, lng: 55.2744, name: "Sharif - Downtown" },
@@ -289,6 +309,9 @@ export default function CreateFranchisePage() {
             console.log("Geolocation failed, using DIFC as default location");
           }
         );
+      }
+      } catch (error) {
+        console.error('Error initializing Google Maps:', error);
       }
     };
 

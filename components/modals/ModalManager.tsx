@@ -7,6 +7,7 @@ import SOLPaymentModal from '@/components/franchise/SOLPaymentModal';
 import CreateFranchiseModal from '@/components/modals/CreateFranchiseModalTest';
 import TypeformCreateFranchiseModal from '@/components/modals/CreateFranchiseModal';
 import TypeformRegisterBrandModal from '@/components/modals/RegisterBrandModal';
+import UserOnboardingModal from '@/components/modals/UserOnboardingModal';
 import MobileMenuModal from '@/components/modals/MobileMenuModal';
 import AccountSelectionModal from '@/components/modals/AccountSelectionModal';
 import SettingsModal from '@/components/modals/SettingsModal';
@@ -79,6 +80,17 @@ const ModalManager: React.FC = () => {
       <TypeformRegisterBrandModal
         isOpen={true}
         onClose={closeModal}
+      />
+    );
+  }
+
+  // Render User Onboarding Modal
+  if (currentModal === 'userOnboarding') {
+    return (
+      <UserOnboardingModal
+        isOpen={true}
+        onClose={closeModal}
+        onComplete={modalData.userOnboarding?.onComplete}
       />
     );
   }

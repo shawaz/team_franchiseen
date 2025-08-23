@@ -30,13 +30,13 @@ import {
 import { useQuery, useMutation } from "convex/react";
 import EmailVerificationModal from "./EmailVerificationModal";
 import { api } from "../convex/_generated/api";
+import { useModal } from "@/contexts/ModalContext";
 import CreateBusinessModal from "./business/CreateBusinessModal";
 import { Id } from "../convex/_generated/dataModel";
 import LanguageCurrencyModal from "./LanguageCurrencyModal";
 import SettingsModal from "./modals/SettingsModal";
 import FilterModal, { FilterOptions } from "./modals/FilterModal";
 import { ThemeSwitcher } from "./theme-switcher";
-import { useModal } from "@/contexts/ModalContext";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
 import { SearchSkeleton } from "@/components/skeletons/FormSkeleton";
 
@@ -52,7 +52,7 @@ function Header() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Use modal context
-  const { openCreateFranchiseModal, openTypeformCreateFranchiseModal, openMobileMenuModal } = useModal();
+  const { openCreateFranchiseModal, openTypeformCreateFranchiseModal, openMobileMenuModal, openUserOnboardingModal } = useModal();
 
   // Function to handle create franchise click
   const handleCreateFranchiseClick = () => {
@@ -62,6 +62,16 @@ function Header() {
     } else {
       openCreateFranchiseModal();
     }
+  };
+
+  // Function to handle onboarding click
+  const handleOnboardingClick = () => {
+    openUserOnboardingModal({
+      onComplete: (userType) => {
+        // You could redirect to the appropriate dashboard here
+        console.log(`User completed onboarding as: ${userType}`);
+      }
+    });
   };
 
   // Use global currency context
@@ -577,11 +587,11 @@ function Header() {
                 <SignedOut>
                   <div className="flex items-center justify-end">
                     <button
-                      onClick={() => setIsEmailVerificationOpen(true)}
-                      className="cursor-pointer hidden md:block uppercase ml-4 px-8 py-2 rounded-full text-sm font-bold bg-neutral-800 hover:bg-yellow-700 text-stone-100 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-yellow-700 transition-colors duration-200"
-                      aria-label="Get Started"
+                      onClick={handleOnboardingClick}
+                      className="cursor-pointer hidden md:block uppercase ml-4 px-8 py-2 rounded-full text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 transition-colors duration-200"
+                      aria-label="Create Account"
                     >
-                      Get Started
+                      Create Account
                     </button>
                     <EmailVerificationModal
                       isOpen={isEmailVerificationOpen}

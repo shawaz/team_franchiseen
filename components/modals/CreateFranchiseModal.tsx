@@ -146,55 +146,77 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   }, [existingFranchiseLocations]);
 
   const initializeGoogleMaps = () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.error('Map ref not available');
+      return;
+    }
 
     if (!window.google) {
       // Load Google Maps script if not already loaded
+      console.log('Loading Google Maps script...');
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+      if (!apiKey) {
+        console.error('Google Maps API key is not configured');
+        toast.error('Google Maps API key is not configured. Please check your environment variables.');
+        return;
+      }
+
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log('Google Maps script loaded');
+        console.log('Google Maps script loaded successfully');
         initMap();
       };
-      script.onerror = () => {
-        console.error('Failed to load Google Maps script');
-        toast.error('Failed to load Google Maps. Please check your API key.');
+      script.onerror = (error) => {
+        console.error('Failed to load Google Maps script:', error);
+        toast.error('Failed to load Google Maps. Please check your API key and internet connection.');
       };
       document.head.appendChild(script);
     } else {
+      console.log('Google Maps already loaded, initializing map...');
       initMap();
     }
   };
 
   const initMap = () => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google) {
+      console.error('Map initialization failed: mapRef or google not available');
+      return;
+    }
 
-    const defaultCenter = { lat: 19.0760, lng: 72.8777 }; // Mumbai default
+    try {
+      const defaultCenter = { lat: 19.0760, lng: 72.8777 }; // Mumbai default
 
-    const mapInstance = new window.google.maps.Map(mapRef.current, {
-      center: defaultCenter,
-      zoom: 12,
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-    });
+      const mapInstance = new window.google.maps.Map(mapRef.current, {
+        center: defaultCenter,
+        zoom: 12,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
 
-    setMap(mapInstance);
+      setMap(mapInstance);
+      console.log('Google Maps initialized successfully');
 
-    // Add click listener to map
-    mapInstance.addListener('click', (event: any) => {
-      if (event.latLng) {
-        const lat = event.latLng.lat();
-        const lng = event.latLng.lng();
-        handleLocationSelect(lat, lng);
+      // Add click listener to map
+      mapInstance.addListener('click', (event: any) => {
+        if (event.latLng) {
+          const lat = event.latLng.lat();
+          const lng = event.latLng.lng();
+          handleLocationSelect(lat, lng);
+        }
+      });
+
+      // Add existing franchise markers
+      if (existingFranchiseLocations) {
+        addExistingFranchiseMarkers(mapInstance);
       }
-    });
-
-    // Add existing franchise markers
-    if (existingFranchiseLocations) {
-      addExistingFranchiseMarkers(mapInstance);
+    } catch (error) {
+      console.error('Error initializing Google Maps:', error);
+      toast.error('Failed to initialize Google Maps. Please try again.');
     }
   };
 

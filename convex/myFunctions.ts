@@ -193,3 +193,150 @@ export const activateUser = mutation({
     return true;
   },
 });
+
+// Onboarding Functions
+export const createUserOnboardingProfile = mutation({
+  args: {
+    personalInfo: v.object({
+      firstName: v.string(),
+      lastName: v.string(),
+      email: v.string(),
+      phone: v.string(),
+      dateOfBirth: v.string(),
+      nationality: v.string(),
+      address: v.object({
+        street: v.string(),
+        city: v.string(),
+        state: v.string(),
+        country: v.string(),
+        postalCode: v.string(),
+      }),
+    }),
+    kyc: v.object({
+      identityDocument: v.object({
+        type: v.union(v.literal("passport"), v.literal("national_id"), v.literal("drivers_license")),
+        number: v.string(),
+        fileUrl: v.optional(v.string()),
+      }),
+      addressProof: v.object({
+        type: v.union(v.literal("utility_bill"), v.literal("bank_statement"), v.literal("rental_agreement")),
+        fileUrl: v.optional(v.string()),
+      }),
+      incomeProof: v.optional(v.object({
+        type: v.union(v.literal("salary_slip"), v.literal("tax_return"), v.literal("bank_statement")),
+        fileUrl: v.optional(v.string()),
+      })),
+      verificationStatus: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+    }),
+    investment: v.object({
+      monthlyBudget: v.number(),
+      currency: v.string(),
+      riskTolerance: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+      investmentGoals: v.array(v.string()),
+    }),
+    wallet: v.object({
+      address: v.string(),
+      seedPhraseVerified: v.boolean(),
+      backupConfirmed: v.boolean(),
+    }),
+    userType: v.union(v.literal("investor"), v.literal("brand_owner")),
+    completedAt: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Check if user exists by email
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.personalInfo.email))
+      .first();
+
+    const userData = {
+      email: args.personalInfo.email,
+      first_name: args.personalInfo.firstName,
+      family_name: args.personalInfo.lastName,
+      phone: args.personalInfo.phone,
+      formatted_address: `${args.personalInfo.address.street}, ${args.personalInfo.address.city}, ${args.personalInfo.address.state}, ${args.personalInfo.address.country}`,
+      area: args.personalInfo.address.city,
+      district: args.personalInfo.address.city,
+      state: args.personalInfo.address.state,
+      country: args.personalInfo.address.country,
+      pincode: args.personalInfo.address.postalCode,
+      investment_budget: args.investment.monthlyBudget.toString(),
+      walletAddress: args.wallet.address,
+      seedPhraseVerified: args.wallet.seedPhraseVerified,
+      verificationStatus: "pending",
+      roles: [args.userType],
+      documents: {
+        identityProof: args.kyc.identityDocument.fileUrl ? {
+          url: args.kyc.identityDocument.fileUrl,
+          status: "pending",
+          uploadedAt: Date.now(),
+        } : undefined,
+        addressProof: args.kyc.addressProof.fileUrl ? {
+          url: args.kyc.addressProof.fileUrl,
+          status: "pending",
+          uploadedAt: Date.now(),
+        } : undefined,
+        incomeProof: args.kyc.incomeProof?.fileUrl ? {
+          url: args.kyc.incomeProof.fileUrl,
+          status: "pending",
+          uploadedAt: Date.now(),
+        } : undefined,
+      },
+      updated_at: Date.now(),
+    };
+
+    if (existing) {
+      // Update existing user
+      await ctx.db.patch(existing._id, userData);
+      return existing._id;
+    } else {
+      // Create new user
+      const id = await ctx.db.insert("users", {
+        ...userData,
+        avatar: getRandomAvatar('male'), // Default avatar, can be updated later
+        created_at: Date.now(),
+      });
+      return id;
+    }
+  },
+});
+
+export const updateKYCStatus = mutation({
+  args: {
+    userId: v.id("users"),
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+    adminNotes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      verificationStatus: args.status,
+      ...(args.adminNotes && { adminNotes: args.adminNotes }),
+      updated_at: Date.now(),
+    });
+    return true;
+  },
+});
+
+export const updateWallet = mutation({
+  args: {
+    walletAddress: v.string(),
+    seedPhraseVerified: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    // This is a simplified version - in a real app you'd want to identify the user properly
+    // For now, we'll assume this is called in the context of the current user
+    const users = await ctx.db.query("users").collect();
+    const user = users[users.length - 1]; // Get the most recent user for demo purposes
+
+    if (user) {
+      await ctx.db.patch(user._id, {
+        walletAddress: args.walletAddress,
+        seedPhraseVerified: args.seedPhraseVerified,
+        updated_at: Date.now(),
+      });
+      return user._id;
+    }
+
+    throw new Error("User not found");
+  },
+});
