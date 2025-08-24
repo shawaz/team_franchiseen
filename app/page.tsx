@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Bell, 
+import {
+  Bell,
   Globe,
   Phone
 } from 'lucide-react';
@@ -13,7 +13,6 @@ import VoiceAssistant from '@/components/help/VoiceAssistant';
 
 export default function LaunchingSoonPage() {
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-
      const handleVoiceClick = () => {
     setIsVoiceOpen(true);
   };
@@ -26,8 +25,6 @@ export default function LaunchingSoonPage() {
   const launchDate = new Date();
   launchDate.setDate(launchDate.getDate() + 30);
 
-  
-
   useEffect(() => {
     (async function () {
       const cal = await getCalApi({"namespace":"franchiseen"});
@@ -35,11 +32,11 @@ export default function LaunchingSoonPage() {
     })();
   }, [])
   
-
   return (
-    <div className=" bg-gradient-to-br from-blue-50 via-white to-yellow-50 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900">
+    <>
+
       {/* Hero Section */}
-      <section className=" bg-stone-900 h-screen flex flex-col items-center justify-center py-20 px-4">
+      <section className="  bg-stone-900  min-h-screen flex flex-col items-center justify-center py-20 px-4">
        <div className="flex items-center gap-3 pb-12">
               <Image
                 src="/logo.svg"
@@ -117,7 +114,7 @@ className="w-full mt-6 h-12 bg-yellow-600 hover:bg-yellow-700 text-white flex it
           <p className="text-stone-400 mb-4">
             The future of franchise investment and management
           </p>
-          <div className="flex items-center justify-center gap-6 text-sm text-stone-500">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 text-sm text-stone-500">
             <span className="flex items-center gap-1">
               <Globe className="w-4 h-4" />
               Global Platform
@@ -130,8 +127,10 @@ className="w-full mt-6 h-12 bg-yellow-600 hover:bg-yellow-700 text-white flex it
         </div>
       </footer>
       </section>
+
+      {/* Hero Section */}
       <VoiceAssistant isOpen={isVoiceOpen} onToggle={toggleVoice} />
 
-    </div>
+    </>
   );
 }

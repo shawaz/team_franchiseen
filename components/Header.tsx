@@ -16,6 +16,9 @@ import {
   PlusSquare,
   Compass,
   HelpCircle,
+  Shield,
+  Building2,
+  Building,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,6 +34,7 @@ import { useQuery, useMutation } from "convex/react";
 import EmailVerificationModal from "./EmailVerificationModal";
 import { api } from "../convex/_generated/api";
 import { useModal } from "@/contexts/ModalContext";
+import { useRouter } from 'next/navigation';
 import CreateBusinessModal from "./business/CreateBusinessModal";
 import { Id } from "../convex/_generated/dataModel";
 import LanguageCurrencyModal from "./LanguageCurrencyModal";
@@ -66,10 +70,18 @@ function Header() {
 
   // Function to handle onboarding click
   const handleOnboardingClick = () => {
+    // First show email verification, then onboarding after successful auth
+    setIsEmailVerificationOpen(true);
+  };
+
+  // Function to handle successful email verification
+  const handleEmailVerificationSuccess = () => {
+    // Close email modal and open onboarding
+    setIsEmailVerificationOpen(false);
     openUserOnboardingModal({
       onComplete: (userType) => {
-        // You could redirect to the appropriate dashboard here
         console.log(`User completed onboarding as: ${userType}`);
+        // Navigation to /home is handled in the modal itself
       }
     });
   };
@@ -99,6 +111,12 @@ function Header() {
     api.myFunctions.getUserByEmail,
     email ? { email } : "skip",
   );
+
+  // Check if user has admin access
+  const hasAdminAccess = useQuery(api.users.hasAdminAccess, {});
+
+  // Check if user has franchiseen.com email for admin access
+  const isFranchiseenEmail = email?.endsWith('@franchiseen.com') || false;
 
   const searchResults = useQuery(
     api.businesses.searchByName,
@@ -306,7 +324,7 @@ function Header() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 w-2/3">
                 {/* Logo */}
-                <Link href="/" className="flex items-center cursor-pointer ">
+                <Link href="/home" className="flex items-center cursor-pointer ">
                   <div className="flex items-center cursor-pointer">
                     <Image
                       src="/logo.svg"
@@ -552,7 +570,23 @@ function Header() {
                           </Link>
                         </div>
 
-                        {/* Settings Menu */}
+                        {/* Admin Dashboard Link - Only show for admin users or franchiseen.com emails */}
+                        {(hasAdminAccess || isFranchiseenEmail) && (
+                          <div className="border-t">
+                            <Link
+                              href="/admin/home/tasks"
+                              className="flex items-center gap-4 px-6 py-3 text-gray-700 dark:text-gray-100 dark:hover:bg-stone-900/30 hover:bg-gray-50 transition-colors"
+                              onClick={() => setIsProfileOpen(false)}
+                            >
+                              <Building className="h-5 w-5 dark:text-gray-400 text-gray-400" />
+                              <span className="text-sm font-medium">
+                                Company Dashboard
+                              </span>
+                            </Link>
+                          </div>
+                        )}
+
+                         {/* Settings Menu */}
                         <div className="border-t">
                           <button
                             onClick={() => {
@@ -568,7 +602,6 @@ function Header() {
                             </span>
                           </button>
                         </div>
-
                        
                         <div className="border-t">
                           <SignOutButton>
@@ -596,6 +629,7 @@ function Header() {
                     <EmailVerificationModal
                       isOpen={isEmailVerificationOpen}
                       onClose={() => setIsEmailVerificationOpen(false)}
+                      onSuccess={handleEmailVerificationSuccess}
                     />
                   </div>
                 </SignedOut>

@@ -19,6 +19,18 @@ import { useModal } from "@/contexts/ModalContext";
 function FooterMobile() {
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
   const { openTypeformRegisterBrandModal, openTypeformCreateFranchiseModal, openUserOnboardingModal } = useModal();
+
+  // Function to handle successful email verification
+  const handleEmailVerificationSuccess = () => {
+    // Close email modal and open onboarding
+    setIsEmailVerificationOpen(false);
+    openUserOnboardingModal({
+      onComplete: (userType) => {
+        console.log(`User completed onboarding as: ${userType}`);
+        // Navigation to /home is handled in the modal itself
+      }
+    });
+  };
   const pathname = usePathname();
 
   // Function to check if a path is active
@@ -67,11 +79,7 @@ function FooterMobile() {
       <SignedOut>
         <div className="px-4 pt-2 pb-2 ">
           <button
-            onClick={() => openUserOnboardingModal({
-              onComplete: (userType) => {
-                console.log(`User completed onboarding as: ${userType}`);
-              }
-            })}
+            onClick={() => setIsEmailVerificationOpen(true)}
             className="cursor-pointer uppercase w-full px-4 py-3 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 transition-colors duration-200"
             aria-label="Create Account"
           >
@@ -82,6 +90,7 @@ function FooterMobile() {
         <EmailVerificationModal
           isOpen={isEmailVerificationOpen}
           onClose={() => setIsEmailVerificationOpen(false)}
+          onSuccess={handleEmailVerificationSuccess}
         />
       </SignedOut>
 

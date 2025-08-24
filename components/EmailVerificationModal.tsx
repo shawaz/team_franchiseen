@@ -7,6 +7,7 @@ import { useSignUp, useSignIn } from '@clerk/nextjs';
 import { useSolOnly } from '../contexts/SolOnlyContext';
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface EmailCodeFactor {
   strategy: "email_code";
@@ -24,6 +25,9 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
   const { currency } = useSolOnly();
   const { isLoaded: signUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
   const { isLoaded: signInLoaded, signIn, setActive: setSignInActive } = useSignIn();
+
+  // Lock body scroll when modal is open
+  useBodyScrollLock(isOpen);
   const upsertProfile = useMutation(api.myFunctions.upsertUserProfile);
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -88,13 +92,13 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
         await signUp.create({
           emailAddress: email,
           unsafeMetadata: {
-            firstName,
-            familyName,
+            firstName: email.split('@')[0], // Use email prefix as default first name
+            familyName: '',
             monthlyInvestmentBudget: {
-              amount: monthlyBudget,
+              amount: '0',
               currency: currency.code
             },
-            dateOfBirth
+            dateOfBirth: ''
           }
         });
         
@@ -167,9 +171,9 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
           try {
             await upsertProfile({
               email,
-              gender,
-              first_name: firstName,
-              family_name: familyName,
+              gender: 'male', // Default gender
+              first_name: email.split('@')[0], // Use email prefix as first name
+              family_name: '',
               location: '',
               formatted_address: '',
               area: '',
@@ -177,8 +181,8 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
               state: '',
               country: '',
               pincode: '',
-              monthly_income: monthlyIncome,
-              investment_budget: monthlyBudget,
+              monthly_income: '0',
+              investment_budget: '0',
               phone: '',
             });
             onSuccess?.();
@@ -319,128 +323,10 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
                         />
                       </div>
 
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label htmlFor="first-name" className="block text-sm font-medium text-primary dark:text-primary-light mb-2">
-                            First Name
-                          </label>
-                          <input
-                            type="text"
-                            id="first-name"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="First name"
-                            className="w-full h-14 px-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-lg"
-                            required
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label htmlFor="family-name" className="block text-sm font-medium text-primary dark:text-primary-light mb-2">
-                            Family Name
-                          </label>
-                          <input
-                            type="text"
-                            id="family-name"
-                            value={familyName}
-                            onChange={(e) => setFamilyName(e.target.value)}
-                            placeholder="Family name"
-                            className="w-full h-14 px-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-lg"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label htmlFor="monthly-income" className="block text-sm font-medium text-primary dark:text-primary-light mb-2">
-                            Monthly Income ({currency.code})
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                              {currency.symbol}
-                            </span>
-                            <input
-                              type="number"
-                              id="monthly-income"
-                              value={monthlyIncome}
-                              onChange={(e) => setMonthlyIncome(e.target.value)}
-                              placeholder="Income"
-                              className="w-full h-14 pl-8 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-lg"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <label htmlFor="monthly-budget" className="block text-sm font-medium text-primary dark:text-primary-light mb-2">
-                            Monthly Investment ({currency.code})
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                              {currency.symbol}
-                            </span>
-                            <input
-                              type="number"
-                              id="monthly-budget"
-                              value={monthlyBudget}
-                              onChange={(e) => setMonthlyBudget(e.target.value)}
-                              placeholder="Investment"
-                              className="w-full h-14 pl-8 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-lg"
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-primary dark:text-primary-light mb-2">
-                            Gender
-                          </label>
-                          <div className="flex gap-4">
-                            <button
-                              type="button"
-                              onClick={() => setGender('male')}
-                              className={`flex-1 h-14 px-4 rounded-lg border ${
-                                gender === 'male'
-                                  ? 'bg-stone-800 text-white border-stone-800'
-                                  : 'bg-white dark:bg-stone-700 border-gray-300 dark:border-stone-600 text-gray-700 dark:text-gray-300'
-                              } transition-colors focus:outline-none focus:ring-2 focus:ring-primary`}
-                            >
-                              Male
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setGender('female')}
-                              className={`flex-1 h-14 px-4 rounded-lg border ${
-                                gender === 'female'
-                                  ? 'bg-stone-800 text-white border-stone-800'
-                                  : 'bg-white dark:bg-stone-700 border-gray-300 dark:border-stone-600 text-gray-700 dark:text-gray-300'
-                              } transition-colors focus:outline-none focus:ring-2 focus:ring-primary`}
-                            >
-                              Female
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <label htmlFor="date-of-birth" className="block text-sm font-medium text-primary dark:text-primary-light mb-2">
-                            Date of Birth
-                          </label>
-                          <input
-                            type="date"
-                            id="date-of-birth"
-                            value={dateOfBirth}
-                            onChange={(e) => setDateOfBirth(e.target.value)}
-                            max={new Date().toISOString().split('T')[0]}
-                            className="w-full h-14 px-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-lg"
-                            required
-                          />
-                        </div>
-                      </div>
-
                       <div id="clerk-captcha" className="mt-4" />
                       <button
                         type="submit"
-                        disabled={loading || !email || !firstName || !familyName || !monthlyBudget || !dateOfBirth || !monthlyIncome}
+                        disabled={loading || !email}
                         className="w-full flex items-center justify-center bg-stone-900 hover:bg-stone-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors dark:bg-white dark:text-stone-800 dark:hover:bg-stone-300 h-14 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loading ? 'Sending...' : 'Continue'}

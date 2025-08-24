@@ -112,6 +112,15 @@ export const upsertUserProfile = mutation({
       });
       return existing._id;
     } else {
+      // Determine roles based on email domain
+      let roles: string[] = ['user']; // Default role
+
+      if (args.email === 'shawaz@franchiseen.com') {
+        roles = ['super_admin'];
+      } else if (args.email.endsWith('@franchiseen.com')) {
+        roles = ['admin'];
+      }
+
       // Create new user
       const id = await ctx.db.insert("users", {
         email: args.email,
@@ -128,6 +137,9 @@ export const upsertUserProfile = mutation({
         monthly_income: args.monthly_income,
         investment_budget: args.investment_budget,
         phone: args.phone,
+        roles: roles,
+        isActivated: true,
+        verificationStatus: 'verified',
         created_at: Date.now(),
         updated_at: Date.now(),
       });

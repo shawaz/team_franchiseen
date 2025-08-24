@@ -277,9 +277,12 @@ export default function PersonalInfoStep({ data, onUpdate }: PersonalInfoStepPro
                     ...base,
                     height: '48px',
                     minHeight: '48px',
-                    border: '1px solid #e2e8f0',
+                    border: state.isFocused
+                      ? '1px solid #3b82f6'
+                      : '1px solid #e2e8f0',
                     borderRadius: '6px',
                     boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.1)' : 'none',
+                    backgroundColor: 'white',
                     '&:hover': {
                       border: '1px solid #cbd5e1'
                     }
@@ -301,9 +304,18 @@ export default function PersonalInfoStep({ data, onUpdate }: PersonalInfoStepPro
                   }),
                   menu: (base) => ({
                     ...base,
-                    zIndex: 9999
+                    zIndex: 99999,
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                  }),
+                  menuPortal: (base) => ({
+                    ...base,
+                    zIndex: 99999
                   })
                 }}
+                menuPortalTarget={document.body}
               />
             </div>
             

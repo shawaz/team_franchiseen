@@ -106,14 +106,6 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
               <Share />
             </Button>
 
-            {/* Management link for franchise owners */}
-            {convexUser && franchise && franchise.owner_id === convexUser._id && (
-              <Link href={`/${brandSlug}/${franchiseSlug}/manage`}>
-                <Button variant="outline" className="ml-3">
-                  Manage Franchise
-                </Button>
-              </Link>
-            )}
           </div>
         </div>
 

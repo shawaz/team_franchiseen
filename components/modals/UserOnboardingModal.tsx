@@ -20,6 +20,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useRouter } from 'next/navigation';
 
 // Import step components
 import PersonalInfoStep from '../onboarding/PersonalInfoStep';
@@ -134,8 +136,12 @@ const STEPS = [
 
 export default function UserOnboardingModal({ isOpen, onClose, onComplete }: UserOnboardingModalProps) {
   const { user } = useUser();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  // Lock body scroll when modal is open
+  useBodyScrollLock(isOpen);
   const [formData, setFormData] = useState<OnboardingFormData>({
     personalInfo: {
       firstName: user?.firstName || '',
@@ -213,6 +219,9 @@ export default function UserOnboardingModal({ isOpen, onClose, onComplete }: Use
       toast.success('Onboarding completed successfully! Your account is pending approval.');
       onComplete?.(userType);
       onClose();
+
+      // Navigate to home page
+      router.push('/home');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast.error('Failed to complete onboarding. Please try again.');
@@ -295,89 +304,98 @@ export default function UserOnboardingModal({ isOpen, onClose, onComplete }: Use
   const progress = (currentStep / STEPS.length) * 100;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-4xl max-h-[95vh] overflow-hidden">
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-stone-700">
-            <div className="flex items-center space-x-4">
-              <div className={`p-2 rounded-lg ${currentStepData.color} text-white`}>
-                <currentStepData.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {currentStepData.title}
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {currentStepData.description}
-                </p>
-              </div>
+    <div className="fixed inset-0 bg-white dark:bg-stone-900 z-50 flex flex-col">
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-stone-700">
+          <div className="flex items-center gap-3">
+            {currentStep > 1 && (
+              <button
+                onClick={prevStep}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              </button>
+            )}
+            <div className={`p-2 rounded-lg ${currentStepData.color} text-white`}>
+              <currentStepData.icon className="h-5 w-5" />
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                {currentStepData.title}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {currentStepData.description}
+              </p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-stone-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Step {currentStep} of {STEPS.length}
+            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {Math.round(progress)}% Complete
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-stone-700 rounded-full h-2">
+            <motion.div
+              className="bg-blue-600 h-2 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderStepContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Footer Navigation */}
+        {currentStep < STEPS.length && (
+          <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-stone-700">
+            <div className="flex-1">
+              {currentStep > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  className="flex items-center space-x-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Previous</span>
+                </Button>
+              )}
+            </div>
+
+            <Button
+              onClick={nextStep}
+              disabled={!canProceedToNext() || loading}
+              className="flex items-center space-x-2 min-w-[120px]"
+            >
+              <span>Continue</span>
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
-
-          {/* Progress Bar */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-stone-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Step {currentStep} of {STEPS.length}
-              </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {Math.round(progress)}% Complete
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-stone-700 rounded-full h-2">
-              <motion.div
-                className="bg-blue-600 h-2 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-          </div>
-
-          {/* Step Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderStepContent()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* Footer Navigation */}
-          {currentStep < STEPS.length && (
-            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-stone-700">
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                className="flex items-center space-x-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Previous</span>
-              </Button>
-
-              <Button
-                onClick={nextStep}
-                disabled={!canProceedToNext() || loading}
-                className="flex items-center space-x-2"
-              >
-                <span>Continue</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
+        )}
+      </div>
     </div>
   );
 }
