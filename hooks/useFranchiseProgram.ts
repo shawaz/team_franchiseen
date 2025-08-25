@@ -44,7 +44,7 @@ export function useFranchiseProgram() {
   // Initialize platform (admin only)
   const initializePlatform = useCallback(async (platformFeeBps: number) => {
     if (!program) {
-      toast.error('Wallet not connected');
+      toast.error('Blockchain program not available. Please check your wallet connection.');
       return null;
     }
 

@@ -1063,3 +1063,5 @@ export const IDL: FranchiseenChain = {
     }
   ]
 };
+
+

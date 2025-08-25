@@ -135,7 +135,24 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   // Initialize Google Maps when step 2 is reached
   useEffect(() => {
     if (currentStep === 2 && formData.selectedBusiness) {
-      initializeGoogleMaps();
+      // Add delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        if (mapRef.current) {
+          initializeGoogleMaps();
+        } else {
+          console.log('Map ref not ready, retrying...');
+          // Retry after another delay
+          const retryTimer = setTimeout(() => {
+            if (mapRef.current) {
+              initializeGoogleMaps();
+            } else {
+              console.error('Map ref still not available after retry');
+            }
+          }, 500);
+          return () => clearTimeout(retryTimer);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [currentStep, formData.selectedBusiness]);
 
@@ -149,6 +166,14 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   const initializeGoogleMaps = () => {
     if (!mapRef.current) {
       console.error('Map ref not available');
+      return;
+    }
+
+    // Check if the map container is visible
+    const mapContainer = mapRef.current;
+    const rect = mapContainer.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      console.error('Map container is not visible or has no dimensions');
       return;
     }
 

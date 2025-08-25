@@ -15,10 +15,12 @@ export class FranchiseProgram {
     try {
       // Validate IDL and PROGRAM_ID before creating program
       if (!IDL) {
-        throw new Error('IDL is not defined');
+        console.warn('IDL is not defined, Anchor program will not be available');
+        return;
       }
       if (!PROGRAM_ID) {
-        throw new Error('PROGRAM_ID is not defined');
+        console.warn('PROGRAM_ID is not defined, Anchor program will not be available');
+        return;
       }
 
       console.log('Initializing Anchor program with:', {
@@ -28,9 +30,12 @@ export class FranchiseProgram {
       });
 
       this.program = new Program(IDL as any, provider);
+      console.log('Anchor program initialized successfully');
     } catch (error) {
       console.error('Error initializing Anchor program:', error);
-      throw new Error(`Failed to initialize Anchor program: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.warn('Anchor program initialization failed, some features may not be available');
+      // Don't throw error, just log it and continue
+      this.program = null;
     }
   }
 
@@ -100,6 +105,10 @@ export class FranchiseProgram {
     industry: string,
     category: string
   ): Promise<string> {
+    if (!this.program) {
+      throw new Error('Anchor program not initialized');
+    }
+
     const [businessPDA] = FranchiseProgram.findBusinessPDA(slug);
 
     const tx = await this.program.methods
@@ -124,6 +133,10 @@ export class FranchiseProgram {
     costPerArea: number,
     totalShares: number
   ): Promise<string> {
+    if (!this.program) {
+      throw new Error('Anchor program not initialized');
+    }
+
     const [businessPDA] = FranchiseProgram.findBusinessPDA(businessSlug);
     const [franchisePDA] = FranchiseProgram.findFranchisePDA(businessPDA, franchiseSlug);
     const [franchiseTokenMintPDA] = FranchiseProgram.findFranchiseTokenMintPDA(businessPDA, franchiseSlug);
