@@ -85,7 +85,7 @@ export default function LaunchingSoonPage() {
             >
               <button onClick={handleVoiceClick} className="w-full h-12 flex items-center justify-center gap-2 bg-white/80 dark:bg-stone-800/80 backdrop-blur-sm border-2 hover:bg-white dark:hover:bg-stone-700 transition-colors text-stone-800 dark:text-white" >
 <Phone className="w-4 h-4 mr-2" />
-                Speak with Franny
+                Speak with Frany
               </button>
 
               {/* <Button onClick={handleVoiceClick} variant={"outline"} type="submit" className="w-full h-12">
@@ -109,7 +109,7 @@ className="w-full mt-6 h-12 bg-yellow-600 hover:bg-yellow-700 text-white flex it
           </motion.div>
         </div>
          {/* Footer */}
-      <footer className="py-12 mt-24  px-4 bg-stone-900 text-white">
+      {/* <footer className="py-12 mt-24  px-4 bg-stone-900 text-white">
         <div className="container mx-auto text-center">
           <p className="text-stone-400 mb-4">
             The future of franchise investment and management
@@ -125,7 +125,7 @@ className="w-full mt-6 h-12 bg-yellow-600 hover:bg-yellow-700 text-white flex it
             <span>Built with ❤️ on Solana</span>
           </div>
         </div>
-      </footer>
+      </footer> */}
       </section>
 
       {/* Hero Section */}

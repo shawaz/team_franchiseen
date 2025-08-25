@@ -32,8 +32,10 @@ function PlatformLayout({
 
         {/* Main Content */}
         <div className="flex-1 lg:ml-64">
-          <div className="p-6">
-            {children}
+          <div className="p-3 sm:p-4 md:p-6">
+            <div className="max-w-full overflow-x-auto">
+              {children}
+            </div>
           </div>
         </div>
 

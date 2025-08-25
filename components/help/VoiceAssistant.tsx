@@ -75,36 +75,45 @@ export default function VoiceAssistant({ isOpen, onToggle }: VoiceAssistantProps
           messages: [
             {
               role: 'system',
-              content: `You are a helpful voice assistant for Franchiseen, a franchise management platform.
+              
+              content: `You are Franny, the voice assistant for Franchiseen, a new franchise management platform.
 
-Key information about Franchiseen:
-- Comprehensive franchise management platform
-- Uses Solana blockchain for payments and tokenization
-- Supports franchise investment, operations, and revenue sharing
-- Serves 10,000+ franchises across 50+ countries
-- 99.9% uptime with 24/7 support
+Franchiseen is designed to:
 
-You help users with:
-1. Platform navigation and features
-2. Franchise investment and funding questions
-3. Operations management
-4. Technical support
-5. Account and billing inquiries
+Help brands in the UAE register and manage their franchises
 
-Keep responses conversational, helpful, and concise since this is voice interaction. If you need to provide detailed information, break it into digestible chunks and ask if they want more details.
+Enable investors to fund outlets and earn through automated revenue sharing
 
-Always be friendly and professional. If you can't answer something, offer to connect them with human support.`
+Use Solana blockchain for secure payments and tokenized shares
+
+Provide tools for managing POS, expenses, and payouts
+
+Support franchise growth from setup to daily operations
+
+Your role is to:
+
+Guide potential franchise partners through platform features
+
+Explain how to register a franchise or outlet
+
+Answer basic investor questions on how funding and payouts will work
+
+Assist with account and technical setup
+
+Keep responses short, clear, and conversational (voice-first)
+
+If you cannot answer something, politely suggest connecting with the Franchiseen team.`
             }
           ],
-          temperature: 0.7,
-          maxTokens: 500,
+          temperature: 0.5,
+          maxTokens: 100,
         },
         voice: {
           provider: 'playht',
           voiceId: 'jennifer',
-          speed: 1.0,
+          speed: 0.9,
         },
-        firstMessage: "Hi! I'm your Franchiseen support assistant. How can I help you today?",
+        firstMessage: "Hi! I am Franny, your Franchiseen assistant. We are helping brands in the UAE manage and grow their franchises with blockchain-powered tools. Would you like to learn how to register your franchise, or explore how investors can join?",
         // Note: Some properties removed due to type constraints
       });
 
@@ -162,12 +171,12 @@ Always be friendly and professional. If you can't answer something, offer to con
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white shadow-2xl w-96 max-w-[calc(100vw-2rem)] p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900 bg-opacity-400">
+      <div className="bg-stone-800 shadow-2xl w-96 max-w-[calc(100vw-2rem)] p-6">
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Voice Assistant</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-xl font-semibold text-white mb-2">Voice Assistant</h2>
+          <p className="text-sm text-stone-500">
             {isConnected ? 'Connected - Speak naturally' : 'Start a voice conversation with our AI assistant'}
           </p>
         </div>
@@ -176,7 +185,7 @@ Always be friendly and professional. If you can't answer something, offer to con
         <div className="text-center mb-6">
           {isConnecting && (
             <div className="flex items-center justify-center gap-2 text-blue-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+              <div className="animate-spin  h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
               <span className="text-sm">Connecting...</span>
             </div>
           )}
@@ -184,7 +193,7 @@ Always be friendly and professional. If you can't answer something, offer to con
           {isConnected && (
             <div className="space-y-2">
               <div className="flex items-center justify-center gap-2 text-green-600">
-                <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-green-600  animate-pulse"></div>
                 <span className="text-sm font-medium">Live - {formatDuration(callDuration)}</span>
               </div>
             </div>
@@ -209,8 +218,8 @@ Always be friendly and professional. If you can't answer something, offer to con
             )}
             
             {assistantResponse && (
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm text-gray-800">
+              <div className="bg-stone-50 p-3 rounded-lg">
+                <p className="text-sm text-stone-800">
                   <strong>Assistant:</strong> {assistantResponse}
                 </p>
               </div>
@@ -219,11 +228,11 @@ Always be friendly and professional. If you can't answer something, offer to con
         )}
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-4 mb-6">
+        <div className="flex items-center justify-center gap-4 mb-6 ">
           {!isConnected && !isConnecting && (
             <button
               onClick={startCall}
-              className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-colors"
+              className="flex w-full items-center justify-center gap-2 bg-yellow-600 text-white py-3  hover:bg-yellow-700 transition-colors"
             >
               <Phone className="h-5 w-5" />
               Start Call
@@ -234,10 +243,10 @@ Always be friendly and professional. If you can't answer something, offer to con
             <>
               <button
                 onClick={toggleMute}
-                className={`p-3 rounded-full transition-colors ${
+                className={`p-3  transition-colors ${
                   isMuted 
                     ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                 }`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
@@ -246,7 +255,7 @@ Always be friendly and professional. If you can't answer something, offer to con
               
               <button
                 onClick={endCall}
-                className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-full hover:bg-red-700 transition-colors"
+                className="flex items-center gap-2 bg-red-600 text-white px-6 py-3  hover:bg-red-700 transition-colors"
               >
                 <PhoneOff className="h-5 w-5" />
                 End Call
@@ -256,10 +265,10 @@ Always be friendly and professional. If you can't answer something, offer to con
         </div>
 
         {/* Close Button */}
-        <div className="text-center">
+        <div className="text-center mt-6">
           <button
             onClick={onToggle}
-            className="text-gray-500 hover:text-gray-700 text-sm transition-colors"
+            className="text-stone-500 hover:text-stone-700 text-sm border border-stone-500 w-full py-3  transition-colors"
           >
             Close
           </button>
@@ -267,8 +276,8 @@ Always be friendly and professional. If you can't answer something, offer to con
 
         {/* Instructions */}
         {!isConnected && !isConnecting && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-800">
+          <div className="mt-6 p-3 bg-stone-700">
+            <p className="text-xs text-stone-50">
               <strong>Tip:</strong> Make sure your microphone is enabled and speak clearly. 
               The assistant can help with franchise management, payments, and platform features.
             </p>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { 
   Home,
@@ -45,7 +46,6 @@ import {
   Factory
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
-import Image from 'next/image';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -90,8 +90,6 @@ const menuStructure = [
     permission: 'operations.office',
     items: [
       { href: '/admin/operations/office', label: 'Brands', icon: Building2, permission: 'operations.office' },
-      { href: '/admin/operations/funding', label: 'Shares', icon: DollarSign, permission: 'operations.funding' },
-      { href: '/admin/operations/funding', label: 'Requests', icon: DollarSign, permission: 'operations.funding' },
       { href: '/admin/operations/funding', label: 'Funding', icon: DollarSign, permission: 'operations.funding' },
       { href: '/admin/operations/projects', label: 'Projects', icon: Briefcase, permission: 'operations.projects' },
       { href: '/admin/operations/ongoing', label: 'Ongoing', icon: Activity, permission: 'operations.ongoing' },
@@ -253,6 +251,15 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
       {/* Mobile Sidebar */}
       <div className={`lg:hidden fixed inset-0 flex z-50 ${isOpen ? '' : 'pointer-events-none'}`}>
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 bg-gray-600 transition-opacity duration-300 ease-in-out ${
+            isOpen ? 'opacity-75' : 'opacity-0'
+          }`}
+          onClick={onClose}
+        />
+
+        {/* Sidebar */}
         <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-stone-800 transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
@@ -265,14 +272,36 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <div className="flex-1 h-0  pt-5 pb-4 overflow-y-auto">
-            <nav className="mt-5 px-3 space-y-1">
+          {/* Header */}
+          <div className="flex flex-col p-3 gap-4 w-full border-b border-stone-200 dark:border-stone-700">
+            <Link href="/home" className="flex items-center cursor-pointer" onClick={onClose}>
+              <div className="flex items-center cursor-pointer">
+                <Image
+                  src="/logo.svg"
+                  alt="logo"
+                  width={28}
+                  height={28}
+                  className="z-0"
+                />
+                <span className="text-xl ml-4 font-bold">FRANCHISEEN</span>
+              </div>
+            </Link>
+            <Link href="/home" onClick={onClose}>
+              <button className="cursor-pointer px-4 py-2 w-full text-sm font-medium bg-stone-100 hover:bg-stone-200 text-stone-900 dark:text-stone-100 dark:bg-stone-700 dark:hover:bg-stone-600 transition-colors duration-200">
+                Exit Dashboard
+              </button>
+            </Link>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+            <nav className="px-3 space-y-6">
               {filteredMenuStructure.map((section) => (
                 <div key={section.id} className="space-y-1">
                   <div className="px-2 py-2">
                     <div className="flex items-center text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-                      <section.icon className="mr-2 h-4 w-4" />
-                      {section.label}
+                      <section.icon className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{section.label}</span>
                     </div>
                   </div>
                   {section.items.map((item) => (
@@ -280,14 +309,14 @@ export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                       key={item.href}
                       href={item.href}
                       onClick={onClose}
-                      className={`group flex items-center px-2 py-2 text-sm font-medium transition-colors ${
+                      className={`group flex items-center px-2 py-3 text-sm font-medium rounded-md transition-colors ${
                         pathname === item.href
                           ? 'bg-stone-100 dark:bg-stone-700 text-stone-900 dark:text-stone-100'
                           : 'text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100'
                       }`}
                     >
                       <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                      {item.label}
+                      <span className="truncate">{item.label}</span>
                     </Link>
                   ))}
                 </div>

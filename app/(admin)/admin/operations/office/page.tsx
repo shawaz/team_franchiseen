@@ -214,38 +214,38 @@ export default function OfficePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Operations Office</h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Operations Office</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
             Manage all registered brands and franchise operations on the platform
           </p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Building2 className="w-4 h-4 mr-2" />
           Register New Brand
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-        <Card className="p-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Brands</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{brandStats.total}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Total Brands</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{brandStats.total}</p>
             </div>
-            <Building2 className="w-6 h-6 text-blue-500" />
+            <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500 flex-shrink-0" />
           </div>
         </Card>
         
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active</p>
-              <p className="text-2xl font-bold text-green-600">{brandStats.active}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Active</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600">{brandStats.active}</p>
             </div>
-            <CheckCircle className="w-6 h-6 text-green-500" />
+            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" />
           </div>
         </Card>
         
@@ -311,22 +311,22 @@ export default function OfficePage() {
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <Card className="p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search brands..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm sm:text-base"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0 flex-1 sm:flex-none sm:w-auto"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -337,7 +337,7 @@ export default function OfficePage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0 flex-1 sm:flex-none sm:w-auto"
             >
               <option value="all">All Categories</option>
               {categories.map(category => (
@@ -349,43 +349,43 @@ export default function OfficePage() {
       </Card>
 
       {/* Brands List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {filteredBrands.map((brand) => (
-          <Card key={brand.id} className="p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
+          <Card key={brand.id} className="p-4 sm:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-2">
                   {getStatusIcon(brand.status)}
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                     {brand.name}
                   </h3>
-                  <Badge variant="outline" className="text-xs font-mono">
+                  <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
                     {brand.id}
                   </Badge>
-                  <Badge variant="outline" className={getStatusColor(brand.status)}>
+                  <Badge variant="outline" className={`${getStatusColor(brand.status)} flex-shrink-0`}>
                     {brand.status}
                   </Badge>
-                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 flex-shrink-0 hidden sm:inline-flex">
                     {brand.category}
                   </Badge>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Contact Person</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{brand.contactPerson}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Contact Person</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{brand.contactPerson}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{brand.location}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Location</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{brand.location}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Franchise Model</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{brand.franchiseModel}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Franchise Model</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{brand.franchiseModel}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Registration Date</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Registration Date</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
                       {new Date(brand.registrationDate).toLocaleDateString()}
                     </p>
                   </div>
@@ -418,15 +418,18 @@ export default function OfficePage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button variant="outline" size="sm" className="p-2">
                   <Eye className="w-4 h-4" />
+                  <span className="sr-only">View</span>
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="p-2">
                   <Edit className="w-4 h-4" />
+                  <span className="sr-only">Edit</span>
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="p-2">
                   <MoreHorizontal className="w-4 h-4" />
+                  <span className="sr-only">More options</span>
                 </Button>
               </div>
             </div>
