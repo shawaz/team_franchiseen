@@ -190,6 +190,9 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
           } catch (convexError) {
             console.error('Failed to update Convex database:', convexError);
             setError('Account created but profile update failed. Please update your profile later.');
+            // Still call onSuccess to continue the flow
+            onSuccess?.();
+            onClose();
           }
         } else {
           setError('Verification incomplete.');

@@ -1,13 +1,14 @@
 "use client";
 
-import React from 'react';
-import { X, Settings, Shield, Bell, Power, Globe, Languages, HelpCircle, Newspaper, Building, FileText, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Settings, Shield, Bell, Power, Globe, Languages, HelpCircle, Newspaper, Building, FileText, Users, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SignOutButton, useUser } from '@clerk/nextjs';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
+import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 
 interface MobileMenuModalProps {
   isOpen: boolean;
@@ -18,6 +19,10 @@ interface MobileMenuModalProps {
 const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSettingsClick }) => {
   const { user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress;
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+
+  // Global currency context
+  const { selectedCurrency, setSelectedCurrency, currencies } = useGlobalCurrency();
 
   // Get Convex user data
   const convexUser = useQuery(
@@ -37,7 +42,7 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
       <div className="bg-white dark:bg-stone-800/80 w-full h-full overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-stone-700">
+        <div className="sticky top-0 flex items-center justify-between px-4 py-3 bg-white dark:bg-stone-800 border-b border-gray-200 dark:border-stone-700">
           <h1 className="text-xl font-bold">Menu</h1>
           <button
             onClick={onClose}
@@ -116,20 +121,54 @@ const MobileMenuModal: React.FC<MobileMenuModalProps> = ({ isOpen, onClose, onSe
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">App Preferences</h3>
             <div className="space-y-2">
-              <Link
-                href="/account"
-                onClick={onClose}
-                className="w-full flex items-center justify-between p-3  hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                  <span className="font-medium">Select Local Currency</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🇺🇸</span>
-                  <span className="text-sm font-medium text-muted-foreground">USD $</span>
-                </div>
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                  className="w-full flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-stone-700 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Globe className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <span className="font-medium">Select Local Currency</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">
+                      {currencies.find(c => c.code === selectedCurrency)?.flag || '💰'}
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {selectedCurrency.toUpperCase()}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${showCurrencyDropdown ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {showCurrencyDropdown && (
+                  <div className="absolute top-full left-0 right-0 bg-white dark:bg-stone-800 border border-gray-200 dark:border-stone-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {currencies.map((currency) => (
+                      <button
+                        key={currency.code}
+                        onClick={() => {
+                          setSelectedCurrency(currency.code);
+                          setShowCurrencyDropdown(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-stone-700 transition-colors ${
+                          currency.code === selectedCurrency ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">{currency.flag}</span>
+                          <div className="text-left">
+                            <div className="font-medium">{currency.code.toUpperCase()}</div>
+                            <div className="text-xs text-gray-500">{currency.name}</div>
+                          </div>
+                        </div>
+                        {currency.code === selectedCurrency && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <Link
                 href="/account"

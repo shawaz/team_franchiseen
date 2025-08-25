@@ -76,6 +76,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   // Map related state
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
+  const [placesService, setPlacesService] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [existingFranchises, setExistingFranchises] = useState<any[]>([]);
   const [conflictingLocation, setConflictingLocation] = useState<boolean>(false);
@@ -162,22 +163,40 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
         return;
       }
 
+      // Check if script is already being loaded
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        console.log('Google Maps script already loading, waiting...');
+        // Wait for existing script to load
+        existingScript.addEventListener('load', () => {
+          console.log('Google Maps script loaded via existing script');
+          setTimeout(initMap, 100); // Small delay to ensure Google Maps is fully initialized
+        });
+        return;
+      }
+
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&callback=initGoogleMapsCallback`;
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-        console.log('Google Maps script loaded successfully');
-        initMap();
+
+      // Create global callback
+      (window as any).initGoogleMapsCallback = () => {
+        console.log('Google Maps script loaded successfully via callback');
+        setTimeout(initMap, 100); // Small delay to ensure Google Maps is fully initialized
+        delete (window as any).initGoogleMapsCallback; // Clean up
       };
+
       script.onerror = (error) => {
         console.error('Failed to load Google Maps script:', error);
         toast.error('Failed to load Google Maps. Please check your API key and internet connection.');
+        delete (window as any).initGoogleMapsCallback; // Clean up
       };
+
       document.head.appendChild(script);
     } else {
       console.log('Google Maps already loaded, initializing map...');
-      initMap();
+      setTimeout(initMap, 100); // Small delay to ensure DOM is ready
     }
   };
 
@@ -200,6 +219,16 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
       setMap(mapInstance);
       console.log('Google Maps initialized successfully');
+
+      // Initialize Places service
+      if (window.google.maps.places) {
+        const placesService = new window.google.maps.places.PlacesService(mapInstance);
+        setPlacesService(placesService);
+        console.log('Places service initialized');
+      } else {
+        console.error('Google Places API not available');
+        toast.error('Google Places service not available. Please refresh the page.');
+      }
 
       // Add click listener to map
       mapInstance.addListener('click', (event: any) => {
@@ -513,6 +542,21 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
             </button>
           )}
           <div className="text-sm text-muted-foreground">
+            {currentStep === 1 && (
+                <p className="text-muted-foreground">Select a business</p>
+            )}
+            {currentStep === 2 && (
+
+                <p className="text-muted-foreground">Enter location details</p>
+            )}
+            {currentStep === 3 && (
+                <p className="text-muted-foreground">Enter investment details</p>
+            )}
+            {currentStep === 4 && (
+
+                <p className="text-muted-foreground">Review and confirm</p>
+
+            )}
             Step {currentStep} of {totalSteps}
           </div>
         </div>
@@ -545,10 +589,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               className="h-full flex flex-col"
             >
               <div className="p-6 pb-4 border-b border-gray-200 dark:border-stone-700">
-                {/* <div className="text-center space-y-2">
-                  <h1 className="text-2xl font-bold">Choose your franchise brand</h1>
-                  <p className="text-muted-foreground">Select from available franchise opportunities</p>
-                </div> */}
 
                 {/* Search Bar */}
                 <div className="relative">
