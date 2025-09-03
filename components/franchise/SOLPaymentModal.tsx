@@ -9,6 +9,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { toast } from 'sonner';
 import { useSolana } from '@/hooks/useSolana';
+import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
+import { calculateAvailableShares, FIXED_USD_PER_SHARE } from '@/lib/franchise-calculations';
 
 interface FranchiseData {
   name: string;
@@ -18,14 +20,17 @@ interface FranchiseData {
   soldShares: number;
   costPerShare: number;
   franchiseId: string;
+  totalInvestment?: number; // Add optional totalInvestment for calculation
 }
 
 interface SOLPaymentModalProps {
   onClose: () => void;
   franchiseData: FranchiseData;
+  businessSlug?: string;
+  onPaymentSuccess?: (contractDetails: any) => void;
 }
 
-const SOLPaymentModal = ({ onClose, franchiseData }: SOLPaymentModalProps) => {
+const SOLPaymentModal = ({ onClose, franchiseData, businessSlug, onPaymentSuccess }: SOLPaymentModalProps) => {
   const [selectedShares, setSelectedShares] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<number>(0);
@@ -34,11 +39,15 @@ const SOLPaymentModal = ({ onClose, franchiseData }: SOLPaymentModalProps) => {
   const [localCurrency, setLocalCurrency] = useState<string>('usd');
   const [localPrice, setLocalPrice] = useState<number>(0);
 
-  const availableShares = franchiseData.totalShares - franchiseData.soldShares;
+  // Calculate correct available shares using utility function
+  const availableShares = franchiseData.totalInvestment
+    ? calculateAvailableShares(franchiseData.totalInvestment, franchiseData.soldShares)
+    : Math.max(0, franchiseData.totalShares - franchiseData.soldShares);
   const { user } = useUser();
   const { publicKey, connected } = useWallet();
   const { setVisible } = useWalletModal();
   const { getSOLBalance, sendSOL } = useSolana();
+  const { investInFranchise } = useFranchiseProgram();
 
   // Pricing calculations (in SOL as base currency)
   const costPerShareSOL = franchiseData.costPerShare; // Assuming costPerShare is already in SOL
@@ -113,19 +122,62 @@ const SOLPaymentModal = ({ onClose, franchiseData }: SOLPaymentModalProps) => {
       const result = await sendSOL(companyWalletAddress, totalAmountSOL);
 
       if (result.success && result.signature) {
-        // Here you would typically save the transaction to your database
-        console.log('Payment successful:', {
-          transactionSignature: result.signature,
-          userEmail: user?.emailAddresses?.[0]?.emailAddress,
-          userWallet: publicKey.toString(),
-          franchiseId: franchiseData.franchiseId,
-          shares: selectedShares,
-          amountLocal: totalAmountLocal,
-          amountSOL: totalAmountSOL,
-          timestamp: new Date().toISOString(),
-        });
+        // Payment successful, now create blockchain contract
+        toast.success('Payment successful! Creating blockchain contract...');
 
-        toast.success(`Payment successful! You purchased ${selectedShares} shares.`);
+        try {
+          // Create investment contract on blockchain
+          if (businessSlug && investInFranchise) {
+            const contractTx = await investInFranchise(
+              businessSlug,
+              franchiseData.franchiseId,
+              selectedShares
+            );
+
+            if (contractTx) {
+              const contractDetails = {
+                paymentSignature: result.signature,
+                contractSignature: contractTx,
+                userEmail: user?.emailAddresses?.[0]?.emailAddress,
+                userWallet: publicKey.toString(),
+                franchiseId: franchiseData.franchiseId,
+                businessSlug,
+                shares: selectedShares,
+                amountLocal: totalAmountLocal,
+                amountSOL: totalAmountSOL,
+                timestamp: new Date().toISOString(),
+                contractAddress: `${businessSlug}-${franchiseData.franchiseId}`,
+              };
+
+              // Save to database
+              await fetch('/api/record-sol-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(contractDetails)
+              });
+
+              toast.success(`Investment contract created! You own ${selectedShares} shares.`);
+              onPaymentSuccess?.(contractDetails);
+            }
+          } else {
+            // Fallback: just record payment without blockchain contract
+            console.log('Payment successful:', {
+              transactionSignature: result.signature,
+              userEmail: user?.emailAddresses?.[0]?.emailAddress,
+              userWallet: publicKey.toString(),
+              franchiseId: franchiseData.franchiseId,
+              shares: selectedShares,
+              amountLocal: totalAmountLocal,
+              amountSOL: totalAmountSOL,
+              timestamp: new Date().toISOString(),
+            });
+            toast.success(`Payment successful! You purchased ${selectedShares} shares.`);
+          }
+        } catch (contractError) {
+          console.error('Contract creation failed:', contractError);
+          toast.error('Payment successful but contract creation failed. Please contact support.');
+        }
+
         onClose();
       } else {
         toast.error(`Payment failed: ${result.error}`);
@@ -220,9 +272,14 @@ const SOLPaymentModal = ({ onClose, franchiseData }: SOLPaymentModalProps) => {
 
         {/* Share Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
-            Number of Shares
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm font-medium text-stone-700 dark:text-stone-300">
+              Number of Shares
+            </label>
+            <span className="text-sm text-stone-500 dark:text-stone-400">
+              {availableShares} available
+            </span>
+          </div>
           <input
             type="number"
             min="1"
@@ -230,6 +287,7 @@ const SOLPaymentModal = ({ onClose, franchiseData }: SOLPaymentModalProps) => {
             value={selectedShares}
             onChange={(e) => setSelectedShares(Math.max(1, Math.min(availableShares, parseInt(e.target.value) || 1)))}
             className="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-white"
+            placeholder={`Max: ${availableShares}`}
           />
         </div>
 

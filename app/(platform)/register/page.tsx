@@ -54,7 +54,7 @@ interface FormData {
   logoUrl: string;
   industry_id: string;
   category_id: string;
-  costPerArea: number;
+  costPerShare: number; // Changed from costPerArea to costPerShare (in local currency)
   min_area: number;
   serviceable_countries: string[];
   currency: string;
@@ -63,7 +63,8 @@ interface FormData {
   seedPhrase: string[];
   seedPhraseVerification: string[];
   companyDocuments: File[];
-  minTotalInvestment: number;
+  franchiseStartingBudget: number; // Changed from minTotalInvestment
+  totalShares: number; // New field for calculated shares
   website: string;
   socialMedia: {
     facebook: string;
@@ -138,7 +139,7 @@ const selectStylesCategory = makeSelectStyles<CategoryOption, false>();
 
 export default function RegisterBrandPage() {
   const { isSignedIn, isLoaded } = useUser();
-  const { selectedCurrency, currencies } = useGlobalCurrency();
+  const { selectedCurrency, currencies, exchangeRates } = useGlobalCurrency();
 
   // Get current currency info with symbol
   const currentCurrency = currencies.find(c => c.code === selectedCurrency) || currencies[0];
@@ -163,16 +164,17 @@ export default function RegisterBrandPage() {
     logoUrl: '',
     industry_id: '',
     category_id: '',
-    costPerArea: 100,
+    costPerShare: 37, // Default cost per share in local currency (≈ AED 10)
     min_area: 100,
     serviceable_countries: [],
-    currency: currentCurrency.code,
+    currency: 'AED', // Default to AED
     solanaWallet: '',
     solanaPrivateKey: '',
     seedPhrase: [],
     seedPhraseVerification: [],
     companyDocuments: [],
-    minTotalInvestment: 0,
+    franchiseStartingBudget: 0,
+    totalShares: 0,
     website: '',
     socialMedia: {
       facebook: '',
@@ -310,7 +312,7 @@ export default function RegisterBrandPage() {
       logoUrl: '',
       industry_id: '',
       category_id: '',
-      costPerArea: 100,
+      costPerShare: 37, // Default cost per share in local currency
       min_area: 100,
       serviceable_countries: [],
       currency: currentCurrency.code,
@@ -319,7 +321,8 @@ export default function RegisterBrandPage() {
       seedPhrase: [],
       seedPhraseVerification: [],
       companyDocuments: [],
-      minTotalInvestment: 0,
+      franchiseStartingBudget: 0,
+      totalShares: 0,
       website: '',
       socialMedia: {
         facebook: '',
@@ -363,12 +366,18 @@ export default function RegisterBrandPage() {
         newData.slug = generateSlug(value);
       }
 
-      // Calculate minimum investment when cost per area or min area changes
-      if (name === 'costPerArea' || name === 'min_area') {
-        const costPerArea = name === 'costPerArea' ? Number(value) : prev.costPerArea;
+      // Calculate franchise starting budget and shares when cost per share or min area changes
+      if (name === 'costPerShare' || name === 'min_area') {
+        const costPerShare = name === 'costPerShare' ? Number(value) : prev.costPerShare;
         const minArea = name === 'min_area' ? Number(value) : prev.min_area;
-        if (costPerArea > 0 && minArea > 0) {
-          newData.minTotalInvestment = costPerArea * minArea;
+        if (costPerShare > 0 && minArea > 0) {
+          // Calculate minimum budget based on area and cost per share
+          // Assume 1 share per sq ft as a baseline
+          const totalShares = minArea; // 1 share per sq ft minimum
+          const franchiseStartingBudget = totalShares * costPerShare; // Total budget in local currency
+
+          newData.franchiseStartingBudget = franchiseStartingBudget;
+          newData.totalShares = totalShares;
         }
       }
 
@@ -488,7 +497,7 @@ export default function RegisterBrandPage() {
         });
         return !!(formData.serviceable_countries.length > 0 && hasAllCountryDocs);
       case 3:
-        return !!(formData.costPerArea > 0 && formData.min_area > 0);
+        return !!(formData.costPerShare > 0 && formData.min_area > 0);
       case 4:
         return !!(formData.solanaWallet && formData.solanaPrivateKey && formData.seedPhrase.length === 12);
       case 5:
@@ -510,7 +519,7 @@ export default function RegisterBrandPage() {
       slug: formData.slug,
       industry_id: formData.industry_id,
       category_id: formData.category_id,
-      costPerArea: formData.costPerArea,
+      costPerArea: formData.costPerShare, // Convert to cost per area for validation
       min_area: formData.min_area,
       serviceable_countries: formData.serviceable_countries,
     });
@@ -546,8 +555,8 @@ export default function RegisterBrandPage() {
       toast.error('Category is required');
       return;
     }
-    if (formData.costPerArea <= 0) {
-      toast.error('Cost per area must be greater than 0');
+    if (formData.costPerShare <= 0) {
+      toast.error('Cost per share must be greater than 0');
       return;
     }
     if (formData.min_area <= 0) {
@@ -635,10 +644,10 @@ export default function RegisterBrandPage() {
         logoUrl,
         industry_id: formData.industry_id,
         category_id: formData.category_id,
-        costPerArea: Number(formData.costPerArea),
+        costPerArea: Number(formData.costPerShare), // Save cost per share as cost per area for now
         min_area: Number(formData.min_area),
         serviceable_countries: formData.serviceable_countries,
-        currency: currentCurrency.code,
+        currency: 'AED', // Always save as AED
       });
       console.log('[Register] Convex mutation result received');
 
@@ -781,7 +790,7 @@ export default function RegisterBrandPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Brand Namez<span className="text-red-500">*</span>
+                        Brand Name<span className="text-red-500">*</span>
                       </label>
                       <Input
                         type="text"
@@ -1024,10 +1033,15 @@ export default function RegisterBrandPage() {
               >
                 <div className="bg-muted/30  p-6 space-y-6">
 
-                <div className="grid grid-cols-2 gap-4">
+
                     <div>
-                      <label htmlFor="costPerArea" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Cost Per Area ({currentCurrencyDetails.code.toUpperCase()}) <span className="text-red-500">*</span>
+                      <label htmlFor="costPerShare" className="block text-sm justify-between flex font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Cost Per Share ({currentCurrencyDetails.code.toUpperCase()}) <span className="text-red-500">*</span>
+                        {selectedCurrency !== 'aed' && (
+                          <span className="text-xs text-gray-500 ml-2">
+                            (≈ AED {(formData.costPerShare * (exchangeRates['aed'] / exchangeRates[selectedCurrency] || 1)).toFixed(2)})
+                          </span>
+                        )}
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
@@ -1035,16 +1049,22 @@ export default function RegisterBrandPage() {
                         </span>
                         <Input
                           type="number"
-                          id="costPerArea"
-                          name="costPerArea"
-                          value={formData.costPerArea}
+                          id="costPerShare"
+                          name="costPerShare"
+                          value={formData.costPerShare}
                           onChange={handleInputChange}
                           className="w-full h-11 pl-12 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 focus:ring-2 focus:ring-primary focus:border-primary"
-                          placeholder="Enter cost per area"
+                          placeholder={`Enter cost per share in ${currentCurrencyDetails.code.toUpperCase()}`}
                           required
                           min={0.01}
                           step={0.01}
                         />
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        {selectedCurrency === 'aed'
+                          ? 'Each share costs AED 10. Set the price per share for your franchise.'
+                          : 'Each share is equivalent to AED 10. Set your local currency price per share.'
+                        }
                       </div>
                     </div>
 
@@ -1064,58 +1084,77 @@ export default function RegisterBrandPage() {
                         min={1}
                       />
                     </div>
-                  </div>
 
-                  {/* Minimum Total Investment Display */}
-                  {formData.costPerArea > 0 && formData.min_area > 0 && (
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800  p-6">
+
+                  {/* Franchise Starting Budget Display */}
+                  {formData.costPerShare > 0 && formData.min_area > 0 && (
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6">
                       <h4 className="text-lg font-medium text-green-800 dark:text-green-200 mb-3">
-                        Franchise Token Investment Calculation
+                        Franchise Starting Budget Calculation
                       </h4>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-green-700 dark:text-green-300">Cost per sq ft:</span>
+                          <span className="text-sm text-green-700 dark:text-green-300">Cost per share:</span>
                           <span className="font-medium text-green-800 dark:text-green-200">
-                            {currentCurrencyDetails.symbol}{formData.costPerArea}
+                            {currentCurrencyDetails.symbol}{formData.costPerShare}
+                            {selectedCurrency !== 'aed' && ' (≈ AED 10)'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-green-700 dark:text-green-300">Minimum area:</span>
                           <span className="font-medium text-green-800 dark:text-green-200">{formData.min_area} sq ft</span>
                         </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-green-700 dark:text-green-300">Total shares available:</span>
+                          <span className="font-medium text-green-800 dark:text-green-200">{formData.totalShares} shares</span>
+                        </div>
                         <div className="border-t border-green-200 dark:border-green-700 pt-3">
                           <div className="flex justify-between items-center">
-                            <span className="text-base font-medium text-green-800 dark:text-green-200">Total Investment (3 years):</span>
+                            <span className="text-base font-medium text-green-800 dark:text-green-200">Starting Budget:</span>
                             <span className="text-2xl font-bold text-green-900 dark:text-green-100">
-                              {currentCurrencyDetails.symbol}{formData.minTotalInvestment.toLocaleString()}
+                              {currentCurrencyDetails.symbol}{formData.franchiseStartingBudget.toLocaleString()}
                             </span>
                           </div>
+                          {selectedCurrency !== 'aed' && (
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-sm text-green-700 dark:text-green-300">In AED:</span>
+                              <span className="text-lg font-semibold text-green-800 dark:text-green-200">
+                                AED {(formData.franchiseStartingBudget * (exchangeRates['aed'] / exchangeRates[selectedCurrency] || 1)).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <p className="text-xs text-green-700 dark:text-green-300 mt-3 bg-green-100 dark:bg-green-900/40 p-2 rounded">
-                        <strong>Note:</strong> This amount includes working capital, rent, salary, and maintenance for 3 years.
-                        Franchisees will receive franchise tokens equivalent to this investment.
+                        <strong>Note:</strong> This is the minimum starting budget for franchisees.
+                        {selectedCurrency === 'aed'
+                          ? 'Each share costs AED 10.'
+                          : `Each share costs AED 10 (equivalent to ${currentCurrencyDetails.symbol}${formData.costPerShare} in your local currency).`
+                        }
                       </p>
                     </div>
                   )}
 
                   {/* Franchise Explanation */}
-                  <div className="bg-blue-50 dark:bg-stone-700/20 border border-stone-200 dark:border-stone-900  p-6">
+                  <div className="bg-blue-50 dark:bg-stone-700/20 border border-stone-200 dark:border-stone-900 p-6">
                     <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-3">
-                      How Franchising Works with Franchise Tokens
+                      How Share-Based Franchising Works
                     </h3>
                     <div className="space-y-3 text-sm text-stone-800 dark:text-stone-200">
                       <p>
-                        <strong>1. Tokenized Franchise Model:</strong> Each franchise location is represented by unique franchise tokens that franchisees purchase to operate your brand.
+                        <strong>1. Share-Based Investment:</strong> Each franchise location is divided into shares worth AED 10 each. Franchisees purchase shares to invest in your brand.
                       </p>
                       <p>
-                        <strong>2. Investment Structure:</strong> Franchisees pay the cost per area × minimum area to acquire franchise tokens for their location.
+                        <strong>2. Flexible Investment:</strong> Franchisees can buy any number of shares based on their budget, with a minimum area requirement for the location.
                       </p>
                       <p>
-                        <strong>3. Royalty Payments:</strong> Ongoing royalties are automatically distributed to your Solana wallet through smart contracts.
+                        <strong>3. Local Currency Support:</strong> While shares are priced at AED 10, franchisees pay in their local currency at current exchange rates.
                       </p>
                       <p>
-                        <strong>4. Transparent Operations:</strong> All transactions are recorded on the blockchain for complete transparency and trust.
+                        <strong>4. Blockchain Security:</strong> All share ownership and transactions are recorded on the Solana blockchain for transparency and security.
+                      </p>
+                      <p>
+                        <strong>5. Revenue Sharing:</strong> Profits are distributed proportionally to shareholders through automated smart contracts.
                       </p>
                     </div>
 

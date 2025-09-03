@@ -168,10 +168,11 @@ export default function BusinessPageClient({
                           name: business?.name || "",
                           logo: business?.logoUrl || "/logo/logo-2.svg",
                           address: "",
-                          totalShares: 0,
+                          totalShares: 1000, // Default placeholder - this should be calculated based on actual franchise data
                           soldShares: 0,
                           costPerShare: business?.costPerArea || 0,
                           franchiseId: businessId as string,
+                          totalInvestment: business?.costPerArea ? business.costPerArea * 100 : undefined, // Estimate based on 100 sq ft
                         }
                       });
                     }

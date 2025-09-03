@@ -30,6 +30,7 @@ export interface SOLPaymentModalData {
     soldShares: number;
     costPerShare: number;
     franchiseId: string;
+    totalInvestment?: number; // Add optional totalInvestment for calculation
   };
 }
 

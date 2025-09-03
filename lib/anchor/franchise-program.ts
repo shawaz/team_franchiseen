@@ -3,6 +3,56 @@ import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solan
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from '@solana/spl-token';
 import { FranchiseenChain, IDL } from './franchiseen-idl';
 
+// Safe BN initialization with comprehensive error handling
+let BNClass: any;
+let isAnchorAvailable = false;
+
+try {
+  // Test if Anchor and BN are properly available
+  if (typeof BN !== 'undefined' && BN) {
+    // Test BN functionality
+    const testBN = new BN(100);
+    if (testBN && typeof testBN.toNumber === 'function' && testBN.toNumber() === 100) {
+      BNClass = BN;
+      isAnchorAvailable = true;
+      console.log('Anchor BN is available and functional');
+    } else {
+      throw new Error('BN test failed');
+    }
+  } else {
+    throw new Error('BN is not defined');
+  }
+} catch (error) {
+  console.warn('Anchor BN not available or not functional:', error);
+  isAnchorAvailable = false;
+
+  // Create a minimal BN-like class for fallback
+  BNClass = class FallbackBN {
+    private value: number;
+
+    constructor(value: number | string) {
+      this.value = typeof value === 'string' ? parseInt(value) : value;
+    }
+
+    toNumber(): number {
+      return this.value;
+    }
+
+    toString(): string {
+      return this.value.toString();
+    }
+
+    // Add other BN-like methods that might be needed
+    add(other: any): FallbackBN {
+      return new FallbackBN(this.value + (other.toNumber ? other.toNumber() : other));
+    }
+
+    sub(other: any): FallbackBN {
+      return new FallbackBN(this.value - (other.toNumber ? other.toNumber() : other));
+    }
+  } as any;
+}
+
 // Program ID (replace with your deployed program ID)
 export const PROGRAM_ID = new PublicKey('7bqq8JJHeZxVrLWCGhDaa9K1RkhpDTE2gBmeVW9ebiCj');
 
@@ -12,7 +62,21 @@ export class FranchiseProgram {
 
   constructor(provider: AnchorProvider) {
     this.provider = provider;
+    this.program = null; // Initialize as null
+
     try {
+      // First check if Anchor is available at all
+      if (!isAnchorAvailable) {
+        console.warn('Anchor framework is not available or not functional, blockchain features will be disabled');
+        return;
+      }
+
+      // Validate provider first
+      if (!provider) {
+        console.warn('Provider is not defined, Anchor program will not be available');
+        return;
+      }
+
       // Validate IDL and PROGRAM_ID before creating program
       if (!IDL) {
         console.warn('IDL is not defined, Anchor program will not be available');
@@ -23,17 +87,41 @@ export class FranchiseProgram {
         return;
       }
 
+      // Validate provider properties
+      if (!provider.connection || !provider.wallet) {
+        console.warn('Provider connection or wallet is not defined, Anchor program will not be available');
+        return;
+      }
+
+      // Additional check for Program class availability
+      if (typeof Program === 'undefined') {
+        console.warn('Program class is not available, Anchor program will not be available');
+        return;
+      }
+
       console.log('Initializing Anchor program with:', {
         programId: PROGRAM_ID.toString(),
         idlName: IDL.name,
-        idlVersion: IDL.version
+        idlVersion: IDL.version,
+        providerWallet: provider.wallet.publicKey?.toString(),
+        connection: provider.connection.rpcEndpoint,
+        anchorAvailable: isAnchorAvailable
       });
 
-      this.program = new Program(IDL as any, provider);
+      // Try to create the program - only if everything is available
+      this.program = new Program(IDL as any, PROGRAM_ID, provider);
       console.log('Anchor program initialized successfully');
+
+      // Test program functionality
+      if (!this.program || !this.program.methods) {
+        console.warn('Program created but methods are not available');
+        this.program = null;
+        return;
+      }
+
     } catch (error) {
       console.error('Error initializing Anchor program:', error);
-      console.warn('Anchor program initialization failed, some features may not be available');
+      console.warn('Anchor program initialization failed, blockchain features will be disabled');
       // Don't throw error, just log it and continue
       this.program = null;
     }
@@ -147,7 +235,7 @@ export class FranchiseProgram {
         locationAddress,
         buildingName,
         carpetArea,
-        new BN(costPerArea),
+        new BNClass(Math.floor(costPerArea)),
         totalShares
       )
       .accounts({
@@ -212,7 +300,7 @@ export class FranchiseProgram {
     const [franchisePDA] = FranchiseProgram.findFranchisePDA(businessPDA, franchiseSlug);
 
     const tx = await this.program.methods
-      .distributeRevenue(new BN(totalRevenue))
+      .distributeRevenue(new BNClass(Math.floor(totalRevenue)))
       .accounts({
         franchise: franchisePDA,
         authority: this.provider.wallet.publicKey,
@@ -300,6 +388,11 @@ export class FranchiseProgram {
 // Helper function to validate IDL and PROGRAM_ID
 export function validateAnchorSetup(): { isValid: boolean; error?: string } {
   try {
+    // First check if Anchor is available
+    if (!isAnchorAvailable) {
+      return { isValid: false, error: 'Anchor framework is not available or not functional' };
+    }
+
     if (!IDL) {
       return { isValid: false, error: 'IDL is not defined' };
     }
@@ -309,6 +402,27 @@ export function validateAnchorSetup(): { isValid: boolean; error?: string } {
     if (!IDL.name || !IDL.version) {
       return { isValid: false, error: 'IDL is missing required fields (name or version)' };
     }
+
+    // Check Program class availability
+    if (typeof Program === 'undefined') {
+      return { isValid: false, error: 'Program class is not available' };
+    }
+
+    // Validate BN is available
+    if (!BNClass) {
+      return { isValid: false, error: 'BN (BigNumber) is not available' };
+    }
+
+    // Test BN functionality
+    try {
+      const testBN = new BNClass(100);
+      if (!testBN || typeof testBN.toNumber !== 'function') {
+        return { isValid: false, error: 'BN is not functioning correctly' };
+      }
+    } catch (bnError) {
+      return { isValid: false, error: `BN initialization failed: ${bnError instanceof Error ? bnError.message : 'Unknown BN error'}` };
+    }
+
     return { isValid: true };
   } catch (error) {
     return { isValid: false, error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}` };
@@ -343,18 +457,18 @@ export interface FranchiseAccount {
   locationAddress: string;
   buildingName: string;
   carpetArea: number;
-  costPerArea: BN;
-  totalInvestment: BN;
+  costPerArea: typeof BNClass;
+  totalInvestment: typeof BNClass;
   totalShares: number;
   soldShares: number;
-  totalRaised: BN;
-  capitalRecovered: BN;
-  totalRevenue: BN;
-  pendingDividends: BN;
+  totalRaised: typeof BNClass;
+  capitalRecovered: typeof BNClass;
+  totalRevenue: typeof BNClass;
+  pendingDividends: typeof BNClass;
   status: FranchiseStatus;
   tokenMint: PublicKey;
-  createdAt: BN;
-  lastPayout: BN;
+  createdAt: typeof BNClass;
+  lastPayout: typeof BNClass;
   bump: number;
 }
 
@@ -366,7 +480,7 @@ export interface BusinessAccount {
   category: string;
   verificationTier: VerificationTier;
   totalFranchises: number;
-  totalInvestment: BN;
-  createdAt: BN;
+  totalInvestment: typeof BNClass;
+  createdAt: typeof BNClass;
   bump: number;
 }

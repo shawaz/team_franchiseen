@@ -198,7 +198,7 @@ export default async function FranchisePage({ params }: FranchisePageProps) {
                 carpetArea: franchise?.carpetArea || 0,
                 costPerArea: franchise?.costPerArea || 0,
                 totalInvestment: franchise?.totalInvestment || 0,
-                totalShares: franchise?.totalShares || 1000,
+                totalShares: Math.max(1, Math.floor((franchise?.totalInvestment || 0) / 10)), // Always calculate from totalInvestment, $10 per share
                 selectedShares: franchise?.selectedShares || 0,
               }}
             />

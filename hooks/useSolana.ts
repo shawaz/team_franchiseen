@@ -34,7 +34,8 @@ export const useSolana = () => {
     setLoading(true);
     try {
       const toPubkey = new PublicKey(toAddress);
-      const lamports = amount * LAMPORTS_PER_SOL;
+      // Ensure integer lamports
+      const lamports = Math.round(amount * LAMPORTS_PER_SOL);
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({

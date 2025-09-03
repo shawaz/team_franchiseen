@@ -64,8 +64,13 @@ export default function FranchiseInvestmentWithAnchor({
       const franchise = await getFranchise(businessSlug, franchiseSlug);
       if (franchise) {
         setOnChainData(franchise);
-        // Convert BN to number for dividends
-        const dividends = franchise.pendingDividends.toNumber() / LAMPORTS_PER_SOL;
+        // Convert BN to number for dividends - safely handle BN
+        let dividends = 0;
+        if (franchise.pendingDividends && typeof franchise.pendingDividends.toNumber === 'function') {
+          dividends = franchise.pendingDividends.toNumber() / LAMPORTS_PER_SOL;
+        } else if (typeof franchise.pendingDividends === 'number') {
+          dividends = franchise.pendingDividends / LAMPORTS_PER_SOL;
+        }
         setPendingDividends(dividends);
       }
     } catch (error) {

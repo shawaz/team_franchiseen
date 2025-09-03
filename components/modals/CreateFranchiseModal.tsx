@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, ArrowLeft, ArrowRight, Check, MapPin, Building, DollarSign, Star, TrendingUp, Search, Wallet, Calculator, AlertTriangle, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +9,18 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
+import { coinGeckoService } from '@/lib/coingecko';
 import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
+
+import SlideButton from '@/components/ui/slide-button';
+import { useSolana } from '@/hooks/useSolana';
 
 interface TypeformCreateFranchiseModalProps {
   isOpen: boolean;
@@ -72,6 +78,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [invoice, setInvoice] = useState<any>(null);
+  const [contractDetails, setContractDetails] = useState<any>(null);
 
   // Map related state
   const mapRef = useRef<HTMLDivElement>(null);
@@ -82,8 +89,12 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   const [conflictingLocation, setConflictingLocation] = useState<boolean>(false);
 
   const { connected } = useWallet();
-  const { createFranchise } = useFranchiseProgram();
+  const { setVisible } = useWalletModal();
+  const { createFranchise, investInFranchise, connected: programConnected } = useFranchiseProgram();
   const { formatAmount } = useGlobalCurrency();
+
+  // Convex mutations
+  const createFranchiseInDB = useMutation(api.franchise.create);
 
   // Get all businesses for selection
   const businesses = useQuery(api.businesses.listAll, {}) || [];
@@ -408,13 +419,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     });
   };
 
-  const totalSteps = 5; // Total steps: 1(Business), 2(Location), 3(Details), 4(Investment), 5(OnChain)
+  const totalSteps = 4; // Steps: 1(Business), 2(Location), 3(Details), 4(Project Investment & Purchase). After payment, show confirmation (Step 6 UI without navigation).
   const progress = (currentStep / totalSteps) * 100;
 
   const nextStep = async () => {
-    if (currentStep === totalSteps) {
-      await handleSubmit();
-    } else if (currentStep < totalSteps) {
+    if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -441,7 +450,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
         formData.locationDetails.buildingName,
         parseFloat(formData.locationDetails.sqft),
         parseFloat(formData.locationDetails.costPerArea),
-        formData.investment.totalShares
+        calculateTotalShares() // Use calculated value directly
       );
 
       // Create invoice
@@ -509,17 +518,245 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     }));
   };
 
-  const calculateTotalInvestment = () => {
-    const area = parseFloat(formData.locationDetails.sqft) || 0;
-    const cost = formData.selectedBusiness?.costPerArea || 0;
-    return area * cost;
+  // In-step Solana payment using SlideButton
+  const { getSOLBalance, sendSOL } = useSolana();
+  const [solBalance, setSolBalance] = useState<number>(0);
+
+  useEffect(() => {
+    const loadBalance = async () => {
+      try {
+        const bal = await getSOLBalance();
+        setSolBalance(bal);
+      } catch (e) {
+        setSolBalance(0);
+      }
+    };
+    if (currentStep === 4 && connected) {
+      void loadBalance();
+    }
+  }, [currentStep, connected, getSOLBalance]);
+
+  const handleSlidePay = async (): Promise<"success" | "error"> => {
+    const selectedShares = formData.investment.selectedShares;
+    const sharePrice = calculateSharePrice();
+    const totalAmountSOL = selectedShares * sharePrice * 1.2; // platform fee + tax
+
+    if (!connected) {
+      toast.error('Please connect your wallet');
+      return 'error';
+    }
+
+    if (!programConnected) {
+      toast.error('Blockchain program not available. Please check your connection and try again.');
+      return 'error';
+    }
+
+    if (!formData.selectedBusiness) {
+      toast.error('Please select a business');
+      return 'error';
+    }
+
+    // Validate required fields
+    if (!formData.locationDetails.franchiseSlug || !formData.locationDetails.buildingName || !formData.locationDetails.sqft) {
+      toast.error('Please complete all required fields');
+      return 'error';
+    }
+
+    // Validate cost per area
+    const costPerArea = parseFloat(formData.locationDetails.costPerArea) || formData.selectedBusiness.costPerArea;
+    if (!costPerArea || costPerArea <= 0) {
+      toast.error('Cost per area must be set by the business owner');
+      return 'error';
+    }
+
+    if (solBalance < totalAmountSOL) {
+      toast.error(`Insufficient SOL balance: need ${totalAmountSOL.toFixed(4)} SOL, have ${solBalance.toFixed(4)} SOL`);
+      return 'error';
+    }
+
+    try {
+      // Step 1: Send payment to company wallet
+      const companyWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
+      const pay = await sendSOL(companyWalletAddress, totalAmountSOL);
+      if (!pay.success || !pay.signature) {
+        toast.error(pay.error || 'Payment failed');
+        return 'error';
+      }
+
+      toast.success('Payment successful! Creating franchise...');
+
+      // Step 2: Create franchise on blockchain
+      const businessSlug = formData.selectedBusiness.slug || formData.selectedBusiness.name.toLowerCase().replace(/\s+/g, '-');
+      const franchiseId = formData.locationDetails.franchiseSlug;
+      const costPerArea = parseFloat(formData.locationDetails.costPerArea) || formData.selectedBusiness.costPerArea || 0;
+
+      let createTx = null;
+      let investTx = null;
+
+      if (createFranchise && investInFranchise) {
+        try {
+          createTx = await createFranchise(
+            businessSlug,
+            franchiseId,
+            formData.location?.address || '',
+            formData.locationDetails.buildingName,
+            parseFloat(formData.locationDetails.sqft),
+            costPerArea,
+            calculateTotalShares()
+          );
+
+          if (!createTx) {
+            toast.error('Failed to create franchise on blockchain');
+            return 'error';
+          }
+
+          toast.success('Franchise created! Creating investment contract...');
+
+          // Step 3: Invest in the franchise
+          investTx = await investInFranchise(businessSlug, franchiseId, selectedShares);
+        } catch (blockchainError) {
+          console.error('Blockchain operation failed:', blockchainError);
+          toast.error('Blockchain operation failed, but payment was successful. Please contact support.');
+          // Continue with database save even if blockchain fails
+        }
+      } else {
+        console.warn('Blockchain functions not available, skipping blockchain operations');
+        toast.warning('Blockchain features not available, saving to database only');
+      }
+
+      toast.success('Investment contract created! Saving to database...');
+
+      // Step 4: Save franchise to Convex database
+      try {
+        const franchiseData = await createFranchiseInDB({
+          businessId: formData.selectedBusiness._id,
+          locationAddress: formData.location?.address || '',
+          building: formData.locationDetails.buildingName,
+          carpetArea: parseFloat(formData.locationDetails.sqft),
+          costPerArea: costPerArea,
+          totalInvestment: calculateTotalInvestment(),
+          totalShares: calculateTotalShares(),
+          selectedShares: selectedShares,
+          slug: franchiseId,
+        });
+
+        console.log('Franchise saved to database:', franchiseData);
+      } catch (error) {
+        console.error('Failed to save franchise to database:', error);
+        toast.error('Failed to save franchise data, but blockchain contracts are created');
+      }
+
+      const details = {
+        paymentSignature: pay.signature,
+        createFranchiseSignature: createTx,
+        contractSignature: investTx || '',
+        userEmail: undefined,
+        userWallet: undefined,
+        franchiseId,
+        businessSlug,
+        shares: selectedShares,
+        amountLocal: selectedShares * sharePrice * 1.2,
+        amountSOL: totalAmountSOL,
+        timestamp: new Date().toISOString(),
+        contractAddress: `${businessSlug}-${franchiseId}`,
+      };
+
+      try {
+        await fetch('/api/record-sol-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(details),
+        });
+      } catch (error) {
+        console.error('Failed to record payment:', error);
+      }
+
+      setContractDetails(details);
+      setCurrentStep(6);
+      toast.success(`Investment successful! You now own ${selectedShares} shares.`);
+      return 'success';
+    } catch (e) {
+      console.error('Payment/contract creation failed:', e);
+      toast.error('Transaction failed. Please try again.');
+      return 'error';
+    }
   };
 
-  const calculateSharePrice = () => {
-    const totalInvestment = calculateTotalInvestment();
-    const shares = formData.investment.totalShares || 1000;
-    return totalInvestment / shares;
+  // Step 4 rules: AED 10 per share, min 5% investment
+  const FIXED_AED_PER_SHARE = 10;
+
+  const calculateTotalInvestment = () => {
+    const area = parseFloat(formData.locationDetails.sqft) || 0;
+    // Use business costPerArea as primary source, fallback to form data
+    let costPerAreaAED = formData.selectedBusiness?.costPerArea || parseFloat(formData.locationDetails.costPerArea) || 0;
+
+    // Ensure we're working with AED values
+    // The business costPerArea is now stored in AED and all calculations use AED
+    const totalInvestmentAED = area * costPerAreaAED;
+
+    console.log('calculateTotalInvestment:', {
+      area,
+      costPerAreaAED,
+      totalInvestmentAED,
+      businessCostPerArea: formData.selectedBusiness?.costPerArea
+    });
+
+    return totalInvestmentAED;
   };
+
+  // Total number of shares is totalInvestment / AED 10
+  const calculateTotalShares = () => {
+    const totalInvestmentAED = calculateTotalInvestment();
+    const totalShares = Math.floor(totalInvestmentAED / FIXED_AED_PER_SHARE);
+    return totalShares;
+  };
+
+  // Share price in SOL: AED 10 converted to SOL using current AED/SOL rate
+  const [aedPerSol, setAedPerSol] = useState<number>(0);
+  useEffect(() => {
+    const loadSolRate = async () => {
+      try {
+        const prices = await coinGeckoService.getSolPrices();
+        setAedPerSol(prices.aed || 0);
+      } catch {
+        setAedPerSol(0);
+      }
+    };
+    void loadSolRate();
+  }, []);
+
+  const calculateSharePrice = () => {
+    if (!aedPerSol || aedPerSol <= 0) return 0;
+    // AED 10 per share -> convert to SOL
+    return FIXED_AED_PER_SHARE / aedPerSol;
+  };
+
+  // Ensure formData investment totals adhere to rules when step 4 loads
+  useEffect(() => {
+    if (currentStep !== 4) return;
+    if (!aedPerSol || aedPerSol <= 0) return; // Wait for SOL price to load
+
+    const totalShares = calculateTotalShares();
+    const minShares = Math.max(1, Math.ceil(totalShares * 0.05));
+
+    console.log('Updating investment data:', {
+      totalShares,
+      minShares,
+      currentSelectedShares: formData.investment.selectedShares,
+      sharePrice: calculateSharePrice(),
+      totalInvestment: calculateTotalInvestment()
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      investment: {
+        ...prev.investment,
+        totalShares,
+        selectedShares: Math.min(totalShares, Math.max(minShares, prev.investment.selectedShares || minShares)),
+        sharePrice: calculateSharePrice(),
+      },
+    }));
+  }, [currentStep, formData.locationDetails.sqft, formData.locationDetails.costPerArea, aedPerSol]);
 
   // Filter businesses based on search query
   const filteredBusinesses = businesses.filter(business =>
@@ -536,7 +773,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
         return formData.location !== null && !conflictingLocation;
       case 3:
         const { doorNumber, sqft, isOwned, landlordNumber, landlordEmail, userNumber, userEmail, franchiseSlug, buildingName } = formData.locationDetails;
-        const basicFields = doorNumber && sqft && franchiseSlug && buildingName && formData.selectedBusiness?.costPerArea;
+        const basicFields = doorNumber && sqft && franchiseSlug && buildingName && formData.locationDetails.costPerArea;
         if (isOwned) {
           return basicFields && userNumber && userEmail;
         } else {
@@ -546,6 +783,8 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
         return true;
       case 5:
         return connected;
+      case 6:
+        return true;
       default:
         return false;
     }
@@ -571,16 +810,16 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 <p className="text-muted-foreground">Select a business</p>
             )}
             {currentStep === 2 && (
-
-                <p className="text-muted-foreground">Enter location details</p>
+                <p className="text-muted-foreground">Choose location</p>
             )}
             {currentStep === 3 && (
-                <p className="text-muted-foreground">Enter investment details</p>
+                <p className="text-muted-foreground">Enter location details</p>
             )}
             {currentStep === 4 && (
-
-                <p className="text-muted-foreground">Review and confirm</p>
-
+                <p className="text-muted-foreground">Project investment summary</p>
+            )}
+            {currentStep === 6 && (
+                <p className="text-muted-foreground">Payment confirmation</p>
             )}
             Step {currentStep} of {totalSteps}
           </div>
@@ -665,7 +904,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                           {business.costPerArea && (
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4" />
-                              <span className="font-medium">{formatAmount(business.costPerArea)}/sq ft</span>
+                              <span className="font-medium">AED {business.costPerArea.toFixed(2)}/sq ft</span>
                             </div>
                           )}
                           {business.min_area && (
@@ -864,7 +1103,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                     <label className="text-sm font-medium mb-2 block">Cost per Sq Ft</label>
                     <div className="h-12 px-3 py-2 bg-gray-50 dark:bg-stone-800 border border-gray-200 dark:border-stone-700 rounded-md flex items-center text-lg">
                       {formData.selectedBusiness?.costPerArea ?
-                        formatAmount(formData.selectedBusiness.costPerArea) :
+                        `AED ${formData.selectedBusiness.costPerArea.toFixed(2)}` :
                         'Not set by brand owner'
                       }
                     </div>
@@ -882,10 +1121,10 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                       <h3 className="font-medium text-yellow-800 dark:text-yellow-200">Investment Calculation</h3>
                     </div>
                     <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">
-                      Total Investment: {formatAmount(calculateTotalInvestment())}
+                      Total Investment: AED {calculateTotalInvestment().toFixed(2)}
                     </div>
                     <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
-                      {formData.locationDetails.sqft} sq ft × {formatAmount(formData.selectedBusiness.costPerArea)} per sq ft
+                      {formData.locationDetails.sqft} sq ft × AED {formData.selectedBusiness.costPerArea?.toFixed(2)} per sq ft
                     </p>
                   </div>
                 )}
@@ -977,7 +1216,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
             </motion.div>
           )}
 
-          {/* Step 4: Investment */}
+          {/* Step 4: Project Investment Summary */}
           {currentStep === 4 && (
             <motion.div
               key="step4"
@@ -986,314 +1225,385 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               exit={{ opacity: 0, x: -20 }}
               className="p-6 space-y-6"
             >
-
-              {/* Investment Amount Display */}
-              <div className="bg-gradient-to-br from-stone-50 to-indigo-50 dark:from-stone-950/20 dark:to-yellow-950/20 p-6 text-center border border-stone-200 dark:border-stone-800">
-                <div className="text-4xl font-bold text-primary mb-2">
-                  ₹{(formData.investment.selectedShares * formData.investment.sharePrice * 83 * 1.2).toLocaleString()}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {formData.investment.selectedShares} shares ({Math.round((formData.investment.selectedShares / formData.investment.totalShares) * 100)}% ownership)
+              {/* Important Information */}
+              <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800 p-4 rounded-lg">
+                <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">Important Information</h4>
+                <div className="text-sm text-stone-600 dark:text-stone-400 space-y-2">
+                  <p>• Your franchise proposal will be submitted for brand owner approval</p>
+                  <p>• Investment funds will be held in escrow until approval</p>
+                  <p>• If rejected, funds will be automatically refunded</p>
+                  <p>• Upon approval, franchise tokens will be created and distributed</p>
+                  <p>• Monthly profit sharing begins after franchise launch</p>
                 </div>
               </div>
+              
+               {/* Investment Summary - Inline */}
+              <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-6 dark:text-white">My Investment Summary</h2>
 
-              {/* Investment Details */}
-              <div className="space-y-6">
-                <div className="bg-white dark:bg-stone-800  p-4 border shadow-sm">
-                  <h3 className="font-medium mb-4">Investment Breakdown</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Share Value:</span>
-                      <span className="font-medium">₹{(formData.investment.selectedShares * formData.investment.sharePrice * 83).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Service Fee (15%):</span>
-                      <span className="font-medium">₹{(formData.investment.selectedShares * formData.investment.sharePrice * 83 * 0.15).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">GST (5%):</span>
-                      <span className="font-medium">₹{(formData.investment.selectedShares * formData.investment.sharePrice * 83 * 0.05).toLocaleString()}</span>
-                    </div>
-                    <div className="border-t border-border pt-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold">Total Amount:</span>
-                        <span className="font-bold text-lg text-primary">₹{(formData.investment.selectedShares * formData.investment.sharePrice * 83 * 1.2).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slider */}
-                <div className="space-y-4">
+                {/* Share Selection */}
+                <div className="space-y-4 mb-6">
                   <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium">Number of Shares</label>
-                    <div className="text-sm text-muted-foreground">
-                      Min: {Math.ceil(formData.investment.totalShares * 0.05)} | Max: {formData.investment.totalShares}
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Number of Shares
+                    </label>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {calculateTotalShares()} available
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-stone-800  p-4 border shadow-sm">
+                  {/* Slider for share selection */}
+                  <div className="space-y-3">
                     <Slider
                       value={[formData.investment.selectedShares]}
                       onValueChange={(value) => updateInvestment(value[0])}
-                      min={Math.ceil(formData.investment.totalShares * 0.05)}
-                      max={formData.investment.totalShares}
+                      max={calculateTotalShares()}
+                      min={Math.max(1, Math.ceil(calculateTotalShares() * 0.05))}
                       step={1}
                       className="w-full"
                     />
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Percentage</label>
-                      <Input
-                        type="number"
-                        value={Math.round((formData.investment.selectedShares / formData.investment.totalShares) * 100)}
-                        onChange={(e) => {
-                          const percentage = Number(e.target.value);
-                          const newShares = Math.round((percentage / 100) * formData.investment.totalShares);
-                          const min = Math.ceil(formData.investment.totalShares * 0.05);
-                          const max = formData.investment.totalShares;
-                          if (newShares >= min && newShares <= max && percentage >= 5 && percentage <= 100) {
-                            updateInvestment(newShares);
-                          }
-                        }}
-                        min="5"
-                        max="100"
-                        className="text-center text-lg font-semibold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Total Shares</label>
-                      <Input
-                        type="number"
-                        value={formData.investment.selectedShares}
-                        onChange={(e) => {
-                          const value = Number(e.target.value);
-                          const min = Math.ceil(formData.investment.totalShares * 0.05);
-                          const max = formData.investment.totalShares;
-                          if (value >= min && value <= max) {
-                            updateInvestment(value);
-                          }
-                        }}
-                        min={Math.ceil(formData.investment.totalShares * 0.05)}
-                        max={formData.investment.totalShares}
-                        className="text-center text-lg font-semibold"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Summary */}
-                <div className="bg-green-50 dark:bg-green-950/20  p-4 border border-green-200 dark:border-green-800">
-                  <div className="flex items-start gap-3">
-                    <TrendingUp className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-green-800 dark:text-green-200">Investment Summary</h4>
-                      <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                        You're investing {formatAmount(calculateTotalInvestment())} for {Math.round((formData.investment.selectedShares / formData.investment.totalShares) * 100)}% ownership in {formData.selectedBusiness?.name} franchise at {formData.location?.address}.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 5: On-Chain Creation */}
-          {currentStep === 5 && (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="p-6 space-y-6"
-            >
-
-              <div className="space-y-6">
-                {/* Investment Summary */}
-                <div className="bg-stone-50 dark:bg-stone-800  p-6">
-                  <h3 className="text-lg font-semibold mb-4">Final Investment Summary</h3>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Business:</span>
-                      <span className="font-medium">{formData.selectedBusiness?.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Location:</span>
-                      <span className="font-medium">{formData.location?.address}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Area:</span>
-                      <span className="font-medium">{formData.locationDetails.sqft} sq ft</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Cost per sq ft:</span>
-                      <span className="font-medium">{formatAmount(parseFloat(formData.locationDetails.costPerArea))}</span>
-                    </div>
-                    <div className="border-t border-stone-200 dark:border-stone-600 pt-3">
-                      <div className="flex justify-between">
-                        <span className="font-semibold">Total Investment:</span>
-                        <span className="text-xl font-bold text-green-600">{formatAmount(calculateTotalInvestment())}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Wallet Connection */}
-                {!connected && (
-                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800  p-4">
-                    <div className="flex items-center gap-3">
-                      <Wallet className="h-5 w-5 text-yellow-600" />
-                      <div>
-                        <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Wallet Required</h4>
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                          Connect your Solana wallet to create the franchise on-chain
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Terms and Conditions */}
-                <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800  p-4">
-                  <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">Important Information</h4>
-                  <div className="text-sm text-stone-600 dark:text-stone-400 space-y-2">
-                    <p>• Your franchise proposal will be submitted for brand owner approval</p>
-                    <p>• Investment funds will be held in escrow until approval</p>
-                    <p>• If rejected, funds will be automatically refunded</p>
-                    <p>• Upon approval, franchise tokens will be created and distributed</p>
-                    <p>• Monthly profit sharing begins after franchise launch</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Invoice Step */}
-          {currentStep === totalSteps + 1 && invoice && (
-            <motion.div
-              key="invoice"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="p-6 space-y-6"
-            >
-
-              {/* Invoice */}
-              <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700  p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold">Franchise Proposal Invoice</h3>
-                  <span className="text-sm text-muted-foreground">#{invoice.id}</span>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Business:</span>
-                      <p className="font-medium">{invoice.businessName}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Location:</span>
-                      <p className="font-medium">{invoice.location}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Total Investment:</span>
-                      <p className="font-medium">{formatAmount(invoice.totalInvestment)}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        {invoice.status}
+                    {/* Current selection display */}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Selected: {formData.investment.selectedShares} shares
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Min: {Math.max(1, Math.ceil(calculateTotalShares() * 0.05))} (5%)
                       </span>
                     </div>
                   </div>
 
-                  <div className="border-t border-stone-200 dark:border-stone-600 pt-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">Total Amount:</span>
-                      <span className="text-xl font-bold">{formatAmount(invoice.totalInvestment)}</span>
+                  {/* Number input as backup */}
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="number"
+                      min={Math.max(1, Math.ceil(calculateTotalShares() * 0.05))}
+                      max={calculateTotalShares()}
+                      value={formData.investment.selectedShares}
+                      onChange={(e) => {
+                        const raw = parseInt(e.target.value) || 0;
+                        const availableShares = calculateTotalShares();
+                        const minShares = Math.max(1, Math.ceil(availableShares * 0.05));
+                        const clamped = Math.max(minShares, Math.min(availableShares, raw));
+                        updateInvestment(clamped);
+                      }}
+                      className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-center"
+                    />
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Price per share: AED 10.00
+                    </div>
+                  </div>
+                </div>
+
+                {/* Your Ownership */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-3 text-blue-800 dark:text-blue-200">Your Ownership</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-blue-700 dark:text-blue-300 font-semibold">
+                        {((formData.investment.selectedShares / calculateTotalShares()) * 100).toFixed(2)}%
+                      </div>
+                      <div className="text-blue-600 dark:text-blue-400">Ownership</div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700 dark:text-blue-300 font-semibold">
+                        {formData.investment.selectedShares}
+                      </div>
+                      <div className="text-blue-600 dark:text-blue-400">Shares</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Investment Breakdown */}
+                <div className="bg-stone-50 dark:bg-stone-800 p-4 rounded-lg my-6">
+                  <h3 className="font-semibold mb-3 dark:text-white">Investment Breakdown</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {formData.investment.selectedShares} shares × AED 10.00
+                      </span>
+                      <span className="dark:text-white">AED {(formData.investment.selectedShares * 10).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Platform Fee (2%)</span>
+                      <span className="dark:text-white">AED {(formData.investment.selectedShares * 10 * 0.02).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">GST (18%)</span>
+                      <span className="dark:text-white">AED {(formData.investment.selectedShares * 10 * 0.18).toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
+                      <div className="flex justify-between font-semibold">
+                        <span className="dark:text-white">Total Amount</span>
+                        <span className="text-green-600 dark:text-green-400">AED {(formData.investment.selectedShares * 10 * 1.2).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project Details Summary */}
+              <div className="bg-stone-50 dark:bg-stone-800 p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Project Details</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Business:</span>
+                    <span className="font-medium">{formData.selectedBusiness?.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Location:</span>
+                    <span className="font-medium">{formData.location?.address}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Building:</span>
+                    <span className="font-medium">{formData.locationDetails.buildingName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Area:</span>
+                    <span className="font-medium">{formData.locationDetails.sqft} sq ft</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Cost per sq ft:</span>
+                    <span className="font-medium">
+                      AED {(formData.selectedBusiness?.costPerArea || parseFloat(formData.locationDetails.costPerArea) || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="border-t border-stone-200 dark:border-stone-600 pt-3">
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Total Project Investment:</span>
+                      <span className="text-xl font-bold text-green-600">AED {calculateTotalInvestment().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Next Steps */}
-              <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800  p-4">
-                <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">What happens next?</h4>
-                <div className="text-sm text-stone-600 dark:text-stone-400 space-y-1">
-                  <p>1. Brand owner will review your proposal</p>
-                  <p>2. You'll receive notification of approval/rejection</p>
-                  <p>3. If approved, franchise tokens will be created</p>
-                  <p>4. You can track progress in your account dashboard</p>
+                
+              </div>
+
+              
+
+              {/* Wallet Balance Display */}
+              {connected && (
+                <div className="bg-stone-50 dark:bg-stone-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-stone-600 dark:text-stone-400">Wallet Balance</span>
+                    <span className="text-sm font-semibold">{solBalance.toFixed(4)} SOL</span>
+                  </div>
+                  {solBalance < (formData.investment.selectedShares * calculateSharePrice() * 1.2) && (
+                    <div className="mt-2">
+                      <Button variant="outline" onClick={() => window.open('https://phantom.app/', '_blank')}>
+                        Add Balance
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!connected && (
+                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 p-4">
+                  <div className="flex items-center gap-3">
+                    <Wallet className="h-5 w-5 text-yellow-600" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Wallet Required</h4>
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Connect your Solana wallet to purchase shares
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+
+          {currentStep === 6 && contractDetails && (
+            <motion.div
+              key="step6"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="p-6 space-y-6"
+            >
+              {/* Contract Success Header */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Investment Successful!
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Your blockchain contract has been created successfully
+                </p>
+              </div>
+
+              {/* Contract Details Card */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-lg font-semibold">Investment Contract</h4>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-green-600">Verified</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Shares Purchased:</span>
+                    <p className="font-semibold text-lg">{contractDetails.shares}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Investment:</span>
+                    <p className="font-semibold text-lg text-green-600">
+                      {formatAmount(contractDetails.amountLocal)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">SOL Amount:</span>
+                    <p className="font-semibold">{contractDetails.amountSOL.toFixed(4)} SOL</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Ownership:</span>
+                    <p className="font-semibold">
+                      {((contractDetails.shares / calculateTotalShares()) * 100).toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Transaction Signatures */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Payment Transaction:
+                    </label>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded p-2 mt-1 flex items-center justify-between">
+                      <code className="text-xs font-mono text-gray-800 dark:text-gray-200 break-all">
+                        {contractDetails.paymentSignature}
+                      </code>
+                      <button
+                        onClick={() => window.open(`https://explorer.solana.com/tx/${contractDetails.paymentSignature}?cluster=devnet`, '_blank')}
+                        className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                      >
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {contractDetails.createFranchiseSignature && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Franchise Creation:
+                      </label>
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded p-2 mt-1 flex items-center justify-between">
+                        <code className="text-xs font-mono text-gray-800 dark:text-gray-200 break-all">
+                          {contractDetails.createFranchiseSignature}
+                        </code>
+                        <button
+                          onClick={() => window.open(`https://explorer.solana.com/tx/${contractDetails.createFranchiseSignature}?cluster=devnet`, '_blank')}
+                          className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                        >
+                          <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Investment Contract:
+                    </label>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded p-2 mt-1 flex items-center justify-between">
+                      <code className="text-xs font-mono text-gray-800 dark:text-gray-200 break-all">
+                        {contractDetails.contractSignature}
+                      </code>
+                      <button
+                        onClick={() => window.open(`https://explorer.solana.com/tx/${contractDetails.contractSignature}?cluster=devnet`, '_blank')}
+                        className="ml-2 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+                      >
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Actions */}
               <div className="flex gap-3">
-                <Button
-                  onClick={() => {
-                    onClose();
-                    // Navigate to account page to view invoices
-                    window.location.href = '/account';
-                  }}
-                  className="flex-1"
-                >
-                  View in Account
+                <Button onClick={() => window.location.href = '/contracts'} className="flex-1">
+                  View Contract
                 </Button>
-                <Button
-                  onClick={onClose}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Close
+                <Button onClick={() => window.location.href = '/'} variant="outline" className="flex-1">
+                  Go Home
                 </Button>
               </div>
             </motion.div>
           )}
+
+
+
         </AnimatePresence>
       </div>
 
       {/* Footer */}
       {currentStep <= totalSteps && (
         <div className="p-6 border-t border-gray-200 dark:border-stone-700">
-          <Button
-            onClick={nextStep}
-            disabled={!canProceed() || loading}
-            className="w-full h-12 text-lg"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating Franchise...
-              </>
-            ) : !connected && currentStep === totalSteps ? (
-              <>
-                <Wallet className="h-5 w-5 mr-2" />
-                Connect Wallet to Create
-              </>
-            ) : currentStep === totalSteps ? (
-              <>
-                <Building className="h-5 w-5 mr-2" />
-                Create Franchise On-Chain
-              </>
-            ) : (
-              <>
-                Continue
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </>
-            )}
-          </Button>
+          {currentStep < 4 ? (
+            <Button
+              onClick={nextStep}
+              disabled={!canProceed() || loading}
+              className="w-full h-12 text-lg"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </>
+              )}
+            </Button>
+          ) : currentStep === 4 ? (
+            <div className="flex items-center justify-between">
+              {/* Left side - Payment totals */}
+              <div className="space-y-1">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Total Amount: AED {(formData.investment.selectedShares * 10 * 1.2).toFixed(2)}
+                </div>
+                <div className="text-lg font-semibold">
+                  Pay: {(formData.investment.selectedShares * calculateSharePrice() * 1.2).toFixed(4)} SOL
+                </div>
+              </div>
 
-          {!connected && currentStep === totalSteps && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center mt-2">
-              Connect your wallet to create a franchise on the Solana blockchain
-            </p>
-          )}
+              {/* Right side - Payment button */}
+              <div className="flex items-center gap-3">
+                {connected ? (
+                  <SlideButton
+                    onAction={handleSlidePay}
+                    className="bg-purple-600 text-white px-8"
+                  >
+                    Slide to Pay
+                  </SlideButton>
+                ) : (
+                  <Button
+                    onClick={() => setVisible(true)}
+                    variant="outline"
+                    className="px-6"
+                  >
+                    Connect Wallet
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
+
+
+
+
     </div>
   );
 };

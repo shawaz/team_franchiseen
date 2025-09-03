@@ -10,33 +10,49 @@ export function useFranchiseProgram() {
   const wallet = useWallet();
 
   const provider = useMemo(() => {
-    if (!wallet.publicKey || !wallet.signTransaction) {
+    if (!wallet.publicKey || !wallet.signTransaction || !connection) {
       return null;
     }
 
-    return new AnchorProvider(
-      connection,
-      {
-        publicKey: wallet.publicKey,
-        signTransaction: wallet.signTransaction,
-        signAllTransactions: wallet.signAllTransactions || (async (txs) => {
-          const signedTxs = [];
-          for (const tx of txs) {
-            signedTxs.push(await wallet.signTransaction!(tx));
-          }
-          return signedTxs;
-        }),
-      },
-      { commitment: 'confirmed' }
-    );
+    try {
+      return new AnchorProvider(
+        connection,
+        {
+          publicKey: wallet.publicKey,
+          signTransaction: wallet.signTransaction,
+          signAllTransactions: wallet.signAllTransactions || (async (txs) => {
+            const signedTxs = [];
+            for (const tx of txs) {
+              signedTxs.push(await wallet.signTransaction!(tx));
+            }
+            return signedTxs;
+          }),
+        },
+        { commitment: 'confirmed' }
+      );
+    } catch (error) {
+      console.error('Error creating AnchorProvider:', error);
+      return null;
+    }
   }, [connection, wallet]);
 
   const program = useMemo(() => {
     if (!provider) return null;
+
     try {
-      return createFranchiseProgram(provider);
+      console.log('Attempting to create franchise program...');
+      const franchiseProgram = createFranchiseProgram(provider);
+
+      if (!franchiseProgram) {
+        console.warn('Franchise program creation returned null - blockchain features will be disabled');
+        return null;
+      }
+
+      console.log('Franchise program created successfully');
+      return franchiseProgram;
     } catch (error) {
       console.error('Error creating franchise program:', error);
+      console.warn('Blockchain features will be disabled due to program initialization failure');
       return null;
     }
   }, [provider]);

@@ -13,6 +13,7 @@ interface FranchiseData {
   soldShares: number;
   costPerShare: number;
   franchiseId: string;
+  totalInvestment?: number; // Add optional totalInvestment for calculation
 }
 
 export default function BuySharesButtonClient({ franchiseData }: { franchiseData: FranchiseData }) {

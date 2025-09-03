@@ -58,12 +58,12 @@ export default defineSchema({
   industries: defineTable({
     name: v.string(),
     slug: v.string(),
-  }),
+  }).index("by_slug", ["slug"]),
   categories: defineTable({
     name: v.string(),
-    industry_id: v.string(),
+    industry_id: v.id("industries"),
     slug: v.string(),
-  }),
+  }).index("by_industry", ["industry_id"]).index("by_slug", ["slug"]),
   businesses: defineTable({
     name: v.string(),
     slug: v.optional(v.string()),
@@ -71,12 +71,19 @@ export default defineSchema({
     owner_id: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
-    industry_id: v.optional(v.string()),
-    category_id: v.optional(v.string()),
+    industry_id: v.optional(v.id("industries")),
+    category_id: v.optional(v.id("categories")),
     costPerArea: v.optional(v.number()),
     min_area: v.optional(v.number()),
     serviceable_countries: v.optional(v.array(v.string())),
     currency: v.optional(v.string()),
+    about: v.optional(v.string()),
+    socialMedia: v.optional(v.object({
+      facebook: v.optional(v.string()),
+      instagram: v.optional(v.string()),
+      linkedin: v.optional(v.string()),
+      twitter: v.optional(v.string()),
+    })),
     // Verification fields
     verificationStatus: v.optional(v.string()), // "pending", "verified", "rejected"
     adminNotes: v.optional(v.string()),

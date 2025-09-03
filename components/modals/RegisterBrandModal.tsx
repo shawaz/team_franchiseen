@@ -313,7 +313,7 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
         costPerArea: formData.totalInvestment,
         min_area: 1000, // Default minimum area
         serviceable_countries: formData.countries,
-        currency: 'USD', // Default currency
+        currency: 'AED', // Default currency
       });
 
       toast.success('Brand registered successfully!');
@@ -640,9 +640,9 @@ const TypeformRegisterBrandModal: React.FC<TypeformRegisterBrandModalProps> = ({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">Cost Per Area (USD) *</label>
+                        <label className="block text-sm font-medium mb-2">Cost Per Area (AED) *</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">AED</span>
                           <Input
                             type="number"
                             value={formData.costPerArea}
