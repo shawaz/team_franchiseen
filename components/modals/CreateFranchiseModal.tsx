@@ -688,7 +688,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   const calculateTotalInvestment = () => {
     const area = parseFloat(formData.locationDetails.sqft) || 0;
     // Use business costPerArea as primary source, fallback to form data
-    let costPerAreaAED = formData.selectedBusiness?.costPerArea || parseFloat(formData.locationDetails.costPerArea) || 0;
+    const costPerAreaAED = formData.selectedBusiness?.costPerArea || parseFloat(formData.locationDetails.costPerArea) || 0;
 
     // Ensure we're working with AED values
     // The business costPerArea is now stored in AED and all calculations use AED

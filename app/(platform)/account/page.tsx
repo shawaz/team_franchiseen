@@ -53,7 +53,7 @@ export default async function ProfilePage() {
     firstName: user.firstName,
     lastName: user.lastName,
     imageUrl: user.imageUrl,
-    emailAddresses: user.emailAddresses?.map(email => ({
+    emailAddresses: user.emailAddresses?.map((email: any) => ({
       emailAddress: email.emailAddress
     }))
   };

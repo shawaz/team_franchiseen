@@ -109,7 +109,7 @@ export class FranchiseProgram {
       });
 
       // Try to create the program - only if everything is available
-      this.program = new Program(IDL as any, PROGRAM_ID, provider);
+      this.program = new Program(IDL as any, provider);
       console.log('Anchor program initialized successfully');
 
       // Test program functionality

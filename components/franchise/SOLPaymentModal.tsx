@@ -10,7 +10,7 @@ import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { toast } from 'sonner';
 import { useSolana } from '@/hooks/useSolana';
 import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
-import { calculateAvailableShares, FIXED_USD_PER_SHARE } from '@/lib/franchise-calculations';
+import { calculateAvailableShares, FIXED_AED_PER_SHARE } from '@/lib/franchise-calculations';
 
 interface FranchiseData {
   name: string;
