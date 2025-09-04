@@ -8,7 +8,6 @@ import {
   Globe,
   DollarSign,
   Upload,
-  Wallet,
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
@@ -24,11 +23,9 @@ import countryList from 'react-select-country-list';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 import { SUPPORTED_CURRENCIES } from '@/lib/coingecko';
 import { useUser } from "@clerk/nextjs";
-import { Keypair } from '@solana/web3.js';
+
 import CountryDocumentsTable from '@/components/CountryDocumentsTable';
 import ImageCropModal from '@/components/ImageCropModal';
-import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { waitForUploadcare } from '@/utils/uploadcare-test';
 import { RegisterFormSkeleton } from '@/components/skeletons/FormSkeleton';
 
@@ -58,13 +55,8 @@ interface FormData {
   min_area: number;
   serviceable_countries: string[];
   currency: string;
-  solanaWallet: string;
-  solanaPrivateKey: string;
-  seedPhrase: string[];
-  seedPhraseVerification: string[];
   companyDocuments: File[];
   franchiseStartingBudget: number; // Changed from minTotalInvestment
-  totalShares: number; // New field for calculated shares
   website: string;
   socialMedia: {
     facebook: string;
@@ -168,13 +160,8 @@ export default function RegisterBrandPage() {
     min_area: 100,
     serviceable_countries: [],
     currency: 'AED', // Default to AED
-    solanaWallet: '',
-    solanaPrivateKey: '',
-    seedPhrase: [],
-    seedPhraseVerification: [],
     companyDocuments: [],
     franchiseStartingBudget: 0,
-    totalShares: 0,
     website: '',
     socialMedia: {
       facebook: '',
@@ -187,7 +174,17 @@ export default function RegisterBrandPage() {
   });
 
   const industries = useQuery(api.industries.listIndustries, {}) || [];
-  const categories = useQuery(api.myFunctions.listCategories, selectedIndustry ? { industry_id: selectedIndustry } : 'skip') as Category[] || [];
+  const categories = useQuery(
+    api.categories.getByIndustry,
+    selectedIndustry ? { industryId: selectedIndustry as any } : 'skip'
+  ) as Category[] || [];
+  // Slug availability check
+  const existingWithSlug = useQuery(
+    api.businesses.getBySlug,
+    formData.slug?.trim() ? { slug: formData.slug.trim() } : 'skip'
+  );
+  const isSlugTaken = !!existingWithSlug;
+
   const industryOptions: IndustryOption[] = industries.map((i: { _id: string; name: string }) => ({ label: i.name, value: i._id }));
   const categoryOptions: CategoryOption[] = categories.map((c: Category) => ({ label: c.name, value: c._id, industry_id: c.industry_id }));
 
@@ -196,75 +193,7 @@ export default function RegisterBrandPage() {
     return <RegisterFormSkeleton />;
   }
 
-  // Generate seed phrase
-  const generateSeedPhrase = (): string[] => {
-    const words = [
-      'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 'absurd', 'abuse',
-      'access', 'accident', 'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire', 'across', 'act',
-      'action', 'actor', 'actress', 'actual', 'adapt', 'add', 'addict', 'address', 'adjust', 'admit',
-      'adult', 'advance', 'advice', 'aerobic', 'affair', 'afford', 'afraid', 'again', 'agent', 'agree',
-      'ahead', 'aim', 'air', 'airport', 'aisle', 'alarm', 'album', 'alcohol', 'alert', 'alien',
-      'all', 'alley', 'allow', 'almost', 'alone', 'alpha', 'already', 'also', 'alter', 'always',
-      'amateur', 'amazing', 'among', 'amount', 'amused', 'analyst', 'anchor', 'ancient', 'anger', 'angle',
-      'angry', 'animal', 'ankle', 'announce', 'annual', 'another', 'answer', 'antenna', 'antique', 'anxiety'
-    ];
 
-    const seedPhrase: string[] = [];
-    for (let i = 0; i < 12; i++) {
-      const randomIndex = Math.floor(Math.random() * words.length);
-      seedPhrase.push(words[randomIndex]);
-    }
-    return seedPhrase;
-  };
-
-  // Generate Solana wallet for the brand
-  const generateSolanaWallet = (): string | undefined => {
-    try {
-      const keypair = Keypair.generate();
-      const publicKey = keypair.publicKey.toString();
-      const privateKey = Buffer.from(keypair.secretKey).toString('base64');
-      const seedPhrase = generateSeedPhrase();
-
-      setFormData(prev => ({
-        ...prev,
-        solanaWallet: publicKey,
-        solanaPrivateKey: privateKey,
-        seedPhrase: seedPhrase,
-        seedPhraseVerification: []
-      }));
-      toast.success('Solana wallet and seed phrase generated!');
-      return publicKey;
-    } catch (error) {
-      console.error('Error generating Solana wallet:', error);
-      toast.error('Failed to generate Solana wallet');
-      return undefined;
-    }
-  };
-
-  // Handle seed phrase verification
-  const handleSeedPhraseVerification = (index: number, word: string) => {
-    setFormData(prev => {
-      const newVerification = [...prev.seedPhraseVerification];
-      newVerification[index] = word;
-      return {
-        ...prev,
-        seedPhraseVerification: newVerification
-      };
-    });
-  };
-
-  // Check if seed phrase verification is valid
-  const isSeedPhraseValid = () => {
-    if (formData.seedPhrase.length !== 12 || formData.seedPhraseVerification.length !== 3) {
-      return false;
-    }
-
-    // Check 3 random words (indices 2, 5, 8)
-    const indicesToCheck = [2, 5, 8];
-    return indicesToCheck.every((index, verifyIndex) =>
-      formData.seedPhraseVerification[verifyIndex] === formData.seedPhrase[index]
-    );
-  };
 
   // Handle logo file selection
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,13 +245,8 @@ export default function RegisterBrandPage() {
       min_area: 100,
       serviceable_countries: [],
       currency: currentCurrency.code,
-      solanaWallet: '',
-      solanaPrivateKey: '',
-      seedPhrase: [],
-      seedPhraseVerification: [],
       companyDocuments: [],
       franchiseStartingBudget: 0,
-      totalShares: 0,
       website: '',
       socialMedia: {
         facebook: '',
@@ -377,7 +301,6 @@ export default function RegisterBrandPage() {
           const franchiseStartingBudget = totalShares * costPerShare; // Total budget in local currency
 
           newData.franchiseStartingBudget = franchiseStartingBudget;
-          newData.totalShares = totalShares;
         }
       }
 
@@ -472,7 +395,7 @@ export default function RegisterBrandPage() {
 
   // Step navigation
   const nextStep = () => {
-    if (currentStep < 5) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -487,7 +410,7 @@ export default function RegisterBrandPage() {
   const isStepValid = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.name.trim() && formData.slug.trim() && formData.industry_id && formData.category_id && logoFile && formData.about.trim());
+        return !!(formData.name.trim() && formData.slug.trim() && formData.industry_id && formData.category_id && logoFile && formData.about.trim() && !isSlugTaken);
       case 2:
         const hasAllCountryDocs = formData.serviceable_countries.every(country => {
           const countryDoc = formData.countryDocuments[country];
@@ -498,21 +421,17 @@ export default function RegisterBrandPage() {
         return !!(formData.serviceable_countries.length > 0 && hasAllCountryDocs);
       case 3:
         return !!(formData.costPerShare > 0 && formData.min_area > 0);
-      case 4:
-        return !!(formData.solanaWallet && formData.solanaPrivateKey && formData.seedPhrase.length === 12);
-      case 5:
-        return isSeedPhraseValid();
       default:
         return false;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log('[Register] Submit clicked. canSubmit =', !isLoading && isSignedIn && isStepValid(5), {
+    console.log('[Register] Submit clicked. canSubmit =', !isLoading && isSignedIn && isStepValid(currentStep), {
       isLoading,
       isSignedIn,
       isLoaded,
-      step5Valid: isStepValid(5),
+      currentStep,
     });
     console.log('[Register] Submit clicked. Form data snapshot:', {
       name: formData.name,
@@ -571,15 +490,6 @@ export default function RegisterBrandPage() {
     setIsLoading(true);
 
     try {
-      // Generate Solana wallet if not already generated
-      let walletAddress: string | undefined = formData.solanaWallet;
-      if (!walletAddress) {
-        walletAddress = generateSolanaWallet();
-        if (!walletAddress) {
-          throw new Error('Failed to generate Solana wallet');
-        }
-      }
-
       console.log('[Register] Proceeding to logo upload. hasLogoFile:', !!logoFile);
       // Upload logo to Uploadcare
       let logoUrl = '';
@@ -651,7 +561,7 @@ export default function RegisterBrandPage() {
       });
       console.log('[Register] Convex mutation result received');
 
-      toast.success('Brand registered successfully with Solana wallet for royalty payments!');
+      toast.success('Brand registered successfully!');
       resetForm();
 
       // Navigate to brand account page
@@ -676,53 +586,16 @@ export default function RegisterBrandPage() {
     <div className="max-w-4xl mx-auto dark:bg-stone-800/50 bg-white text-foreground my-6 dark:text-foreground border">
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 justify-between pr-6 border-b">
         
-        <div className="flex flex-col px-5">
-          <p className="text-sm font-semibold">{
+        <p className="text-lg font-semibold pl-6">{
               currentStep === 1 ? 'Brand' :
               currentStep === 2 ? 'Countries' :
-              currentStep === 3 ? 'Franchise' :
-              currentStep === 4 ? 'Wallet' :
-              'Verify'
+              'Franchise'
             }
           </p>
-          <p className="text-xs text-muted-foreground">Step {currentStep} of 5</p>
+          <p className="text-xs text-muted-foreground">Step {currentStep} of 3</p>
 
-        </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex gap-2 justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 1}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Previous
-        </Button>
-
-        {currentStep < 5 ? (
-          <Button
-            type="button"
-            onClick={nextStep}
-            disabled={!isStepValid(currentStep)}
-            className="flex items-center gap-2 bg-yellow-600 text-white hover:bg-yellow-700"
-          >
-            Next
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            type="submit"
-            disabled={isLoading || !isStepValid(5) || !isSignedIn || !isLoaded}
-            className="bg-yellow-600 text-white hover:bg-yellow-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            title={!isLoaded ? 'Auth loading' : !isSignedIn ? 'Sign in required' : !isStepValid(5) ? 'Complete seed phrase verification' : isLoading ? 'Submitting…' : ''}
-          >
-            {isLoading ? 'Creating Brand...' : 'Register Brand'}
-          </Button>
-        )}
-      </div>
+      
 
       </header>
 
@@ -733,7 +606,7 @@ export default function RegisterBrandPage() {
           transition={{ delay: 0.4 }}
           className=""
         >
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form id="register-form" onSubmit={handleSubmit} className="space-y-8">
 
             {/* Step 1: Brand Information */}
             {currentStep === 1 && (
@@ -818,12 +691,19 @@ export default function RegisterBrandPage() {
                           name="slug"
                           value={formData.slug}
                           onChange={handleInputChange}
-                          className="w-full h-11 pl-8 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600  focus:ring-2 focus:ring-primary focus:border-primary"
+                          className={`w-full h-11 pl-8 pr-4 bg-white dark:bg-stone-700 border  focus:ring-2 focus:ring-primary focus:border-primary ${isSlugTaken ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-stone-600'}`}
                           placeholder="brand-name-slug"
                           required
                           pattern="[a-z0-9-]+"
                           title="Only lowercase letters, numbers, and hyphens allowed"
                         />
+                        {formData.slug.trim().length > 0 && (
+                          isSlugTaken ? (
+                            <p className="mt-1 text-xs text-red-600">This slug is already taken. Please choose another.</p>
+                          ) : (
+                            <p className="mt-1 text-xs text-green-600">This slug is available.</p>
+                          )
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1036,7 +916,7 @@ export default function RegisterBrandPage() {
 
                     <div>
                       <label htmlFor="costPerShare" className="block text-sm justify-between flex font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Cost Per Share ({currentCurrencyDetails.code.toUpperCase()}) <span className="text-red-500">*</span>
+                        Cost Per Share *({currentCurrencyDetails.code.toUpperCase()}) 
                         {selectedCurrency !== 'aed' && (
                           <span className="text-xs text-gray-500 ml-2">
                             (≈ AED {(formData.costPerShare * (exchangeRates['aed'] / exchangeRates[selectedCurrency] || 1)).toFixed(2)})
@@ -1103,10 +983,6 @@ export default function RegisterBrandPage() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-green-700 dark:text-green-300">Minimum area:</span>
                           <span className="font-medium text-green-800 dark:text-green-200">{formData.min_area} sq ft</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-green-700 dark:text-green-300">Total shares available:</span>
-                          <span className="font-medium text-green-800 dark:text-green-200">{formData.totalShares} shares</span>
                         </div>
                         <div className="border-t border-green-200 dark:border-green-700 pt-3">
                           <div className="flex justify-between items-center">
@@ -1186,124 +1062,47 @@ export default function RegisterBrandPage() {
               </motion.div>
             )}
 
-            {/* Step 4: Wallet Setup */}
-            {currentStep === 4 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
-              >
-                <div className="bg-stone-50 dark:bg-stone-800 p-6 space-y-6 border border-stone-300 dark:border-stone-600 rounded-lg">
+            {/* Navigation Buttons */}
+            <div className="flex gap-2 justify-between p-6 border-t">
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+              )}
 
-                  <div className="space-y-4">
-                    <p className="text-sm text-stone-600 dark:text-stone-400">
-                      Generate a Solana wallet for your brand to receive royalty payments from franchisees.
-                    </p>
+              {currentStep < 3 ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!isStepValid(currentStep)}
+                  className="flex items-center gap-2 bg-yellow-600 text-white hover:bg-yellow-700 justify-end"
+                >
+                  Next
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit" form="register-form"
+                  disabled={isLoading || !isStepValid(3)}
+                  className="bg-yellow-600 text-white hover:bg-yellow-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!isStepValid(3) ? 'Complete required fields' : isLoading ? 'Submitting…' : ''}
+                  onClick={() => {
+                    const formEl = document.getElementById('register-form') as HTMLFormElement | null;
+                    if (formEl) formEl.requestSubmit();
+                  }}
+                >
+                  {isLoading ? 'Creating Brand...' : 'Register Brand'}
+                </Button>
+              )}
+            </div>
 
-                    {formData.solanaWallet ? (
-                      <div className="space-y-4">
-                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Wallet className="h-4 w-4 text-yellow-600" />
-                            <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Wallet Generated Successfully</span>
-                          </div>
-                          <div className="space-y-3">
-                            <div>
-                              <label className="text-xs font-medium text-yellow-700 dark:text-yellow-300">Public Key:</label>
-                              <p className="text-xs text-yellow-700 dark:text-yellow-300 font-mono break-all bg-yellow-100 dark:bg-yellow-900/40 p-2 rounded">
-                                {formData.solanaWallet}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Seed Phrase Display */}
-                        <div className="bg-stone-100 dark:bg-stone-700 border border-stone-300 dark:border-stone-600 p-4 rounded-lg">
-                          <h4 className="text-sm font-medium text-stone-800 dark:text-stone-200 mb-3">Your Seed Phrase</h4>
-                          <p className="text-xs text-stone-600 dark:text-stone-400 mb-3">
-                            Write down these 12 words in order. You'll need them to verify your wallet in the next step.
-                          </p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {formData.seedPhrase.map((word, index) => (
-                              <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-stone-800 rounded border border-stone-200 dark:border-stone-600">
-                                <span className="text-xs text-stone-500 w-6">{index + 1}.</span>
-                                <span className="font-mono text-sm text-stone-800 dark:text-stone-200">{word}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
-                            <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                              <strong>Important:</strong> Save these words securely. You'll need to verify them in the next step.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={generateSolanaWallet}
-                        className="w-full bg-yellow-600 text-white hover:bg-yellow-700"
-                      >
-                        <Wallet className="h-4 w-4 mr-2" />
-                        Generate Solana Wallet
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 5: Seed Phrase Verification */}
-            {currentStep === 5 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-6"
-              >
-                <div className="bg-stone-50 dark:bg-stone-800 p-6 space-y-6 border border-stone-300 dark:border-stone-600 rounded-lg">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200 mb-2">Verify Your Seed Phrase</h3>
-                    <p className="text-sm text-stone-600 dark:text-stone-400 mb-6">
-                      Enter the requested words from your seed phrase to confirm you've saved it
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    {[2, 5, 8].map((wordIndex, verifyIndex) => (
-                      <div key={wordIndex}>
-                        <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
-                          Word #{wordIndex + 1}
-                        </label>
-                        <Input
-                          value={formData.seedPhraseVerification[verifyIndex] || ''}
-                          onChange={(e) => handleSeedPhraseVerification(verifyIndex, e.target.value)}
-                          placeholder={`Enter word #${wordIndex + 1}`}
-                          className="font-mono bg-white dark:bg-stone-700 border-stone-300 dark:border-stone-600 focus:border-yellow-500 focus:ring-yellow-500"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {formData.seedPhraseVerification.length === 3 && (
-                    <div className={`p-4 rounded-lg ${
-                      isSeedPhraseValid()
-                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
-                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                    }`}>
-                      <p className={`text-sm ${
-                        isSeedPhraseValid()
-                          ? 'text-green-700 dark:text-green-300'
-                          : 'text-red-700 dark:text-red-300'
-                      }`}>
-                        {isSeedPhraseValid()
-                          ? '✓ Seed phrase verified successfully!'
-                          : '✗ Incorrect words. Please check your seed phrase.'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
 
           </form>
         </motion.div>

@@ -10,6 +10,7 @@ import { useModal } from '@/contexts/ModalContext';
 import { formatSol } from '@/lib/coingecko';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 import { Button } from '../ui/button';
+import MobileWalletConnect from './MobileWalletConnect';
 
 interface SolanaWalletWithLocalCurrencyProps {
   onAddMoney?: () => void;
@@ -146,12 +147,7 @@ const SolanaWalletWithLocalCurrency: React.FC<SolanaWalletWithLocalCurrencyProps
               </div>
               <h4 className="text-sm font-semibold mb-2">Connect Your Wallet</h4>
               <p className="text-purple-100 text-xs mb-3">Connect your Phantom wallet to view your SOL balance</p>
-              <button
-                onClick={() => setVisible(true)}
-                className="bg-white text-purple-600 font-semibold px-4 py-2 hover:bg-purple-50 transition text-sm"
-              >
-                Connect Wallet
-              </button>
+              <MobileWalletConnect />
             </div>
           ) : (
             <>

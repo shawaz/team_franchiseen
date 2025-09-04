@@ -26,13 +26,16 @@ export default function SolanaWalletProvider({ children }: SolanaWalletProviderP
     return clusterApiUrl(network);
   }, [network]);
 
-  // Configure wallets
+  // Configure wallets with mobile support
   const wallets = useMemo(
     () => [
-      new PhantomWalletAdapter(),
+      new PhantomWalletAdapter({
+        // Enable mobile deep linking
+        network,
+      }),
       // Add more wallet adapters here as needed
     ],
-    []
+    [network]
   );
 
   return (

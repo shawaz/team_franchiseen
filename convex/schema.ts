@@ -8,6 +8,8 @@ import { v } from "convex/values";
 export default defineSchema({
   users: defineTable({
     email: v.string(),
+    // Link to Privy DID for authentication
+    privyUserId: v.optional(v.string()),
     created_at: v.number(),
     updated_at: v.optional(v.number()),
     avatar: v.optional(v.string()),
@@ -54,7 +56,7 @@ export default defineSchema({
       })),
     })),
   })
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"]).index("by_privyUserId", ["privyUserId"]),
   industries: defineTable({
     name: v.string(),
     slug: v.string(),
