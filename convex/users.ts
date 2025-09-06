@@ -232,6 +232,9 @@ export const hasAdminAccess = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
 
+    // Super admin always has access
+    if (identity.email === "shawaz@franchiseen.com") return true;
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", identity.email as string))
@@ -241,7 +244,19 @@ export const hasAdminAccess = query({
 
     // Check if user has admin role or is a platform admin
     const adminRoles = ['admin', 'platform_admin', 'super_admin'];
-    return user.roles?.some(role => adminRoles.includes(role)) || false;
+    const hasRole = user.roles?.some(role => adminRoles.includes(role)) || false;
+
+    // Also check if user is active platform team member
+    if (!hasRole && user) {
+      const platformMember = await ctx.db
+        .query("platformTeamMembers")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .unique();
+
+      return platformMember?.isActive || false;
+    }
+
+    return hasRole;
   },
 });
 
@@ -252,12 +267,41 @@ export const hasPermission = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return false;
 
+    // Super admin has all permissions
+    if (identity.email === "shawaz@franchiseen.com") return true;
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", identity.email as string))
       .unique();
 
-    if (!user || !user.roles) return false;
+    if (!user) return false;
+
+    // Check platform team member permissions first
+    const platformMember = await ctx.db
+      .query("platformTeamMembers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .unique();
+
+    if (platformMember?.isActive) {
+      const permissions = platformMember.permissions || [];
+
+      // Check for wildcard permission
+      if (permissions.includes('*')) return true;
+
+      // Check for exact permission match
+      if (permissions.includes(args.permission)) return true;
+
+      // Check for wildcard section match
+      const wildcardPermissions = permissions.filter(p => p.endsWith('.*'));
+      for (const wildcardPerm of wildcardPermissions) {
+        const section = wildcardPerm.replace('.*', '');
+        if (args.permission.startsWith(section + '.')) return true;
+      }
+    }
+
+    // Fallback to user roles
+    if (!user.roles) return false;
 
     // Check each role for the permission
     for (const role of user.roles) {

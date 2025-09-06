@@ -43,6 +43,8 @@ export default function FranchisesListView({ franchises, brandSlug }: Franchises
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "Approved":
+        return "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-500";
       case "Funding":
         return "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-500";
       case "Launching":
@@ -66,13 +68,17 @@ export default function FranchisesListView({ franchises, brandSlug }: Franchises
 
   const getProgress = (f: Franchise) => {
     switch (f.status) {
+      case "Approved": {
+        // Approved franchises are ready for funding - show as 10% progress
+        return { percent: 10, color: "bg-emerald-500" };
+      }
       case "Funding": {
         const cps = computeCostPerShare(f);
         const totalRaised = (f.selectedShares || 0) * cps;
         const percent = f.totalInvestment
           ? Math.min(100, Math.round((totalRaised / f.totalInvestment) * 100))
           : 0;
-        return { percent, color: "bg-yellow-500" };
+        return { percent: Math.max(10, percent), color: "bg-yellow-500" };
       }
       case "Launching":
         return { percent: 50, color: "bg-blue-500" };
@@ -86,9 +92,12 @@ export default function FranchisesListView({ franchises, brandSlug }: Franchises
   };
 
   const filteredFranchises = React.useMemo(() => {
-    return selectedStatus === "All"
-      ? franchises.filter((f) => f.status !== "Pending Approval")
-      : franchises.filter((f) => f.status === selectedStatus);
+    if (selectedStatus === "Funding") {
+      // Only include "Funding" status - "Approved" should not be public until transitioned
+      return franchises.filter((f) => f.status === "Funding");
+    } else {
+      return franchises.filter((f) => f.status === selectedStatus);
+    }
   }, [franchises, selectedStatus]);
 
   return (

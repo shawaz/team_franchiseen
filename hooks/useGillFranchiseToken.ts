@@ -6,20 +6,55 @@ import { useState, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { toast } from 'sonner';
 
-// Mock implementation for now - will be replaced with actual Solana program
+// Enhanced FRC Token interfaces
 interface FranchiseTokenResult {
   tokenMint: PublicKey;
   signature: string;
+  tokenSymbol: string;
+  tokenName: string;
 }
 
 interface FranchiseTokenData {
   franchiseId: string;
   tokenMint: PublicKey;
+  tokenSymbol: string;
+  tokenName: string;
   totalSupply: number;
   circulatingSupply: number;
-  reserveFund: number;
+  reserveSupply: number;
+  tokenPrice: number;
+  marketCap: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
   monthlyRevenue: number;
   monthlyExpenses: number;
+  lastPayoutAmount: number;
+  lastPayoutDate: number;
+  nextPayoutDate: number;
+  status: string;
+  createdAt: number;
+}
+
+interface TokenTransaction {
+  signature: string;
+  type: 'mint' | 'burn' | 'transfer' | 'payout';
+  amount: number;
+  timestamp: number;
+  from?: PublicKey;
+  to?: PublicKey;
+  description: string;
+}
+
+interface TokenHolder {
+  walletAddress: PublicKey;
+  tokenBalance: number;
+  totalEarned: number;
+  totalRedeemed: number;
+  investmentTokens: number;
+  performanceTokens: number;
+  bonusTokens: number;
+  lastPayoutAmount: number;
   lastPayoutDate: number;
 }
 
@@ -30,11 +65,12 @@ export function useGillFranchiseToken() {
 
   const [loading, setLoading] = useState(false);
 
-  // Create franchise token (mock implementation)
+  // Create franchise token with enhanced functionality
   const createFranchiseToken = useCallback(async (
     franchiseId: string,
-    totalShares: number,
-    initialPrice: number
+    businessName: string,
+    franchiseLocation: string,
+    totalSupply: number = 10000
   ): Promise<FranchiseTokenResult> => {
     if (!connected || !wallet) {
       throw new Error('Wallet not connected');
@@ -42,18 +78,28 @@ export function useGillFranchiseToken() {
 
     setLoading(true);
     try {
-      // Mock implementation - simulate token creation
+      // Ensure parameters are strings and handle edge cases
+      const safeBusinessName = String(businessName || 'Unknown Business');
+      const safeFranchiseLocation = String(franchiseLocation || 'Unknown Location');
+
+      // Generate token symbol and name
+      const tokenSymbol = `FRC-${safeBusinessName.toUpperCase().replace(/\s+/g, '')}-${safeFranchiseLocation.toUpperCase().replace(/\s+/g, '')}`;
+      const tokenName = `${safeBusinessName} ${safeFranchiseLocation} Franchise Coin`;
+
+      // Mock implementation - simulate token creation on Solana
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Generate a mock token mint address
+      // Generate a mock token mint address (in real implementation, this would be from Solana program)
       const tokenMint = new PublicKey("11111111111111111111111111111112");
       const signature = "mock_signature_" + Date.now();
 
-      toast.success(`Franchise token created for ${franchiseId}`);
+      toast.success(`FRC Token created: ${tokenSymbol}`);
 
       return {
         tokenMint,
-        signature
+        signature,
+        tokenSymbol,
+        tokenName,
       };
     } catch (error) {
       console.error('Error creating franchise token:', error);
@@ -184,19 +230,113 @@ export function useGillFranchiseToken() {
       // Mock implementation
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      const now = Date.now();
+      const monthlyRevenue = 15000;
+      const monthlyExpenses = 8000;
+
       return {
         franchiseId,
         tokenMint: new PublicKey("11111111111111111111111111111112"),
+        tokenSymbol: "FRC-STARBUCKS-NYC",
+        tokenName: "Starbucks NYC Franchise Coin",
         totalSupply: 10000,
         circulatingSupply: 7500,
-        reserveFund: 25000,
-        monthlyRevenue: 15000,
-        monthlyExpenses: 8000,
-        lastPayoutDate: Date.now() - 30 * 24 * 60 * 60 * 1000 // 30 days ago
+        reserveSupply: 2500,
+        tokenPrice: 1.25,
+        marketCap: 12500,
+        totalRevenue: 180000,
+        totalExpenses: 96000,
+        netProfit: 84000,
+        monthlyRevenue,
+        monthlyExpenses,
+        lastPayoutAmount: 500,
+        lastPayoutDate: now - (30 * 24 * 60 * 60 * 1000),
+        nextPayoutDate: now + (30 * 24 * 60 * 60 * 1000),
+        status: "active",
+        createdAt: now - (180 * 24 * 60 * 60 * 1000),
       };
     } catch (error) {
       console.error('Error fetching franchise token data:', error);
       return null;
+    }
+  }, [connected, wallet]);
+
+  // Distribute performance tokens
+  const distributePerformanceTokens = useCallback(async (
+    franchiseId: string,
+    totalTokensToDistribute: number,
+    reason: string
+  ): Promise<string> => {
+    if (!connected || !wallet) {
+      throw new Error('Wallet not connected');
+    }
+
+    setLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const signature = "distribute_tokens_" + Date.now();
+      toast.success(`Distributed ${totalTokensToDistribute} FRC tokens for ${reason}`);
+      return signature;
+    } catch (error) {
+      console.error('Error distributing tokens:', error);
+      toast.error('Failed to distribute tokens');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [connected, wallet]);
+
+  // Get token transactions
+  const getTokenTransactions = useCallback(async (franchiseId: string): Promise<TokenTransaction[]> => {
+    if (!connected || !wallet) return [];
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const now = Date.now();
+      return [
+        {
+          signature: "tx_1_" + Date.now(),
+          type: 'mint',
+          amount: 1000,
+          timestamp: now - (7 * 24 * 60 * 60 * 1000),
+          description: 'Initial token mint',
+        },
+        {
+          signature: "tx_2_" + Date.now(),
+          type: 'payout',
+          amount: 500,
+          timestamp: now - (30 * 24 * 60 * 60 * 1000),
+          description: 'Monthly profit distribution',
+        },
+      ];
+    } catch (error) {
+      console.error('Error fetching token transactions:', error);
+      return [];
+    }
+  }, [connected, wallet]);
+
+  // Get token holders
+  const getTokenHolders = useCallback(async (franchiseId: string): Promise<TokenHolder[]> => {
+    if (!connected || !wallet) return [];
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      return [
+        {
+          walletAddress: new PublicKey("11111111111111111111111111111112"),
+          tokenBalance: 2500,
+          totalEarned: 3000,
+          totalRedeemed: 500,
+          investmentTokens: 2000,
+          performanceTokens: 800,
+          bonusTokens: 200,
+          lastPayoutAmount: 125,
+          lastPayoutDate: Date.now() - (30 * 24 * 60 * 60 * 1000),
+        },
+      ];
+    } catch (error) {
+      console.error('Error fetching token holders:', error);
+      return [];
     }
   }, [connected, wallet]);
 
@@ -209,5 +349,8 @@ export function useGillFranchiseToken() {
     recordExpense,
     processMonthlyPayouts,
     getFranchiseTokenData,
+    distributePerformanceTokens,
+    getTokenTransactions,
+    getTokenHolders,
   };
 }

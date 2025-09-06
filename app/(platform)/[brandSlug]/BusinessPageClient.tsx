@@ -51,7 +51,6 @@ export default function BusinessPageClient({
   const [selectedStatus, setSelectedStatus] = React.useState<string>("Funding");
   const statusTabs = React.useMemo(() => {
     return [
-      // { label: 'All', value: 'All', count: franchises.filter(f => f.status !== 'Pending Approval').length },
       {
         label: "Funding",
         value: "Funding",
@@ -78,6 +77,8 @@ export default function BusinessPageClient({
   // Map status to badge classes
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "Approved":
+        return "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-500";
       case "Funding":
         return "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-500";
       case "Launching":
@@ -94,16 +95,20 @@ export default function BusinessPageClient({
   // Progress bar logic based on status
   const getProgress = (franchise: Franchise) => {
     switch (franchise.status) {
+      case "Approved": {
+        // Approved franchises are ready for funding - show as 10% progress
+        return { percent: 10, color: "bg-emerald-500" };
+      }
       case "Funding": {
-        const totalRaised =
-          (franchise.selectedShares || 0) * (franchise.costPerArea || 0);
+        const costPerShare = franchise.costPerShare || (franchise.totalInvestment / Math.max(1, franchise.totalShares));
+        const totalRaised = (franchise.selectedShares || 0) * costPerShare;
         const percent = franchise.totalInvestment
           ? Math.min(
               100,
               Math.round((totalRaised / franchise.totalInvestment) * 100),
             )
           : 0;
-        return { percent, color: "bg-yellow-500" };
+        return { percent: Math.max(10, percent), color: "bg-yellow-500" };
       }
       case "Launching": {
         return { percent: 50, color: "bg-blue-500" };
@@ -186,10 +191,14 @@ export default function BusinessPageClient({
           </div>
           <div>
             {(() => {
-              const filteredFranchises =
-                selectedStatus === "All"
-                  ? franchises.filter((f) => f.status !== "Pending Approval")
-                  : franchises.filter((f) => f.status === selectedStatus);
+              const filteredFranchises = (() => {
+                if (selectedStatus === "Funding") {
+                  // Only include "Funding" status - "Approved" should not be public until transitioned
+                  return franchises.filter((f) => f.status === "Funding");
+                } else {
+                  return franchises.filter((f) => f.status === selectedStatus);
+                }
+              })();
 
               if (filteredFranchises.length === 0) {
                 return (
@@ -315,8 +324,8 @@ export default function BusinessPageClient({
                                 {(() => {
                                   switch (franchise.status) {
                                     case "Funding": {
-                                      const invested =
-                                        (franchise.selectedShares || 0) * 500;
+                                      const costPerShare = franchise.costPerShare || (franchise.totalInvestment / Math.max(1, franchise.totalShares));
+                                      const invested = (franchise.selectedShares || 0) * costPerShare;
                                       return (
                                         <div className="flex items-center justify-between">
                                           Invested: {formatAmount(invested)}{" "}

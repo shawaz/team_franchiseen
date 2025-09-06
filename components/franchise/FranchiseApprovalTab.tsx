@@ -81,29 +81,54 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
   const approveFranchise = useMutation(api.franchise.approveFranchise);
   const rejectFranchise = useMutation(api.franchise.rejectFranchise);
 
+  // Query escrow records for all franchises
+  const allEscrowRecords = useQuery(api.escrow.getAllEscrowRecords, {}) || [];
+
+  // Helper function to get escrow info for a franchise
+  const getEscrowInfo = (franchiseId: string) => {
+    const escrowRecords = allEscrowRecords.filter(record => record.franchiseId === franchiseId);
+    const totalEscrowAmount = escrowRecords.reduce((sum, record) => sum + record.amount, 0);
+    const heldRecords = escrowRecords.filter(record => record.status === 'held');
+
+    return {
+      totalAmount: totalEscrowAmount,
+      heldAmount: heldRecords.reduce((sum, record) => sum + record.amount, 0),
+      recordCount: escrowRecords.length,
+      heldCount: heldRecords.length,
+      hasEscrow: escrowRecords.length > 0,
+    };
+  };
+
   const handleApprove = async (franchise: PendingFranchise) => {
     if (!connected) {
       toast.error('Please connect your wallet to approve franchises');
       return;
     }
 
+    const escrowInfo = getEscrowInfo(franchise._id);
+
     setLoading(franchise._id);
     try {
       // 1. Create franchise token on Solana
       const tokenResult = await createFranchiseToken(
         franchise.slug || franchise._id,
-        franchise.totalShares,
-        franchise.costPerArea
+        business.name || 'Unknown Business',
+        franchise.locationAddress || 'Unknown Location',
+        franchise.totalShares
       );
 
-      // 2. Update franchise status in database
+      // 2. Update franchise status in database (this will also release escrow funds)
       await approveFranchise({
         franchiseId: franchise._id,
         tokenMint: tokenResult.tokenMint.toString(),
         transactionSignature: tokenResult.signature
       });
 
-      toast.success('Franchise approved and token created successfully!');
+      const escrowMessage = escrowInfo.hasEscrow
+        ? ` Escrow funds (${formatAmount(escrowInfo.heldAmount)}) have been released.`
+        : '';
+
+      toast.success(`Franchise approved and token created successfully!${escrowMessage}`);
     } catch (error) {
       console.error('Error approving franchise:', error);
       toast.error('Failed to approve franchise');
@@ -113,6 +138,8 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
   };
 
   const handleReject = async (franchise: PendingFranchise, reason: string) => {
+    const escrowInfo = getEscrowInfo(franchise._id);
+
     setLoading(franchise._id);
     try {
       await rejectFranchise({
@@ -120,7 +147,11 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
         rejectionReason: reason
       });
 
-      toast.success('Franchise proposal rejected. Funds will be returned to the proposer.');
+      const escrowMessage = escrowInfo.hasEscrow
+        ? ` Escrow funds (${formatAmount(escrowInfo.heldAmount)}) will be refunded to investors.`
+        : '';
+
+      toast.success(`Franchise proposal rejected.${escrowMessage}`);
     } catch (error) {
       console.error('Error rejecting franchise:', error);
       toast.error('Failed to reject franchise');
@@ -404,16 +435,36 @@ export default function FranchiseApprovalTab({ business }: FranchiseApprovalTabP
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-sm text-stone-600 dark:text-stone-400">Timeline</div>
+                  <div className="text-sm text-stone-600 dark:text-stone-400">Escrow & Timeline</div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4" />
-                      <span>Submitted: {new Date(franchise.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="w-4 h-4" />
-                      <span>Proposer ID: {franchise.owner_id.slice(-8)}</span>
-                    </div>
+                    {(() => {
+                      const escrowInfo = getEscrowInfo(franchise._id);
+                      return (
+                        <>
+                          {escrowInfo.hasEscrow ? (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-sm">Escrow Amount:</span>
+                                <span className="font-semibold text-green-600">{formatAmount(escrowInfo.heldAmount)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm">Escrow Records:</span>
+                                <span className="font-semibold">{escrowInfo.heldCount} held</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-2 text-sm text-amber-600">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span>No escrow funds</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="w-4 h-4" />
+                            <span>Submitted: {new Date(franchise.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

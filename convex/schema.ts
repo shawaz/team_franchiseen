@@ -216,4 +216,217 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_franchise", ["franchiseId"])
     .index("by_role", ["role"]),
+
+  // Platform team management for Franchiseen internal team
+  platformTeamMembers: defineTable({
+    userId: v.id("users"),
+    role: v.string(), // super_admin, platform_admin, admin, developer, support, marketing, sales
+    department: v.string(), // engineering, operations, marketing, sales, support, finance
+    position: v.string(), // CTO, Developer, Marketing Manager, etc.
+    joinedAt: v.number(),
+    invitedBy: v.id("users"),
+    permissions: v.array(v.string()),
+    isActive: v.boolean(),
+    lastActiveAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_role", ["role"])
+    .index("by_department", ["department"])
+    .index("by_active", ["isActive"]),
+
+  platformTeamInvitations: defineTable({
+    email: v.string(),
+    role: v.string(),
+    department: v.string(),
+    position: v.string(),
+    permissions: v.array(v.string()),
+    invitedBy: v.id("users"),
+    status: v.string(), // pending, accepted, declined, expired
+    inviteToken: v.string(),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+    message: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_token", ["inviteToken"])
+    .index("by_status", ["status"])
+    .index("by_invited_by", ["invitedBy"]),
+
+  // Escrow system for secure payment processing
+  escrow: defineTable({
+    // Core identifiers
+    franchiseId: v.id("franchise"),
+    userId: v.id("users"),
+    businessId: v.id("businesses"),
+
+    // Payment details
+    paymentSignature: v.string(), // Solana transaction signature
+    amount: v.number(), // Amount in SOL
+    amountLocal: v.number(), // Amount in local currency (AED)
+    currency: v.string(), // "SOL", "USDC", etc.
+    shares: v.number(), // Number of shares purchased
+
+    // Escrow status and lifecycle
+    status: v.string(), // "held", "released", "refunded", "expired"
+    stage: v.string(), // "pending_approval", "funding", "launching", "active"
+
+    // Timestamps
+    createdAt: v.number(),
+    expiresAt: v.number(), // 90 days from creation for funding stage
+    releasedAt: v.optional(v.number()),
+    refundedAt: v.optional(v.number()),
+
+    // Transaction signatures for releases/refunds
+    releaseSignature: v.optional(v.string()),
+    refundSignature: v.optional(v.string()),
+
+    // Admin actions
+    processedBy: v.optional(v.id("users")), // Admin who processed release/refund
+    adminNotes: v.optional(v.string()),
+    refundReason: v.optional(v.string()), // Reason for refund
+
+    // Blockchain contract details
+    contractSignature: v.optional(v.string()),
+    contractAddress: v.optional(v.string()),
+
+    // User and wallet info
+    userEmail: v.optional(v.string()),
+    userWallet: v.string(),
+
+    // Refund/release conditions
+    autoRefundEnabled: v.boolean(), // Whether to auto-refund after expiry
+    manualReleaseRequired: v.boolean(), // Whether manual admin approval is needed
+  })
+    .index("by_franchise", ["franchiseId"])
+    .index("by_user", ["userId"])
+    .index("by_business", ["businessId"])
+    .index("by_status", ["status"])
+    .index("by_stage", ["stage"])
+    .index("by_payment_signature", ["paymentSignature"])
+    .index("by_expires_at", ["expiresAt"])
+    .index("by_created_at", ["createdAt"])
+    .index("by_franchise_user", ["franchiseId", "userId"]),
+
+  // FRC Token System
+  frcTokens: defineTable({
+    franchiseId: v.id("franchise"),
+    businessId: v.id("businesses"),
+    tokenMint: v.string(), // Solana token mint address
+    tokenSymbol: v.string(), // e.g., "FRC-STARBUCKS-NYC"
+    tokenName: v.string(), // e.g., "Starbucks NYC Franchise Coin"
+    totalSupply: v.number(),
+    circulatingSupply: v.number(),
+    reserveSupply: v.number(),
+
+    // Financial metrics
+    totalRevenue: v.number(),
+    totalExpenses: v.number(),
+    netProfit: v.number(),
+    monthlyRevenue: v.number(),
+    monthlyExpenses: v.number(),
+
+    // Token economics
+    tokenPrice: v.number(), // Current price per token
+    marketCap: v.number(),
+    lastPayoutAmount: v.number(),
+    lastPayoutDate: v.optional(v.number()),
+    nextPayoutDate: v.optional(v.number()),
+
+    // Blockchain data
+    contractAddress: v.optional(v.string()),
+    creationSignature: v.string(),
+    lastUpdateSignature: v.optional(v.string()),
+
+    // Status and metadata
+    status: v.string(), // "active", "paused", "closed"
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.id("users"),
+  })
+    .index("by_franchise", ["franchiseId"])
+    .index("by_business", ["businessId"])
+    .index("by_token_mint", ["tokenMint"])
+    .index("by_status", ["status"])
+    .index("by_created_at", ["createdAt"]),
+
+  // Financial Transactions (Income/Expense tracking)
+  financialTransactions: defineTable({
+    franchiseId: v.id("franchise"),
+    businessId: v.id("businesses"),
+    userId: v.id("users"), // Who recorded the transaction
+
+    // Transaction details
+    type: v.string(), // "income", "expense"
+    category: v.string(), // "sales", "rent", "utilities", "supplies", etc.
+    description: v.string(),
+    amount: v.number(),
+    currency: v.string(),
+
+    // Date and timing
+    transactionDate: v.number(), // When the transaction occurred
+    recordedAt: v.number(), // When it was recorded in system
+
+    // Verification and blockchain
+    isVerified: v.boolean(),
+    verificationMethod: v.optional(v.string()), // "receipt", "bank_statement", "blockchain"
+    blockchainSignature: v.optional(v.string()),
+    frcTokensIssued: v.optional(v.number()), // FRC tokens issued for this transaction
+
+    // Supporting documents
+    receiptUrl: v.optional(v.string()),
+    attachments: v.optional(v.array(v.string())),
+
+    // Approval workflow
+    status: v.string(), // "pending", "approved", "rejected"
+    approvedBy: v.optional(v.id("users")),
+    approvedAt: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
+
+    // Metadata
+    tags: v.optional(v.array(v.string())),
+    notes: v.optional(v.string()),
+  })
+    .index("by_franchise", ["franchiseId"])
+    .index("by_business", ["businessId"])
+    .index("by_user", ["userId"])
+    .index("by_type", ["type"])
+    .index("by_category", ["category"])
+    .index("by_status", ["status"])
+    .index("by_transaction_date", ["transactionDate"])
+    .index("by_recorded_at", ["recordedAt"])
+    .index("by_franchise_type", ["franchiseId", "type"])
+    .index("by_franchise_date", ["franchiseId", "transactionDate"]),
+
+  // FRC Token Holders and Distributions
+  frcHolders: defineTable({
+    franchiseId: v.id("franchise"),
+    userId: v.id("users"),
+    walletAddress: v.string(),
+
+    // Token holdings
+    tokenBalance: v.number(),
+    totalEarned: v.number(), // Total FRC tokens earned
+    totalRedeemed: v.number(), // Total FRC tokens redeemed
+
+    // Earning sources
+    investmentTokens: v.number(), // Tokens from initial investment
+    performanceTokens: v.number(), // Tokens from franchise performance
+    bonusTokens: v.number(), // Bonus tokens from promotions
+
+    // Payout history
+    totalPayouts: v.number(),
+    lastPayoutAmount: v.number(),
+    lastPayoutDate: v.optional(v.number()),
+
+    // Status
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_franchise", ["franchiseId"])
+    .index("by_user", ["userId"])
+    .index("by_wallet", ["walletAddress"])
+    .index("by_franchise_user", ["franchiseId", "userId"])
+    .index("by_active", ["isActive"]),
 });

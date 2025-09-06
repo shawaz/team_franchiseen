@@ -37,6 +37,25 @@ export function useFranchiseProgram() {
   }, [connection, wallet]);
 
   const program = useMemo(() => {
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Using mock mode for franchise program - blockchain features will use mock data');
+      // Create a mock provider if none exists
+      const mockProvider = provider || {
+        connection: { rpcEndpoint: 'mock' },
+        wallet: { publicKey: 'mock' }
+      } as any;
+
+      try {
+        return createFranchiseProgram(mockProvider);
+      } catch (error) {
+        console.error('Error creating mock franchise program:', error);
+        return null;
+      }
+    }
+
     if (!provider) return null;
 
     try {

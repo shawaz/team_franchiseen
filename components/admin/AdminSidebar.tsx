@@ -43,7 +43,8 @@ import {
   Bug,
   Ticket,
   X,
-  Factory
+  Factory,
+  Timer
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -108,6 +109,10 @@ const menuStructure = [
       { href: '/admin/finances/invoices', label: 'Invoices', icon: Receipt, permission: 'finances.invoices' },
       { href: '/admin/finances/payee', label: 'Payee', icon: UserCheck, permission: 'finances.payee' },
       { href: '/admin/finances/transactions', label: 'Transactions', icon: CreditCard, permission: 'finances.transactions' },
+      { href: '/admin/escrow', label: 'Escrow', icon: Shield, permission: 'finances.escrow' },
+      { href: '/admin/funding', label: 'Funding Timer', icon: Timer, permission: 'finances.funding' },
+      { href: '/admin/investments', label: 'Investments', icon: TrendingUp, permission: 'finances.investments' },
+      { href: '/admin/refunds', label: 'Refunds', icon: RefreshCw, permission: 'finances.refunds' },
     ]
   },
   {

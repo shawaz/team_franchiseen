@@ -210,7 +210,11 @@ export default function FranchiseInvestmentWithAnchor({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {formatAmount(onChainData ? onChainData.totalRaised.toNumber() / LAMPORTS_PER_SOL : 0)}
+              {formatAmount(
+                onChainData && onChainData.totalRaised && typeof onChainData.totalRaised.toNumber === 'function'
+                  ? onChainData.totalRaised.toNumber() / LAMPORTS_PER_SOL
+                  : (franchiseData.selectedShares || 0) * (franchiseData.totalInvestment / Math.max(1, franchiseData.totalShares))
+              )}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Total Raised</div>
           </div>
@@ -336,7 +340,9 @@ export default function FranchiseInvestmentWithAnchor({
       )}
 
       {/* Revenue Information */}
-      {onChainData && onChainData.totalRevenue.toNumber() > 0 && (
+      {onChainData && onChainData.totalRevenue &&
+       typeof onChainData.totalRevenue.toNumber === 'function' &&
+       onChainData.totalRevenue.toNumber() > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <Clock className="h-5 w-5 text-purple-600" />
@@ -346,19 +352,29 @@ export default function FranchiseInvestmentWithAnchor({
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {formatAmount(onChainData.totalRevenue.toNumber() / LAMPORTS_PER_SOL)}
+                {formatAmount(
+                  onChainData.totalRevenue && typeof onChainData.totalRevenue.toNumber === 'function'
+                    ? onChainData.totalRevenue.toNumber() / LAMPORTS_PER_SOL
+                    : 0
+                )}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-orange-600">
-                {formatAmount(onChainData.capitalRecovered.toNumber() / LAMPORTS_PER_SOL)}
+                {formatAmount(
+                  onChainData.capitalRecovered && typeof onChainData.capitalRecovered.toNumber === 'function'
+                    ? onChainData.capitalRecovered.toNumber() / LAMPORTS_PER_SOL
+                    : 0
+                )}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Capital Recovered</div>
             </div>
           </div>
 
-          {onChainData.lastPayout.toNumber() > 0 && (
+          {onChainData.lastPayout &&
+           typeof onChainData.lastPayout.toNumber === 'function' &&
+           onChainData.lastPayout.toNumber() > 0 && (
             <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
               Last payout: {new Date(onChainData.lastPayout.toNumber() * 1000).toLocaleDateString()}
             </div>

@@ -95,9 +95,13 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
   // Convex mutations
   const createFranchiseInDB = useMutation(api.franchise.create);
+  const createEscrowRecord = useMutation(api.escrow.createEscrowRecord);
 
   // Get all businesses for selection
   const businesses = useQuery(api.businesses.listAll, {}) || [];
+
+  // Get current user
+  const currentUser = useQuery(api.users.getCurrentUser, {});
 
   // Get specific business if brandSlug provided
   const specificBusiness = useQuery(
@@ -575,15 +579,15 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     }
 
     try {
-      // Step 1: Send payment to company wallet
-      const companyWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
-      const pay = await sendSOL(companyWalletAddress, totalAmountSOL);
+      // Step 1: Send payment to escrow wallet (company wallet for now, but held in escrow)
+      const escrowWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
+      const pay = await sendSOL(escrowWalletAddress, totalAmountSOL);
       if (!pay.success || !pay.signature) {
         toast.error(pay.error || 'Payment failed');
         return 'error';
       }
 
-      toast.success('Payment successful! Creating franchise...');
+      toast.success('Payment successful! Funds held in escrow. Creating franchise...');
 
       // Step 2: Create franchise on blockchain
       const businessSlug = formData.selectedBusiness.slug || formData.selectedBusiness.name.toLowerCase().replace(/\s+/g, '-');
@@ -627,6 +631,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
       toast.success('Investment contract created! Saving to database...');
 
       // Step 4: Save franchise to Convex database
+      let savedFranchiseId = null;
       try {
         const franchiseData = await createFranchiseInDB({
           businessId: formData.selectedBusiness._id,
@@ -640,10 +645,36 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
           slug: franchiseId,
         });
 
+        savedFranchiseId = franchiseData;
         console.log('Franchise saved to database:', franchiseData);
       } catch (error) {
         console.error('Failed to save franchise to database:', error);
         toast.error('Failed to save franchise data, but blockchain contracts are created');
+      }
+
+      // Step 5: Create escrow record for payment protection
+      if (savedFranchiseId && currentUser) {
+        try {
+          await createEscrowRecord({
+            franchiseId: savedFranchiseId,
+            userId: currentUser._id,
+            businessId: formData.selectedBusiness._id,
+            paymentSignature: pay.signature,
+            amount: totalAmountSOL,
+            amountLocal: selectedShares * sharePrice * 1.2,
+            currency: "SOL",
+            shares: selectedShares,
+            userEmail: currentUser.email,
+            userWallet: publicKey?.toString() || '',
+            contractSignature: investTx || undefined,
+            contractAddress: `${businessSlug}-${franchiseId}`,
+          });
+
+          toast.success('Payment secured in escrow! Franchise pending approval.');
+        } catch (escrowError) {
+          console.error('Failed to create escrow record:', escrowError);
+          toast.error('Payment successful but escrow record failed. Please contact support.');
+        }
       }
 
       const details = {
@@ -794,51 +825,73 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
   return (
     <div className="fixed inset-0 bg-white dark:bg-stone-900 z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-stone-700">
-        <div className="flex items-center gap-3">
-          {currentStep > 1 && (
+      {/* Header - Hide navigation on step 6 */}
+      {currentStep !== 6 && (
+        <>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-stone-700">
+            <div className="flex items-center gap-3">
+              {currentStep > 1 && (
+                <button
+                  onClick={prevStep}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-stone-800 rounded-full transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              )}
+              <div className="text-sm text-muted-foreground">
+                {currentStep === 1 && (
+                    <p className="text-muted-foreground">Select a business</p>
+                )}
+                {currentStep === 2 && (
+                    <p className="text-muted-foreground">Choose location</p>
+                )}
+                {currentStep === 3 && (
+                    <p className="text-muted-foreground">Enter location details</p>
+                )}
+                {currentStep === 4 && (
+                    <p className="text-muted-foreground">Project investment summary</p>
+                )}
+                Step {currentStep} of {totalSteps}
+              </div>
+            </div>
             <button
-              onClick={prevStep}
+              onClick={onClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-stone-800 rounded-full transition-colors"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <X className="h-5 w-5" />
             </button>
-          )}
-          <div className="text-sm text-muted-foreground">
-            {currentStep === 1 && (
-                <p className="text-muted-foreground">Select a business</p>
-            )}
-            {currentStep === 2 && (
-                <p className="text-muted-foreground">Choose location</p>
-            )}
-            {currentStep === 3 && (
-                <p className="text-muted-foreground">Enter location details</p>
-            )}
-            {currentStep === 4 && (
-                <p className="text-muted-foreground">Project investment summary</p>
-            )}
-            {currentStep === 6 && (
-                <p className="text-muted-foreground">Payment confirmation</p>
-            )}
-            Step {currentStep} of {totalSteps}
           </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-stone-800 rounded-full transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-stone-700 h-1">
-        <div 
-          className="bg-yellow-600 h-1 transition-all duration-300 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 dark:bg-stone-700 h-1">
+            <div
+              className="bg-yellow-600 h-1 transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Step 6 Header - Special header for confirmation */}
+      {currentStep === 6 && (
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-stone-700">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+              <Check className="h-4 w-4 text-green-600" />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground">Payment confirmation</p>
+              Transaction completed successfully
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-stone-800 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
@@ -1529,8 +1582,19 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
               {/* Actions */}
               <div className="flex gap-3">
-                <Button onClick={() => window.location.href = '/contracts'} className="flex-1">
-                  View Contract
+                <Button
+                  onClick={() => {
+                    const businessSlug = formData.selectedBusiness?.slug || formData.selectedBusiness?.name?.toLowerCase().replace(/\s+/g, '-');
+                    const franchiseSlug = formData.locationDetails.franchiseSlug;
+                    if (businessSlug && franchiseSlug) {
+                      window.location.href = `/${businessSlug}/${franchiseSlug}/manager`;
+                    } else {
+                      window.location.href = '/';
+                    }
+                  }}
+                  className="flex-1"
+                >
+                  View Franchise Dashboard
                 </Button>
                 <Button onClick={() => window.location.href = '/'} variant="outline" className="flex-1">
                   Go Home

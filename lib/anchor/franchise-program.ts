@@ -108,13 +108,36 @@ export class FranchiseProgram {
         anchorAvailable: isAnchorAvailable
       });
 
-      // Try to create the program - only if everything is available
-      this.program = new Program(IDL as any, provider);
-      console.log('Anchor program initialized successfully');
+      // Check if we're in mock mode first
+      const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
 
-      // Test program functionality
-      if (!this.program || !this.program.methods) {
-        console.warn('Program created but methods are not available');
+      if (useMockData) {
+        console.log('Mock mode enabled - skipping Anchor program initialization');
+        this.program = null;
+        return;
+      }
+
+      // Try to create the program - only if everything is available
+      try {
+        // Additional safety checks before creating Program
+        if (!IDL || !IDL.name || !IDL.instructions) {
+          console.warn('IDL is not properly defined');
+          this.program = null;
+          return;
+        }
+
+        this.program = new Program(IDL as any, provider);
+        console.log('Anchor program initialized successfully');
+
+        // Test program functionality
+        if (!this.program || !this.program.methods) {
+          console.warn('Program created but methods are not available');
+          this.program = null;
+          return;
+        }
+      } catch (programError) {
+        console.error('Failed to create Program instance:', programError);
+        console.warn('Falling back to mock mode due to program initialization failure');
         this.program = null;
         return;
       }
@@ -193,8 +216,30 @@ export class FranchiseProgram {
     industry: string,
     category: string
   ): Promise<string> {
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Using mock data for business creation');
+      // Generate a mock transaction signature
+      const mockTxSignature = `mock_business_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Simulate blockchain delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      console.log('Mock business created:', {
+        name,
+        slug,
+        industry,
+        category,
+        txSignature: mockTxSignature
+      });
+
+      return mockTxSignature;
+    }
+
     if (!this.program) {
-      throw new Error('Anchor program not initialized');
+      throw new Error('Anchor program not initialized - please connect your wallet and ensure the blockchain program is deployed');
     }
 
     const [businessPDA] = FranchiseProgram.findBusinessPDA(slug);
@@ -221,8 +266,33 @@ export class FranchiseProgram {
     costPerArea: number,
     totalShares: number
   ): Promise<string> {
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Using mock data for franchise creation');
+      // Generate a mock transaction signature
+      const mockTxSignature = `mock_franchise_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Simulate blockchain delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log('Mock franchise created:', {
+        businessSlug,
+        franchiseSlug,
+        locationAddress,
+        buildingName,
+        carpetArea,
+        costPerArea,
+        totalShares,
+        txSignature: mockTxSignature
+      });
+
+      return mockTxSignature;
+    }
+
     if (!this.program) {
-      throw new Error('Anchor program not initialized');
+      throw new Error('Anchor program not initialized - please connect your wallet and ensure the blockchain program is deployed');
     }
 
     const [businessPDA] = FranchiseProgram.findBusinessPDA(businessSlug);
@@ -258,6 +328,31 @@ export class FranchiseProgram {
     franchiseSlug: string,
     sharesToBuy: number
   ): Promise<string> {
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Using mock data for franchise investment');
+      // Generate a mock transaction signature
+      const mockTxSignature = `mock_investment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Simulate blockchain delay
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      console.log('Mock investment created:', {
+        businessSlug,
+        franchiseSlug,
+        sharesToBuy,
+        txSignature: mockTxSignature
+      });
+
+      return mockTxSignature;
+    }
+
+    if (!this.program) {
+      throw new Error('Anchor program not initialized - please connect your wallet and ensure the blockchain program is deployed');
+    }
+
     const [businessPDA] = FranchiseProgram.findBusinessPDA(businessSlug);
     const [franchisePDA] = FranchiseProgram.findFranchisePDA(businessPDA, franchiseSlug);
     const [franchiseTokenMintPDA] = FranchiseProgram.findFranchiseTokenMintPDA(businessPDA, franchiseSlug);
@@ -341,16 +436,57 @@ export class FranchiseProgram {
 
   // Get franchise account data
   async getFranchise(businessSlug: string, franchiseSlug: string) {
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Using mock data for franchise fetch');
+      // Return mock franchise data
+      return {
+        businessSlug,
+        franchiseSlug,
+        locationAddress: 'Mock Location',
+        buildingName: 'Mock Building',
+        carpetArea: 1000,
+        costPerArea: 100,
+        totalShares: 1000,
+        // Add other mock fields as needed
+      };
+    }
+
+    if (!this.program) {
+      throw new Error('Anchor program not initialized - cannot fetch franchise data');
+    }
+
     const [businessPDA] = FranchiseProgram.findBusinessPDA(businessSlug);
     const [franchisePDA] = FranchiseProgram.findFranchisePDA(businessPDA, franchiseSlug);
-    
+
     return await this.program.account.franchise.fetch(franchisePDA);
   }
 
   // Get business account data
   async getBusiness(businessSlug: string) {
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Using mock data for business fetch');
+      // Return mock business data
+      return {
+        slug: businessSlug,
+        name: 'Mock Business',
+        industry: 'Mock Industry',
+        category: 'Mock Category',
+        // Add other mock fields as needed
+      };
+    }
+
+    if (!this.program) {
+      throw new Error('Anchor program not initialized - cannot fetch business data');
+    }
+
     const [businessPDA] = FranchiseProgram.findBusinessPDA(businessSlug);
-    
+
     return await this.program.account.business.fetch(businessPDA);
   }
 
@@ -432,7 +568,16 @@ export function validateAnchorSetup(): { isValid: boolean; error?: string } {
 // Helper function to create program instance
 export function createFranchiseProgram(provider: AnchorProvider): FranchiseProgram | null {
   try {
-    // Validate setup first
+    // Check if we're in mock mode
+    const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
+
+    if (useMockData) {
+      console.log('Creating franchise program in mock mode');
+      // In mock mode, we can create the program even without proper Anchor setup
+      return new FranchiseProgram(provider);
+    }
+
+    // Validate setup first for non-mock mode
     const validation = validateAnchorSetup();
     if (!validation.isValid) {
       console.error('Anchor setup validation failed:', validation.error);

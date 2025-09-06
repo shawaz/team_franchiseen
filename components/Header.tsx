@@ -454,14 +454,11 @@ function Header() {
                     >
                       <Heart className="h-5 w-5 text-stone-700 dark:text-stone-300" />
                     </Link>
-                    <Link
-                      href="/create"
-                      className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                    >
+                    <button onClick={() => openTypeformCreateFranchiseModal()} className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
                       <PlusSquare className="h-5 w-5 text-stone-700 dark:text-stone-300" />
-                    </Link>
-                 
 
+                    </button>
+                 
                     <Link
                       href="/notify"
                       className="p-2 rounded-full hidden sm:block hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
@@ -621,10 +618,10 @@ function Header() {
                   <div className="flex items-center justify-end">
                     <button
                       onClick={handleOnboardingClick}
-                      className="cursor-pointer hidden md:block uppercase ml-4 px-8 py-2 rounded-full text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700 transition-colors duration-200"
+                      className="cursor-pointer hidden md:block uppercase ml-4 px-8 py-2 text-sm font-bold bg-yellow-600 hover:bg-yellow-700 text-white dark:bg-yellow-600 dark:text-white dark:hover:bg-yellow-700 transition-colors duration-200"
                       aria-label="Create Account"
                     >
-                      Create Account
+                      Get Started
                     </button>
                     <EmailVerificationModal
                       isOpen={isEmailVerificationOpen}

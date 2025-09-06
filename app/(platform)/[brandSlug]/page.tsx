@@ -18,10 +18,10 @@ export default async function BusinessPage({ params }: BusinessPageProps) {
   const business = await fetchQuery(api.businesses.getBySlug, { slug: brandSlug });
   if (!business) return notFound();
 
-  // Fetch all franchises for this business
-  const allFranchises = await fetchQuery(api.franchise.list, {});
-  // Filter by businessId
-  const franchises = (allFranchises as Doc<"franchise">[]).filter(f => f.businessId === business._id);
+  // Fetch only publicly visible franchises for this business
+  const franchises = await fetchQuery(api.franchise.getPublicFranchisesByBusiness, {
+    businessId: business._id
+  }) as Doc<"franchise">[];
 
   return (
     <BusinessPageClient 

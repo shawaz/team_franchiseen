@@ -115,10 +115,22 @@ export default function RevenueDistribution({
     );
   }
 
-  const totalInvestment = franchiseData.totalInvestment.toNumber() / LAMPORTS_PER_SOL;
-  const capitalRecovered = franchiseData.capitalRecovered.toNumber() / LAMPORTS_PER_SOL;
-  const totalRevenue = franchiseData.totalRevenue.toNumber() / LAMPORTS_PER_SOL;
-  const pendingDividends = franchiseData.pendingDividends.toNumber() / LAMPORTS_PER_SOL;
+  // Handle both blockchain data (with .toNumber()) and regular numbers
+  const totalInvestment = typeof franchiseData.totalInvestment === 'object' && franchiseData.totalInvestment?.toNumber
+    ? franchiseData.totalInvestment.toNumber() / LAMPORTS_PER_SOL
+    : (franchiseData.totalInvestment || 0);
+
+  const capitalRecovered = typeof franchiseData.capitalRecovered === 'object' && franchiseData.capitalRecovered?.toNumber
+    ? franchiseData.capitalRecovered.toNumber() / LAMPORTS_PER_SOL
+    : (franchiseData.capitalRecovered || 0);
+
+  const totalRevenue = typeof franchiseData.totalRevenue === 'object' && franchiseData.totalRevenue?.toNumber
+    ? franchiseData.totalRevenue.toNumber() / LAMPORTS_PER_SOL
+    : (franchiseData.totalRevenue || 0);
+
+  const pendingDividends = typeof franchiseData.pendingDividends === 'object' && franchiseData.pendingDividends?.toNumber
+    ? franchiseData.pendingDividends.toNumber() / LAMPORTS_PER_SOL
+    : (franchiseData.pendingDividends || 0);
 
   return (
     <div className="space-y-6">

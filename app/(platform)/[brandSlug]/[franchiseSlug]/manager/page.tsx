@@ -4,7 +4,7 @@ import { api } from '@/convex/_generated/api';
 import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { Doc } from '@/convex/_generated/dataModel';
-import FranchiseDashboard from '@/components/profile/FranchiseDashboard';
+import FranchiseManagerDashboard from '@/components/franchise/FranchiseManagerDashboard';
 
 interface FranchiseManagerPageProps {
   params: Promise<{
@@ -69,8 +69,7 @@ export default async function FranchiseManager({ params }: FranchiseManagerPageP
   }
 
   return (
-    <FranchiseDashboard
-      convexUser={convexUser}
+    <FranchiseManagerDashboard
       business={business}
       franchise={franchise}
       brandSlug={brandSlug}

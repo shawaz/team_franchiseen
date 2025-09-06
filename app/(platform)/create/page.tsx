@@ -451,6 +451,41 @@ export default function CreateFranchisePage() {
         <div className="flex items-center gap-2 w-full md:w-3/4">
           <h1 className="text-lg md:text-xl font-semibold text-foreground">Create New Franchise</h1>
         </div>
+         {/* Progress Steps */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex items-center justify-center md:justify-end w-full md:w-auto  p-6"
+        >
+          {[
+            { num: 1, label: "Brand" },
+            { num: 2, label: "Location" },
+            { num: 3, label: "Payment" }
+          ].map((stepInfo, index) => (
+            <div key={stepInfo.num} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm text-white font-medium ${
+                    step >= stepInfo.num
+                      ? "bg-neutral-700 text-primary-foreground"
+                      : "bg-neutral-300 "
+                  }`}
+                >
+                  {stepInfo.num}
+                </div>
+                {/* <span className="text-xs text-muted-foreground mt-1 hidden md:block">{stepInfo.label}</span> */}
+              </div>
+              {index < 2 && (
+                <div
+                  className={`w-8 md:w-16 h-0.5 mx-1 md:mx-2 ${
+                    step > stepInfo.num ? "bg-neutral-700" : "bg-neutral-200"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </motion.div>
        
       </header>
       <div className="p-4 md:p-6 border-b  ">
@@ -1061,41 +1096,7 @@ export default function CreateFranchisePage() {
               )}
         </motion.div>
       </div>
-       {/* Progress Steps */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center justify-center md:justify-end w-full md:w-auto  p-6"
-        >
-          {[
-            { num: 1, label: "Brand" },
-            { num: 2, label: "Location" },
-            { num: 3, label: "Payment" }
-          ].map((stepInfo, index) => (
-            <div key={stepInfo.num} className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm text-white font-medium ${
-                    step >= stepInfo.num
-                      ? "bg-neutral-700 text-primary-foreground"
-                      : "bg-muted-gradient text-muted-foreground"
-                  }`}
-                >
-                  {stepInfo.num}
-                </div>
-                <span className="text-xs text-muted-foreground mt-1 hidden md:block">{stepInfo.label}</span>
-              </div>
-              {index < 2 && (
-                <div
-                  className={`w-8 md:w-16 h-0.5 mx-1 md:mx-2 ${
-                    step > stepInfo.num ? "bg-neutral-700" : "bg-muted-gradient"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </motion.div>
+      
       <div className="w-full  flex md:flex-row justify-between gap-2 md:gap-4 mt-4 p-6 border md:mt-0">
           {step === 1 && (
             <Button variant="outline" onClick={() => router.back()} className="w-auto">
