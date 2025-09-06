@@ -88,7 +88,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   const [existingFranchises, setExistingFranchises] = useState<any[]>([]);
   const [conflictingLocation, setConflictingLocation] = useState<boolean>(false);
 
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { setVisible } = useWalletModal();
   const { createFranchise, investInFranchise, connected: programConnected } = useFranchiseProgram();
   const { formatAmount } = useGlobalCurrency();
@@ -656,7 +656,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
       if (savedFranchiseId && currentUser) {
         try {
           await createEscrowRecord({
-            franchiseId: savedFranchiseId,
+            franchiseId: savedFranchiseId.franchiseId,
             userId: currentUser._id,
             businessId: formData.selectedBusiness._id,
             paymentSignature: pay.signature,

@@ -37,9 +37,10 @@ export default function InvestmentTrackingDashboard({
 
   // Queries
   const investmentSummary = useQuery(api.franchise.getInvestmentSummary, {}) || [];
-  const franchiseTracking = franchiseId 
-    ? useQuery(api.franchise.getInvestmentTracking, { franchiseId }) 
-    : null;
+  const franchiseTracking = useQuery(
+    api.franchise.getInvestmentTracking,
+    franchiseId ? { franchiseId } : "skip"
+  );
 
   if (showSummary) {
     // Summary view for all franchises

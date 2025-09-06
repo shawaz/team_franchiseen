@@ -36,12 +36,7 @@ const MobileWalletModal: React.FC<MobileWalletModalProps> = ({ isOpen, onClose }
 
   const handleBrowserWallet = async () => {
     try {
-      if (window.phantom?.solana) {
-        await window.phantom.solana.connect();
-      } else {
-        // Fallback to wallet adapter
-        await connect();
-      }
+      await connect();
     } catch (error) {
       console.error('Browser wallet connection failed:', error);
     }

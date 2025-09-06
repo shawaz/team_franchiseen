@@ -239,7 +239,7 @@ export default function FranchiseManagerDashboard({
                     <Badge variant={
                       transaction.status === 'approved' ? 'default' : 
                       transaction.status === 'rejected' ? 'destructive' : 'secondary'
-                    } size="sm">
+                    }>
                       {transaction.status}
                     </Badge>
                   </div>

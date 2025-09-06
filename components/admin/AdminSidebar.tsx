@@ -44,7 +44,8 @@ import {
   Ticket,
   X,
   Factory,
-  Timer
+  Timer,
+  RefreshCw
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 

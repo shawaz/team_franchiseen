@@ -30,7 +30,15 @@ export default function FundingManagementPage() {
 
   // Queries
   const nearingDeadline = useQuery(api.escrow.getFranchisesNearingDeadline, {}) || [];
-  const fundingStats = useQuery(api.escrow.getFundingStatistics, {}) || {};
+  const fundingStats = useQuery(api.escrow.getFundingStatistics, {}) || {
+    totalCampaigns: 0,
+    successfulCampaigns: 0,
+    atRiskCampaigns: 0,
+    expiredCampaigns: 0,
+    totalFundingTarget: 0,
+    totalFundingRaised: 0,
+    averageFundingPercentage: 0,
+  };
 
   // Mutations
   const processExpiredFunding = useMutation(api.escrow.processExpiredFunding);
@@ -42,7 +50,7 @@ export default function FundingManagementPage() {
       toast.success(`Processed ${result.processedCount} expired funding campaigns`);
       
       if (result.processedFranchises.length > 0) {
-        const refunded = result.processedFranchises.filter(f => f.refundCount > 0);
+        const refunded = result.processedFranchises.filter(f => f.refundCount && f.refundCount > 0);
         const launched = result.processedFranchises.filter(f => f.status === 'moved_to_launching');
         
         if (refunded.length > 0) {
@@ -122,7 +130,7 @@ export default function FundingManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Campaigns</p>
-              <p className="text-2xl font-bold">{fundingStats.totalCampaigns || 0}</p>
+              <p className="text-2xl font-bold">{fundingStats.totalCampaigns}</p>
             </div>
             <Target className="h-8 w-8 text-blue-500" />
           </div>
@@ -132,7 +140,7 @@ export default function FundingManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Successful</p>
-              <p className="text-2xl font-bold text-green-600">{fundingStats.successfulCampaigns || 0}</p>
+              <p className="text-2xl font-bold text-green-600">{fundingStats.successfulCampaigns}</p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-500" />
           </div>
@@ -142,7 +150,7 @@ export default function FundingManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">At Risk</p>
-              <p className="text-2xl font-bold text-red-600">{fundingStats.atRiskCampaigns || 0}</p>
+              <p className="text-2xl font-bold text-red-600">{fundingStats.atRiskCampaigns}</p>
             </div>
             <AlertTriangle className="h-8 w-8 text-red-500" />
           </div>
@@ -152,7 +160,7 @@ export default function FundingManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Funding</p>
-              <p className="text-2xl font-bold">{(fundingStats.averageFundingPercentage || 0).toFixed(1)}%</p>
+              <p className="text-2xl font-bold">{fundingStats.averageFundingPercentage.toFixed(1)}%</p>
             </div>
             <TrendingUp className="h-8 w-8 text-blue-500" />
           </div>
@@ -166,17 +174,17 @@ export default function FundingManagementPage() {
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Total Target</span>
-              <span className="font-semibold">{formatAmount(fundingStats.totalFundingTarget || 0)}</span>
+              <span className="font-semibold">{formatAmount(fundingStats.totalFundingTarget)}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600">Total Raised</span>
-              <span className="font-semibold text-green-600">{formatAmount(fundingStats.totalFundingRaised || 0)}</span>
+              <span className="font-semibold text-green-600">{formatAmount(fundingStats.totalFundingRaised)}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full" 
-                style={{ 
-                  width: `${Math.min(100, (fundingStats.averageFundingPercentage || 0))}%` 
+              <div
+                className="bg-green-500 h-2 rounded-full"
+                style={{
+                  width: `${Math.min(100, fundingStats.averageFundingPercentage)}%`
                 }}
               ></div>
             </div>
@@ -184,15 +192,15 @@ export default function FundingManagementPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-sm">Successful Campaigns: {fundingStats.successfulCampaigns || 0}</span>
+              <span className="text-sm">Successful Campaigns: {fundingStats.successfulCampaigns}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm">At Risk Campaigns: {fundingStats.atRiskCampaigns || 0}</span>
+              <span className="text-sm">At Risk Campaigns: {fundingStats.atRiskCampaigns}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-              <span className="text-sm">Expired Campaigns: {fundingStats.expiredCampaigns || 0}</span>
+              <span className="text-sm">Expired Campaigns: {fundingStats.expiredCampaigns}</span>
             </div>
           </div>
         </div>

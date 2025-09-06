@@ -6,7 +6,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 interface MobileWalletState {
   isMobile: boolean;
   isPhantomInstalled: boolean;
-  connectionMethod: 'browser' | 'app' | 'qr' | null;
+  connectionMethod: 'browser' | 'app' | 'qr' | 'auto' | null;
   isConnecting: boolean;
 }
 

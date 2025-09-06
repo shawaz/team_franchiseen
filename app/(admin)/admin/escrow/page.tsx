@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import {
   Search,
@@ -29,7 +30,7 @@ import {
 } from 'lucide-react';
 
 interface EscrowRecord {
-  _id: string;
+  _id: Id<"escrow">;
   franchiseId: string;
   userId: string;
   businessId: string;
@@ -46,7 +47,7 @@ interface EscrowRecord {
   refundedAt?: number;
   releaseSignature?: string;
   refundSignature?: string;
-  processedBy?: string;
+  processedById?: string;
   adminNotes?: string;
   contractSignature?: string;
   contractAddress?: string;
@@ -55,24 +56,44 @@ interface EscrowRecord {
   autoRefundEnabled: boolean;
   manualReleaseRequired: boolean;
   user?: {
-    email: string;
+    _id: string;
+    _creationTime: number;
+    privyUserId?: string;
+    updated_at?: number;
+    avatar?: string;
     first_name?: string;
     family_name?: string;
-  };
+    email: string;
+    created_at: number;
+  } | null;
   franchise?: {
+    _id: string;
+    _creationTime: number;
+    slug?: string;
+    launchStartDate?: number;
+    launchEndDate?: number;
+    tokenMint?: string;
     locationAddress: string;
     building: string;
-    slug?: string;
-  };
+    selectedShares: number;
+  } | null;
   business?: {
+    _id: string;
+    _creationTime: number;
     name: string;
     slug?: string;
-  };
+  } | null;
   processedBy?: {
-    email: string;
+    _id: string;
+    _creationTime: number;
+    privyUserId?: string;
+    updated_at?: number;
+    avatar?: string;
     first_name?: string;
     family_name?: string;
-  };
+    email: string;
+    created_at: number;
+  } | null;
 }
 
 const STATUS_COLORS = {
