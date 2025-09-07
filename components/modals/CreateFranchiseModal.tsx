@@ -20,7 +20,6 @@ import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
 
 import { useSolana } from '@/hooks/useSolana';
-import { useTransactionWallet } from '@/hooks/useTransactionWallet';
 
 interface TypeformCreateFranchiseModalProps {
   isOpen: boolean;
@@ -96,6 +95,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   // Convex mutations
   const createFranchiseInDB = useMutation(api.franchise.create);
   const createEscrowRecord = useMutation(api.escrow.createEscrowRecord);
+  const updateUserContact = useMutation(api.users.updateContactInfo);
 
   // Get all businesses for selection
   const businesses = useQuery(api.businesses.listAll, {}) || [];
@@ -130,6 +130,20 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
       sharePrice: 5.75
     }
   });
+
+  // Update user contact info when currentUser loads
+  useEffect(() => {
+    if (currentUser && (!formData.locationDetails.userEmail || !formData.locationDetails.userNumber)) {
+      setFormData(prev => ({
+        ...prev,
+        locationDetails: {
+          ...prev.locationDetails,
+          userEmail: prev.locationDetails.userEmail || currentUser.email || '',
+          userNumber: prev.locationDetails.userNumber || currentUser.phone || '',
+        }
+      }));
+    }
+  }, [currentUser]);
 
   // Get existing franchise locations for the selected business
   const existingFranchiseLocations = useQuery(
@@ -490,14 +504,24 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
   };
 
   const selectBusiness = (business: Business) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedBusiness: business,
-      locationDetails: {
-        ...prev.locationDetails,
-        costPerArea: business.costPerArea?.toString() || ''
-      }
-    }));
+    // Generate franchise slug based on business slug and existing franchise count
+    const generateFranchiseSlug = async () => {
+      const businessSlug = business.slug || business.name.toLowerCase().replace(/\s+/g, '-');
+      const existingCount = existingFranchiseLocations?.length || 0;
+      return `${businessSlug}-${existingCount + 1}`;
+    };
+
+    generateFranchiseSlug().then(slug => {
+      setFormData(prev => ({
+        ...prev,
+        selectedBusiness: business,
+        locationDetails: {
+          ...prev.locationDetails,
+          costPerArea: business.costPerArea?.toString() || '',
+          franchiseSlug: slug
+        }
+      }));
+    });
   };
 
   // Remove unused selectLocation function
@@ -510,6 +534,18 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
         [field]: value
       }
     }));
+
+    // Save user contact info when they update their phone or email
+    if ((field === 'userNumber' || field === 'userEmail') && typeof value === 'string' && value.trim()) {
+      const updateData: { phone?: string; email?: string } = {};
+      if (field === 'userNumber') updateData.phone = value;
+      if (field === 'userEmail') updateData.email = value;
+
+      // Debounce the update to avoid too many calls
+      setTimeout(() => {
+        updateUserContact(updateData).catch(console.error);
+      }, 1000);
+    }
   };
 
   const updateInvestment = (selectedShares: number) => {
@@ -524,7 +560,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
   // In-step Solana payment using SlideButton
   const { getSOLBalance, sendSOL } = useSolana();
-  const { executeTransaction } = useTransactionWallet();
   const [solBalance, setSolBalance] = useState<number>(0);
 
   useEffect(() => {
@@ -545,6 +580,42 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     const selectedShares = formData.investment.selectedShares;
     const sharePrice = calculateSharePrice();
     const totalAmountSOL = selectedShares * sharePrice * 1.2; // platform fee + tax
+
+    // Check wallet connection first
+    if (!connected || !publicKey) {
+      // Open Phantom for authentication
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        if (isIOS) {
+          // iOS: Use app scheme for connection
+          const appScheme = `phantom://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(window.location.origin)}`;
+          window.location.href = appScheme;
+        } else if (isAndroid) {
+          // Android: Use intent for connection
+          const intentUrl = `intent://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(window.location.origin)}#Intent;scheme=phantom;package=app.phantom;S.browser_fallback_url=https://play.google.com/store/apps/details?id=app.phantom;end`;
+          window.location.href = intentUrl;
+        }
+
+        // Store context for when user returns
+        localStorage.setItem('phantom_transaction_context', JSON.stringify({
+          timestamp: Date.now(),
+          action: 'franchise_creation',
+          amount: totalAmountSOL,
+          description: `Create franchise: ${formData.locationDetails.buildingName}`,
+          step: 'payment'
+        }));
+
+        return 'error'; // Will return when user comes back
+      } else {
+        // Desktop: Use wallet modal
+        setVisible(true);
+        return 'error';
+      }
+    }
 
     if (!programConnected) {
       toast.error('Blockchain program not available. Please check your connection and try again.');
@@ -576,17 +647,14 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
     setLoading(true);
     try {
-      // Use the new transaction wallet approach
-      const result = await executeTransaction(
-        async () => {
-          // Step 1: Send payment to escrow wallet (company wallet for now, but held in escrow)
-          const escrowWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
-          const pay = await sendSOL(escrowWalletAddress, totalAmountSOL);
-          if (!pay.success || !pay.signature) {
-            throw new Error(pay.error || 'Payment failed');
-          }
+      // Step 1: Send payment to escrow wallet (company wallet for now, but held in escrow)
+      const escrowWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
+      const pay = await sendSOL(escrowWalletAddress, totalAmountSOL);
+      if (!pay.success || !pay.signature) {
+        throw new Error(pay.error || 'Payment failed');
+      }
 
-          toast.success('Payment successful! Funds held in escrow. Creating franchise...');
+      toast.success('Payment successful! Funds held in escrow. Creating franchise...');
 
           // Step 2: Create franchise on blockchain
           const businessSlug = formData.selectedBusiness!.slug || formData.selectedBusiness!.name.toLowerCase().replace(/\s+/g, '-');
@@ -703,20 +771,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
           setContractDetails(details);
           setCurrentStep(6);
 
-          return details;
-        },
-        {
-          action: 'franchise_creation',
-          amount: totalAmountSOL,
-          description: `Create franchise: ${formData.locationDetails.buildingName} (${selectedShares} shares)`
-        }
-      );
-
       toast.success(`Investment successful! You now own ${selectedShares} shares.`);
       return 'success';
     } catch (e) {
       console.error('Payment/contract creation failed:', e);
-      // Error handling is done in executeTransaction
+      toast.error('Failed to complete franchise creation. Please try again.');
       return 'error';
     } finally {
       setLoading(false);
@@ -961,9 +1020,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                           )}
                         </div>
                         <p className="text-base text-muted-foreground mb-1">
-                          {business.category?.name} • {business.industry?.name}
+                          {business.category?.name}
                         </p>
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                        
+                      </div>
+                      <div className="flex items-center gap-6 text-sm text-muted-foreground justify-end">
                           {business.costPerArea && (
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4" />
@@ -977,7 +1038,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                             </div>
                           )}
                         </div>
-                      </div>
                     </div>
                   </button>
                 ))}
@@ -1117,14 +1177,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Franchise Slug</label>
-                    <Input
-                      value={formData.locationDetails.franchiseSlug}
-                      onChange={(e) => updateLocationDetails('franchiseSlug', e.target.value)}
-                      placeholder="e.g., downtown-branch"
-                      className="h-12 text-lg"
-                    />
+                    <div className="h-12 px-3 py-2 bg-gray-50 dark:bg-stone-800 border border-gray-200 dark:border-stone-700 rounded-md flex items-center text-lg">
+                      {formData.locationDetails.franchiseSlug || 'Auto-generated after business selection'}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      This will be used in your franchise URL
+                      Auto-generated based on business name and location count
                     </p>
                   </div>
 
@@ -1152,14 +1209,40 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                 {/* Property Details */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Square Feet</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      Square Feet
+                      {formData.selectedBusiness?.min_area && (
+                        <span className="text-xs text-gray-500 ml-1">
+                          (Min: {formData.selectedBusiness.min_area} sq ft)
+                        </span>
+                      )}
+                    </label>
                     <Input
-                      type="number"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={formData.locationDetails.sqft}
-                      onChange={(e) => updateLocationDetails('sqft', e.target.value)}
-                      placeholder="e.g., 1500"
-                      className="h-12 text-lg"
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        updateLocationDetails('sqft', value);
+                      }}
+                      placeholder={`e.g., ${formData.selectedBusiness?.min_area || 1500}`}
+                      className={`h-12 text-lg ${
+                        formData.selectedBusiness?.min_area &&
+                        formData.locationDetails.sqft &&
+                        parseInt(formData.locationDetails.sqft) < formData.selectedBusiness.min_area
+                          ? 'border-red-500 focus:border-red-500'
+                          : ''
+                      }`}
+                      min={formData.selectedBusiness?.min_area || 1}
                     />
+                    {formData.selectedBusiness?.min_area &&
+                     formData.locationDetails.sqft &&
+                     parseInt(formData.locationDetails.sqft) < formData.selectedBusiness.min_area && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Minimum area required: {formData.selectedBusiness.min_area} sq ft
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1232,9 +1315,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                         <label className="text-sm font-medium mb-2 block">Your Phone Number</label>
                         <Input
                           type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
                           value={formData.locationDetails.userNumber}
                           onChange={(e) => updateLocationDetails('userNumber', e.target.value)}
-                          placeholder="+1 (555) 123-4567"
+                          placeholder="+971 50 123 4567"
                           className="h-12 text-lg"
                         />
                       </div>
@@ -1256,9 +1341,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                         <label className="text-sm font-medium mb-2 block">Landlord Phone Number</label>
                         <Input
                           type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
                           value={formData.locationDetails.landlordNumber}
                           onChange={(e) => updateLocationDetails('landlordNumber', e.target.value)}
-                          placeholder="+1 (555) 123-4567"
+                          placeholder="+971 50 123 4567"
                           className="h-12 text-lg"
                         />
                       </div>
@@ -1288,17 +1375,36 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               exit={{ opacity: 0, x: -20 }}
               className="p-6 space-y-6"
             >
-              {/* Important Information */}
-              <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800 p-4 rounded-lg">
-                <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">Important Information</h4>
-                <div className="text-sm text-stone-600 dark:text-stone-400 space-y-2">
-                  <p>• Your franchise proposal will be submitted for brand owner approval</p>
-                  <p>• Investment funds will be held in escrow until approval</p>
-                  <p>• If rejected, funds will be automatically refunded</p>
-                  <p>• Upon approval, franchise tokens will be created and distributed</p>
-                  <p>• Monthly profit sharing begins after franchise launch</p>
+               {/* Wallet Balance Display */}
+              {connected && (
+                <div className="bg-stone-50 dark:bg-stone-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-stone-600 dark:text-stone-400">Wallet Balance</span>
+                    <span className="text-sm font-semibold">{solBalance.toFixed(4)} SOL</span>
+                  </div>
+                  {solBalance < (formData.investment.selectedShares * calculateSharePrice() * 1.2) && (
+                    <div className="mt-2">
+                      <Button variant="outline" onClick={() => window.open('https://phantom.app/', '_blank')}>
+                        Add Balance
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {!connected && (
+                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 p-4">
+                  <div className="flex items-center gap-3">
+                    <Wallet className="h-5 w-5 text-yellow-600" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Wallet Required</h4>
+                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                        Connect your Solana wallet to purchase shares
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
                {/* Investment Summary - Inline */}
               <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg p-6">
@@ -1378,7 +1484,11 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                   </div>
                 </div>
 
-                {/* Investment Breakdown */}
+               
+
+                
+              </div>
+               {/* Investment Breakdown */}
                 <div className="bg-stone-50 dark:bg-stone-800 p-4 rounded-lg my-6">
                   <h3 className="font-semibold mb-3 dark:text-white">Investment Breakdown</h3>
                   <div className="space-y-2 text-sm">
@@ -1439,42 +1549,21 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
                   </div>
                 </div>
               </div>
-
-                
+              {/* Important Information */}
+              <div className="bg-stone-50 dark:bg-stone-950/20 border border-stone-200 dark:border-stone-800 p-4 rounded-lg">
+                <h4 className="font-medium text-stone-800 dark:text-stone-200 mb-2">Important Information</h4>
+                <div className="text-sm text-stone-600 dark:text-stone-400 space-y-2">
+                  <p>• Your franchise proposal will be submitted for brand owner approval</p>
+                  <p>• Investment funds will be held in escrow until approval</p>
+                  <p>• If rejected, funds will be automatically refunded</p>
+                  <p>• Upon approval, franchise tokens will be created and distributed</p>
+                  <p>• Monthly profit sharing begins after franchise launch</p>
+                </div>
               </div>
 
               
 
-              {/* Wallet Balance Display */}
-              {connected && (
-                <div className="bg-stone-50 dark:bg-stone-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-stone-600 dark:text-stone-400">Wallet Balance</span>
-                    <span className="text-sm font-semibold">{solBalance.toFixed(4)} SOL</span>
-                  </div>
-                  {solBalance < (formData.investment.selectedShares * calculateSharePrice() * 1.2) && (
-                    <div className="mt-2">
-                      <Button variant="outline" onClick={() => window.open('https://phantom.app/', '_blank')}>
-                        Add Balance
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!connected && (
-                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 p-4">
-                  <div className="flex items-center gap-3">
-                    <Wallet className="h-5 w-5 text-yellow-600" />
-                    <div>
-                      <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Wallet Required</h4>
-                      <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                        Connect your Solana wallet to purchase shares
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+             
             </motion.div>
           )}
 

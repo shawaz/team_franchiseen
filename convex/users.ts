@@ -194,6 +194,41 @@ export const getCurrentUser = query({
   },
 });
 
+// Update user contact information
+export const updateContactInfo = mutation({
+  args: {
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    // Get current user
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
+      .unique();
+
+    if (!user) throw new Error("User not found");
+
+    const updateFields: any = {
+      updated_at: Date.now(),
+    };
+
+    if (args.phone !== undefined) {
+      updateFields.phone = args.phone;
+    }
+
+    if (args.email !== undefined) {
+      updateFields.email = args.email;
+    }
+
+    await ctx.db.patch(user._id, updateFields);
+    return user._id;
+  },
+});
+
 // Define role permissions
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   // Platform-wide roles
