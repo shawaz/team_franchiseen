@@ -220,8 +220,8 @@ export default defineSchema({
   // Platform team management for Franchiseen internal team
   platformTeamMembers: defineTable({
     userId: v.id("users"),
-    role: v.string(), // super_admin, platform_admin, admin, developer, support, marketing, sales
-    department: v.string(), // engineering, operations, marketing, sales, support, finance
+    role: v.string(), // super_admin, platform_admin, department_manager, senior_specialist, specialist, team_member
+    departments: v.array(v.string()), // ["home", "administration", "finances", "operations", "people", "marketing", "sales", "support", "software"]
     position: v.string(), // CTO, Developer, Marketing Manager, etc.
     joinedAt: v.number(),
     invitedBy: v.id("users"),
@@ -231,13 +231,14 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_role", ["role"])
-    .index("by_department", ["department"])
     .index("by_active", ["isActive"]),
 
   platformTeamInvitations: defineTable({
     email: v.string(),
     role: v.string(),
-    department: v.string(),
+    // Migration support: keep old department field optional for backward compatibility
+    department: v.optional(v.string()),
+    departments: v.optional(v.array(v.string())), // Multiple departments can be assigned during invitation
     position: v.string(),
     permissions: v.array(v.string()),
     invitedBy: v.id("users"),

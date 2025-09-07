@@ -19,7 +19,6 @@ import { coinGeckoService } from '@/lib/coingecko';
 import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
 
-import SlideButton from '@/components/ui/slide-button';
 import { useSolana } from '@/hooks/useSolana';
 
 interface TypeformCreateFranchiseModalProps {
@@ -578,6 +577,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
       return 'error';
     }
 
+    setLoading(true);
     try {
       // Step 1: Send payment to escrow wallet (company wallet for now, but held in escrow)
       const escrowWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
@@ -710,6 +710,8 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
       console.error('Payment/contract creation failed:', e);
       toast.error('Transaction failed. Please try again.');
       return 'error';
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1644,12 +1646,28 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
               {/* Right side - Payment button */}
               <div className="flex items-center gap-3">
                 {connected ? (
-                  <SlideButton
-                    onAction={handleSlidePay}
-                    className="bg-purple-600 text-white px-8"
+                  <Button
+                    onClick={async () => {
+                      const result = await handleSlidePay();
+                      if (result === 'success') {
+                        // Payment successful, handleSlidePay already handles the success flow
+                      }
+                    }}
+                    disabled={loading || solBalance < (formData.investment.selectedShares * calculateSharePrice() * 1.2)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg font-semibold"
                   >
-                    Slide to Pay
-                  </SlideButton>
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="h-5 w-5 mr-2" />
+                        Confirm Payment
+                      </>
+                    )}
+                  </Button>
                 ) : (
                   <Button
                     onClick={() => setVisible(true)}

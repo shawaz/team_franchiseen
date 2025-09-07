@@ -5,6 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Wallet, Smartphone, QrCode, ExternalLink, Copy, CheckCircle } from 'lucide-react';
+import WalletQRCode from './WalletQRCode';
 
 interface MobileWalletModalProps {
   isOpen: boolean;
@@ -30,8 +31,25 @@ const MobileWalletModal: React.FC<MobileWalletModalProps> = ({ isOpen, onClose }
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const handlePhantomApp = () => {
-    const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=franchiseen`;
-    window.open(phantomUrl, '_self'); // Use _self to replace current page instead of opening new tab
+    const dappUrl = window.location.origin;
+
+    // Store connection attempt for when user returns
+    localStorage.setItem('phantom_connection_attempt', JSON.stringify({
+      timestamp: Date.now(),
+      url: currentUrl,
+      dappUrl: dappUrl,
+      method: 'modal'
+    }));
+
+    // Use the correct Phantom deep link format
+    const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+
+    // For mobile, replace current page to avoid navigation issues
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      window.location.href = phantomUrl;
+    } else {
+      window.open(phantomUrl, '_blank');
+    }
   };
 
   const handleBrowserWallet = async () => {
@@ -162,27 +180,27 @@ const MobileWalletModal: React.FC<MobileWalletModalProps> = ({ isOpen, onClose }
       </div>
 
       <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg text-center">
-        <div className="w-48 h-48 mx-auto bg-white rounded-lg flex items-center justify-center mb-4">
-          {/* QR Code would go here - you can integrate a QR code library */}
-          <div className="text-gray-400">
-            <QrCode className="w-16 h-16" />
-            <p className="text-sm mt-2">QR Code</p>
-          </div>
+        <div className="flex justify-center mb-4">
+          <WalletQRCode
+            url={currentUrl}
+            size={200}
+            className="border border-gray-200 rounded-lg"
+          />
         </div>
         
         <div className="text-sm text-gray-600 mb-3">
           Or copy this link to open in Phantom:
         </div>
-        
+
         <div className="flex items-center gap-2 bg-white dark:bg-gray-700 p-2 rounded border">
           <input
             type="text"
-            value={currentUrl}
+            value={`https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(window.location.origin)}`}
             readOnly
             className="flex-1 bg-transparent text-xs"
           />
           <Button
-            onClick={() => copyToClipboard(currentUrl)}
+            onClick={() => copyToClipboard(`https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(window.location.origin)}`)}
             size="sm"
             variant="ghost"
             className="p-1"

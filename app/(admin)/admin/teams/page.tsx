@@ -22,27 +22,6 @@ import {
   Briefcase
 } from 'lucide-react';
 
-interface TeamMember {
-  _id: string;
-  userId: string;
-  role: string;
-  department: string;
-  position: string;
-  joinedAt: number;
-  isActive: boolean;
-  lastActiveAt?: number;
-  user?: {
-    email: string;
-    first_name?: string;
-    family_name?: string;
-    avatar?: string;
-  };
-  invitedBy?: {
-    email: string;
-    first_name?: string;
-    family_name?: string;
-  };
-}
 
 const PLATFORM_ROLES = {
   super_admin: { name: "Super Admin", color: "bg-red-100 text-red-800 border-red-200" },
@@ -63,8 +42,8 @@ export default function PlatformTeamsPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteForm, setInviteForm] = useState({
     email: '',
-    role: 'developer',
-    department: 'engineering',
+    role: 'team_member',
+    departments: ['home'], // Support multiple departments
     position: '',
     message: ''
   });
@@ -73,22 +52,51 @@ export default function PlatformTeamsPage() {
   const teamMembers = useQuery(api.platformTeam.listPlatformTeamMembers, {}) || [];
   const currentUser = useQuery(api.platformTeam.getCurrentPlatformUser, {});
   const hasAccess = useQuery(api.platformTeam.hasPlatformAccess, {});
+  const availableRoles = useQuery(api.platformTeam.getAvailableRoles, {}) || [];
+  const availableDepartments = useQuery(api.platformTeam.getAvailableDepartments, {}) || [];
 
   // Mutations
   const inviteTeamMember = useMutation(api.platformTeam.invitePlatformTeamMember);
 
   // Filter team members
-  const filteredMembers = teamMembers.filter((member: TeamMember) => {
+  const filteredMembers = teamMembers.filter((member) => {
     const searchLower = searchQuery.toLowerCase();
     return (
       member.user?.email?.toLowerCase().includes(searchLower) ||
       member.user?.first_name?.toLowerCase().includes(searchLower) ||
       member.user?.family_name?.toLowerCase().includes(searchLower) ||
       member.role.toLowerCase().includes(searchLower) ||
-      member.department.toLowerCase().includes(searchLower) ||
+      member.departments?.some((dept: string) => dept.toLowerCase().includes(searchLower)) ||
       member.position.toLowerCase().includes(searchLower)
     );
   });
+
+  const handleDepartmentToggle = (deptId: string, checked: boolean) => {
+    let newDepartments = [...inviteForm.departments];
+
+    if (checked) {
+      if (!newDepartments.includes(deptId)) {
+        newDepartments.push(deptId);
+      }
+    } else {
+      // Don't allow removing 'home' department
+      if (deptId === 'home') {
+        toast.error('Home department cannot be removed');
+        return;
+      }
+      newDepartments = newDepartments.filter(d => d !== deptId);
+    }
+
+    // Ensure home is always included
+    if (!newDepartments.includes('home')) {
+      newDepartments.unshift('home');
+    }
+
+    setInviteForm({
+      ...inviteForm,
+      departments: newDepartments
+    });
+  };
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,11 +106,16 @@ export default function PlatformTeamsPage() {
       return;
     }
 
+    if (inviteForm.departments.length === 0) {
+      toast.error('At least one department must be selected');
+      return;
+    }
+
     try {
       await inviteTeamMember({
         email: inviteForm.email,
         role: inviteForm.role,
-        department: inviteForm.department,
+        departments: inviteForm.departments,
         position: inviteForm.position,
         message: inviteForm.message || undefined,
       });
@@ -111,8 +124,8 @@ export default function PlatformTeamsPage() {
       setShowInviteModal(false);
       setInviteForm({
         email: '',
-        role: 'developer',
-        department: 'engineering',
+        role: 'team_member',
+        departments: ['home'],
         position: '',
         message: ''
       });
@@ -182,7 +195,7 @@ export default function PlatformTeamsPage() {
 
       {/* Team Members Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMembers.map((member: TeamMember) => (
+        {filteredMembers.map((member) => (
           <Card key={member._id} className="p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -220,9 +233,13 @@ export default function PlatformTeamsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                  {member.department}
-                </span>
+                <div className="flex flex-wrap gap-1">
+                  {member.departments?.map((dept, index) => (
+                    <span key={dept} className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                      {dept}{index < member.departments.length - 1 ? ',' : ''}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-400" />
@@ -294,24 +311,42 @@ export default function PlatformTeamsPage() {
                     onChange={(e) => setInviteForm({...inviteForm, role: e.target.value})}
                     className="w-full p-2 border rounded-md"
                   >
-                    {Object.entries(PLATFORM_ROLES).map(([key, role]) => (
-                      <option key={key} value={key}>{role.name}</option>
+                    {availableRoles.map((role) => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
                     ))}
                   </select>
                 </div>
 
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Department</label>
-                  <select
-                    value={inviteForm.department}
-                    onChange={(e) => setInviteForm({...inviteForm, department: e.target.value})}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    {DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept} className="capitalize">{dept}</option>
+                  <label className="block text-sm font-medium mb-2">Departments</label>
+                  <div className="border rounded-md p-2 max-h-32 overflow-y-auto">
+                    {availableDepartments.map((dept) => (
+                      <label key={dept.id} className={`flex items-center gap-2 p-2 hover:bg-gray-50 rounded transition-colors ${
+                        dept.id === 'home' ? 'bg-blue-50 border border-blue-200' : ''
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={inviteForm.departments.includes(dept.id)}
+                          onChange={(e) => handleDepartmentToggle(dept.id, e.target.checked)}
+                          disabled={dept.id === 'home'} // Home is always required
+                          className="rounded"
+                        />
+                        <span className={`text-sm ${dept.id === 'home' ? 'font-medium text-blue-700' : ''}`}>
+                          {dept.name}
+                        </span>
+                        {dept.id === 'home' && (
+                          <span className="text-xs text-blue-600 font-medium">(Required)</span>
+                        )}
+                        {dept.accessLevel === 'closed' && dept.id !== 'home' && (
+                          <span className="text-xs text-gray-500">(Closed)</span>
+                        )}
+                      </label>
                     ))}
-                  </select>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 <strong>Home</strong> is required for all team members. Select additional departments as needed.
+                  </p>
                 </div>
               </div>
 

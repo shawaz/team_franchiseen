@@ -156,8 +156,8 @@ export default function RegisterBrandPage() {
     logoUrl: '',
     industry_id: '',
     category_id: '',
-    costPerShare: 37, // Default cost per share in local currency (≈ AED 10)
-    min_area: 100,
+    costPerShare: 0, // User must enter cost per share
+    min_area: 0, // User must enter minimum area
     serviceable_countries: [],
     currency: 'AED', // Default to AED
     companyDocuments: [],
@@ -241,8 +241,8 @@ export default function RegisterBrandPage() {
       logoUrl: '',
       industry_id: '',
       category_id: '',
-      costPerShare: 37, // Default cost per share in local currency
-      min_area: 100,
+      costPerShare: 0, // User must enter cost per share
+      min_area: 0, // User must enter minimum area
       serviceable_countries: [],
       currency: currentCurrency.code,
       companyDocuments: [],
@@ -279,10 +279,23 @@ export default function RegisterBrandPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+
     setFormData(prev => {
+      let processedValue: string | number = value;
+
+      // Handle number fields
+      if (name === 'costPerShare' || name === 'min_area') {
+        // Convert to number, but handle empty strings gracefully
+        processedValue = value === '' ? 0 : Number(value);
+        // Ensure we don't get NaN
+        if (isNaN(processedValue as number)) {
+          processedValue = 0;
+        }
+      }
+
       const newData = {
         ...prev,
-        [name]: name === 'costPerArea' || name === 'min_area' ? Number(value) : value,
+        [name]: processedValue,
       };
 
       // Auto-generate slug when business name changes (only if slug is empty or was auto-generated)
@@ -292,8 +305,9 @@ export default function RegisterBrandPage() {
 
       // Calculate franchise starting budget and shares when cost per share or min area changes
       if (name === 'costPerShare' || name === 'min_area') {
-        const costPerShare = name === 'costPerShare' ? Number(value) : prev.costPerShare;
-        const minArea = name === 'min_area' ? Number(value) : prev.min_area;
+        const costPerShare = name === 'costPerShare' ? (processedValue as number) : prev.costPerShare;
+        const minArea = name === 'min_area' ? (processedValue as number) : prev.min_area;
+
         if (costPerShare > 0 && minArea > 0) {
           // Calculate minimum budget based on area and cost per share
           // Assume 1 share per sq ft as a baseline
@@ -426,23 +440,24 @@ export default function RegisterBrandPage() {
     }
   };
 
+  // Prevent form submission on Enter key unless on final step
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && currentStep < 3) {
+      e.preventDefault();
+      // If on a valid step, move to next step instead
+      if (isStepValid(currentStep)) {
+        nextStep();
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log('[Register] Submit clicked. canSubmit =', !isLoading && isSignedIn && isStepValid(currentStep), {
-      isLoading,
-      isSignedIn,
-      isLoaded,
-      currentStep,
-    });
-    console.log('[Register] Submit clicked. Form data snapshot:', {
-      name: formData.name,
-      slug: formData.slug,
-      industry_id: formData.industry_id,
-      category_id: formData.category_id,
-      costPerArea: formData.costPerShare, // Convert to cost per area for validation
-      min_area: formData.min_area,
-      serviceable_countries: formData.serviceable_countries,
-    });
     e.preventDefault();
+
+    // Only allow submission on step 3
+    if (currentStep !== 3) {
+      return;
+    }
 
     if (!isSignedIn) {
       toast.error('Please sign in to create a business');
@@ -606,7 +621,7 @@ export default function RegisterBrandPage() {
           transition={{ delay: 0.4 }}
           className=""
         >
-          <form id="register-form" onSubmit={handleSubmit} className="space-y-8">
+          <form id="register-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-8">
 
             {/* Step 1: Brand Information */}
             {currentStep === 1 && (
@@ -916,7 +931,7 @@ export default function RegisterBrandPage() {
 
                     <div>
                       <label htmlFor="costPerShare" className="block text-sm justify-between flex font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Cost Per Share *({currentCurrencyDetails.code.toUpperCase()}) 
+                        Cost Per Share *({currentCurrencyDetails.code.toUpperCase()})
                         {selectedCurrency !== 'aed' && (
                           <span className="text-xs text-gray-500 ml-2">
                             (≈ AED {(formData.costPerShare * (exchangeRates['aed'] / exchangeRates[selectedCurrency] || 1)).toFixed(2)})
@@ -931,7 +946,7 @@ export default function RegisterBrandPage() {
                           type="number"
                           id="costPerShare"
                           name="costPerShare"
-                          value={formData.costPerShare}
+                          value={formData.costPerShare || ''}
                           onChange={handleInputChange}
                           className="w-full h-11 pl-12 pr-4 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600 focus:ring-2 focus:ring-primary focus:border-primary"
                           placeholder={`Enter cost per share in ${currentCurrencyDetails.code.toUpperCase()}`}
@@ -956,7 +971,7 @@ export default function RegisterBrandPage() {
                         type="number"
                         id="min_area"
                         name="min_area"
-                        value={formData.min_area}
+                        value={formData.min_area || ''}
                         onChange={handleInputChange}
                         className="w-full h-11 bg-white dark:bg-stone-700 border border-gray-300 dark:border-stone-600  focus:ring-2 focus:ring-primary focus:border-primary"
                         placeholder="Enter minimum area"
@@ -967,7 +982,7 @@ export default function RegisterBrandPage() {
 
 
                   {/* Franchise Starting Budget Display */}
-                  {formData.costPerShare > 0 && formData.min_area > 0 && (
+                  {formData.costPerShare > 0 && formData.min_area > 0 ? (
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-6">
                       <h4 className="text-lg font-medium text-green-800 dark:text-green-200 mb-3">
                         Franchise Starting Budget Calculation
@@ -1007,6 +1022,15 @@ export default function RegisterBrandPage() {
                           ? 'Each share costs AED 10.'
                           : `Each share costs AED 10 (equivalent to ${currentCurrencyDetails.symbol}${formData.costPerShare} in your local currency).`
                         }
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-6">
+                      <h4 className="text-lg font-medium text-yellow-800 dark:text-yellow-200 mb-3">
+                        Complete the Required Fields
+                      </h4>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        Please enter both the cost per share and minimum area to see the franchise starting budget calculation and enable registration.
                       </p>
                     </div>
                   )}
@@ -1088,14 +1112,10 @@ export default function RegisterBrandPage() {
                 </Button>
               ) : (
                 <Button
-                  type="submit" form="register-form"
+                  type="submit"
                   disabled={isLoading || !isStepValid(3)}
                   className="bg-yellow-600 text-white hover:bg-yellow-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   title={!isStepValid(3) ? 'Complete required fields' : isLoading ? 'Submitting…' : ''}
-                  onClick={() => {
-                    const formEl = document.getElementById('register-form') as HTMLFormElement | null;
-                    if (formEl) formEl.requestSubmit();
-                  }}
                 >
                   {isLoading ? 'Creating Brand...' : 'Register Brand'}
                 </Button>

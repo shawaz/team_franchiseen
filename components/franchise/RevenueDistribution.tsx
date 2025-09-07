@@ -55,8 +55,15 @@ export default function RevenueDistribution({
     const revenue = parseFloat(revenueAmount) || 0;
     if (!franchiseData || revenue <= 0) return null;
 
-    const totalInvestment = franchiseData.totalInvestment.toNumber() / LAMPORTS_PER_SOL;
-    const capitalRecovered = franchiseData.capitalRecovered.toNumber() / LAMPORTS_PER_SOL;
+    // Safely handle blockchain data
+    const totalInvestment = typeof franchiseData.totalInvestment === 'object' && franchiseData.totalInvestment?.toNumber
+      ? franchiseData.totalInvestment.toNumber() / LAMPORTS_PER_SOL
+      : (franchiseData.totalInvestment || 0);
+
+    const capitalRecovered = typeof franchiseData.capitalRecovered === 'object' && franchiseData.capitalRecovered?.toNumber
+      ? franchiseData.capitalRecovered.toNumber() / LAMPORTS_PER_SOL
+      : (franchiseData.capitalRecovered || 0);
+
     const remainingCapital = Math.max(0, totalInvestment - capitalRecovered);
 
     // 50% goes to capital recovery, 50% to dividends (until capital is recovered)
@@ -131,6 +138,10 @@ export default function RevenueDistribution({
   const pendingDividends = typeof franchiseData.pendingDividends === 'object' && franchiseData.pendingDividends?.toNumber
     ? franchiseData.pendingDividends.toNumber() / LAMPORTS_PER_SOL
     : (franchiseData.pendingDividends || 0);
+
+  const lastPayout = typeof franchiseData.lastPayout === 'object' && franchiseData.lastPayout?.toNumber
+    ? franchiseData.lastPayout.toNumber()
+    : (franchiseData.lastPayout || 0);
 
   return (
     <div className="space-y-6">
@@ -263,13 +274,13 @@ export default function RevenueDistribution({
           <h3 className="text-lg font-semibold">Distribution History</h3>
         </div>
 
-        {franchiseData.lastPayout.toNumber() > 0 ? (
+        {lastPayout > 0 ? (
           <div className="space-y-3">
             <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div>
                 <div className="font-medium">Last Distribution</div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {new Date(franchiseData.lastPayout.toNumber() * 1000).toLocaleDateString()}
+                  {new Date(lastPayout * 1000).toLocaleDateString()}
                 </div>
               </div>
               <div className="text-right">

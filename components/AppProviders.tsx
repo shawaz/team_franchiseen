@@ -9,6 +9,7 @@ import ModalManager from "@/components/modals/ModalManager";
 import { SolOnlyProvider } from "@/contexts/SolOnlyContext";
 import { GlobalCurrencyProvider } from "@/contexts/GlobalCurrencyContext";
 import FullScreenLoader from '@/components/ui/FullScreenLoader';
+import PhantomConnectionHandler from "@/components/wallet/PhantomConnectionHandler";
 import { Suspense } from 'react';
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,8 @@ export default function AppProviders({ children }: { children: React.ReactNode }
                   <Suspense fallback={<FullScreenLoader />}>
                     {children}
                   </Suspense>
+                  {/* Phantom Wallet Connection Handler */}
+                  <PhantomConnectionHandler />
                   {/* Centralized Modal Manager */}
                   <ModalManager />
                 </ConvexClientProvider>

@@ -1,59 +1,107 @@
-// TEMPORARILY DISABLED DUE TO TYPESCRIPT ERRORS
-// import { mutation, query } from "./_generated/server";
-// import { v } from "convex/values";
-// import { Id } from "./_generated/dataModel";
-
-// TEMPORARILY DISABLED - WILL RE-ENABLE AFTER ESCROW SYSTEM IS WORKING
-/*
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 // Super admin email - hardcoded for security
 const SUPER_ADMIN_EMAIL = "shawaz@franchiseen.com";
 
-// Define platform roles and their permissions
+// Define departments and their access levels
+export const DEPARTMENTS = {
+  home: {
+    name: "Home",
+    description: "Open to all Franchiseen members",
+    accessLevel: "open",
+    permissions: ["home.*"]
+  },
+  administration: {
+    name: "Administration",
+    description: "Closed Department - Admin access only",
+    accessLevel: "closed",
+    permissions: ["admin.*"]
+  },
+  finances: {
+    name: "Finances",
+    description: "Closed Department - Finance team access only",
+    accessLevel: "closed",
+    permissions: ["finances.*"]
+  },
+  operations: {
+    name: "Operations",
+    description: "Closed Department - Operations team access only",
+    accessLevel: "closed",
+    permissions: ["operations.*"]
+  },
+  people: {
+    name: "People (HR)",
+    description: "Closed Department - HR team access only",
+    accessLevel: "closed",
+    permissions: ["people.*"]
+  },
+  marketing: {
+    name: "Marketing",
+    description: "Closed Department - Marketing team access only",
+    accessLevel: "closed",
+    permissions: ["marketing.*"]
+  },
+  sales: {
+    name: "Sales",
+    description: "Closed Department - Sales team access only",
+    accessLevel: "closed",
+    permissions: ["sales.*"]
+  },
+  support: {
+    name: "Support",
+    description: "Closed Department - Support team access only",
+    accessLevel: "closed",
+    permissions: ["support.*"]
+  },
+  software: {
+    name: "Software",
+    description: "Closed Department - Development team access only",
+    accessLevel: "closed",
+    permissions: ["software.*"]
+  }
+};
+
+// Define platform roles with flexible department access
 export const PLATFORM_ROLES = {
   super_admin: {
     name: "Super Admin",
     permissions: ["*"], // All permissions
-    department: "executive",
+    defaultDepartments: Object.keys(DEPARTMENTS),
     description: "Full platform access and control"
   },
   platform_admin: {
-    name: "Platform Admin", 
+    name: "Platform Admin",
     permissions: [
-      "admin.*", "operations.*", "finances.*", "people.*", 
+      "home.*", "admin.*", "operations.*", "finances.*", "people.*",
       "marketing.*", "sales.*", "software.*", "support.*"
     ],
-    department: "operations",
-    description: "Full administrative access"
+    defaultDepartments: Object.keys(DEPARTMENTS),
+    description: "Full administrative access to all departments"
   },
-  admin: {
-    name: "Admin",
-    permissions: ["admin.*", "operations.*", "people.*", "support.*"],
-    department: "operations", 
-    description: "General administrative access"
+  department_manager: {
+    name: "Department Manager",
+    permissions: ["home.*", "admin.*", "people.*"],
+    defaultDepartments: ["home"],
+    description: "Can manage multiple departments - departments assigned during invitation"
   },
-  developer: {
-    name: "Developer",
-    permissions: ["software.*", "admin.resources", "operations.projects"],
-    department: "engineering",
-    description: "Software development and technical resources"
+  senior_specialist: {
+    name: "Senior Specialist",
+    permissions: ["home.*"],
+    defaultDepartments: ["home"],
+    description: "Senior team member - can have access to multiple departments"
   },
-  support: {
-    name: "Support Specialist",
-    permissions: ["support.*", "people.users", "operations.ongoing"],
-    department: "support",
-    description: "Customer and user support"
+  specialist: {
+    name: "Specialist",
+    permissions: ["home.*"],
+    defaultDepartments: ["home"],
+    description: "Team specialist - can have access to specific departments"
   },
-  marketing: {
-    name: "Marketing Manager", 
-    permissions: ["marketing.*", "sales.leads", "people.users"],
-    department: "marketing",
-    description: "Marketing campaigns and content"
-  },
-  sales: {
-    name: "Sales Manager",
-    permissions: ["sales.*", "marketing.leads", "people.users"],
-    department: "sales", 
-    description: "Sales operations and client management"
+  team_member: {
+    name: "Team Member",
+    permissions: ["home.*"],
+    defaultDepartments: ["home"],
+    description: "Basic team member - can be granted additional department access"
   }
 };
 
@@ -78,9 +126,17 @@ export const getCurrentPlatformUser = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .unique();
 
+    // Get user's department access
+    let departmentAccess: string[] = ["home"]; // Everyone gets home access
+    if (platformMember?.isActive) {
+      // Use the departments assigned to the user (supports multiple departments)
+      departmentAccess = platformMember.departments || ["home"];
+    }
+
     return {
       ...user,
       platformMember,
+      departmentAccess,
     };
   },
 });
@@ -112,7 +168,7 @@ export const grantSuperAdminAccess = mutation({
       const superAdminMember = await ctx.db.insert("platformTeamMembers", {
         userId: user._id,
         role: "super_admin",
-        department: "executive",
+        departments: Object.keys(DEPARTMENTS), // Super admin has access to all departments
         position: "Chief Technology Officer",
         joinedAt: Date.now(),
         invitedBy: user._id, // Self-invited
@@ -144,6 +200,9 @@ export const hasPlatformAccess = query({
     // Super admin always has access
     if (identity.email === SUPER_ADMIN_EMAIL) return true;
 
+    // All @franchiseen.com emails have basic platform access (home section)
+    if (identity.email.endsWith('@franchiseen.com')) return true;
+
     // Check if user is active platform team member
     const user = await ctx.db
       .query("users")
@@ -161,6 +220,41 @@ export const hasPlatformAccess = query({
   },
 });
 
+// Check if user has access to specific department
+export const hasDepartmentAccess = query({
+  args: { department: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return false;
+
+    // Super admin always has access
+    if (identity.email === SUPER_ADMIN_EMAIL) return true;
+
+    // Home department is open to all Franchiseen members
+    if (args.department === "home" && identity.email.endsWith('@franchiseen.com')) {
+      return true;
+    }
+
+    // Check if user is active platform team member with department access
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email as string))
+      .unique();
+
+    if (!user) return false;
+
+    const platformMember = await ctx.db
+      .query("platformTeamMembers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .unique();
+
+    if (!platformMember?.isActive) return false;
+
+    // Check if user has access to this department (supports multiple departments)
+    return platformMember.departments?.includes(args.department) || false;
+  },
+});
+
 // Get all platform team members
 export const listPlatformTeamMembers = query({
   args: {},
@@ -170,7 +264,7 @@ export const listPlatformTeamMembers = query({
 
     // Super admin always has access
     if (identity.email !== SUPER_ADMIN_EMAIL) {
-      // Check if user is active platform team member
+      // Check if user is active platform team member with admin permissions
       const user = await ctx.db
         .query("users")
         .withIndex("by_email", (q) => q.eq("email", identity.email as string))
@@ -184,6 +278,14 @@ export const listPlatformTeamMembers = query({
         .unique();
 
       if (!platformMember?.isActive) throw new Error("Not authorized");
+
+      // Only admins and managers can view team members
+      const role = PLATFORM_ROLES[platformMember.role as keyof typeof PLATFORM_ROLES];
+      const hasAdminAccess = role?.permissions.includes("*") ||
+                           role?.permissions.includes("admin.*") ||
+                           role?.permissions.includes("people.*");
+
+      if (!hasAdminAccess) throw new Error("Not authorized to view team members");
     }
 
     const members = await ctx.db
@@ -195,10 +297,12 @@ export const listPlatformTeamMembers = query({
       members.map(async (member) => {
         const user = await ctx.db.get(member.userId);
         const invitedByUser = await ctx.db.get(member.invitedBy);
+        const role = PLATFORM_ROLES[member.role as keyof typeof PLATFORM_ROLES];
         return {
           ...member,
           user,
           invitedBy: invitedByUser,
+          roleInfo: role,
         };
       })
     );
@@ -212,7 +316,7 @@ export const invitePlatformTeamMember = mutation({
   args: {
     email: v.string(),
     role: v.string(),
-    department: v.string(),
+    departments: v.array(v.string()), // Support multiple departments
     position: v.string(),
     message: v.optional(v.string()),
   },
@@ -222,7 +326,7 @@ export const invitePlatformTeamMember = mutation({
 
     // Super admin always has access
     if (identity.email !== SUPER_ADMIN_EMAIL) {
-      // Check if user is active platform team member
+      // Check if user is active platform team member with admin permissions
       const user = await ctx.db
         .query("users")
         .withIndex("by_email", (q) => q.eq("email", identity.email as string))
@@ -236,6 +340,14 @@ export const invitePlatformTeamMember = mutation({
         .unique();
 
       if (!platformMember?.isActive) throw new Error("Not authorized to invite team members");
+
+      // Only admins and managers can invite team members
+      const role = PLATFORM_ROLES[platformMember.role as keyof typeof PLATFORM_ROLES];
+      const hasInviteAccess = role?.permissions.includes("*") ||
+                             role?.permissions.includes("admin.*") ||
+                             role?.permissions.includes("people.*");
+
+      if (!hasInviteAccess) throw new Error("Not authorized to invite team members");
     }
 
     // Get current user
@@ -249,6 +361,18 @@ export const invitePlatformTeamMember = mutation({
     // Validate role
     if (!PLATFORM_ROLES[args.role as keyof typeof PLATFORM_ROLES]) {
       throw new Error("Invalid role specified");
+    }
+
+    // Validate departments
+    for (const dept of args.departments) {
+      if (!DEPARTMENTS[dept as keyof typeof DEPARTMENTS]) {
+        throw new Error(`Invalid department specified: ${dept}`);
+      }
+    }
+
+    // Ensure at least one department is specified
+    if (args.departments.length === 0) {
+      throw new Error("At least one department must be specified");
     }
 
     // Check if invitation already exists
@@ -287,7 +411,7 @@ export const invitePlatformTeamMember = mutation({
     const invitationId = await ctx.db.insert("platformTeamInvitations", {
       email: args.email,
       role: args.role,
-      department: args.department,
+      departments: args.departments,
       position: args.position,
       permissions: roleConfig.permissions,
       invitedBy: currentUser._id,
@@ -298,10 +422,14 @@ export const invitePlatformTeamMember = mutation({
       message: args.message,
     });
 
-    // TODO: Send email invitation
-    // This would integrate with your email service (SendGrid, etc.)
-    
-    return { invitationId, inviteToken };
+    // TODO: Integrate with Clerk to send team invitation
+    // This would use Clerk's team invitation API
+
+    return {
+      invitationId,
+      inviteToken,
+      inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/admin/invite/${inviteToken}`
+    };
   },
 });
 
@@ -364,11 +492,23 @@ export const acceptPlatformInvitation = mutation({
 
     if (!user) throw new Error("Failed to create/update user");
 
+    // Handle migration: convert old department field to departments array
+    let departments: string[] = [];
+    if (invitation.departments) {
+      departments = invitation.departments;
+    } else if (invitation.department) {
+      // Migration: convert single department to array
+      departments = [invitation.department];
+    } else {
+      // Fallback to home if no departments specified
+      departments = ["home"];
+    }
+
     // Create platform team member
     await ctx.db.insert("platformTeamMembers", {
       userId: user._id,
       role: invitation.role,
-      department: invitation.department,
+      departments: departments,
       position: invitation.position,
       joinedAt: Date.now(),
       invitedBy: invitation.invitedBy,
@@ -386,4 +526,31 @@ export const acceptPlatformInvitation = mutation({
     return { success: true };
   },
 });
-*/
+
+// Get available roles for invitation
+export const getAvailableRoles = query({
+  args: {},
+  handler: async (ctx) => {
+    return Object.entries(PLATFORM_ROLES).map(([key, role]) => ({
+      id: key,
+      name: role.name,
+      description: role.description,
+      departments: role.defaultDepartments,
+      permissions: role.permissions,
+    }));
+  },
+});
+
+// Get available departments
+export const getAvailableDepartments = query({
+  args: {},
+  handler: async (ctx) => {
+    return Object.entries(DEPARTMENTS).map(([key, dept]) => ({
+      id: key,
+      name: dept.name,
+      description: dept.description,
+      accessLevel: dept.accessLevel,
+      permissions: dept.permissions,
+    }));
+  },
+});

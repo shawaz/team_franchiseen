@@ -179,11 +179,31 @@ const menuStructure = [
 
 export default function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, hasDepartmentAccess, departmentAccess } = usePermissions();
 
-  // Filter menu structure based on user permissions
+  // Map menu sections to departments
+  const menuToDepartment: Record<string, string> = {
+    'home': 'home',
+    'admin': 'administration',
+    'finances': 'finances',
+    'operations': 'operations',
+    'people': 'people',
+    'marketing': 'marketing',
+    'sales': 'sales',
+    'software': 'software',
+    'support': 'support'
+  };
+
+  // Filter menu structure based on department access and permissions
   const filteredMenuStructure = menuStructure.filter(menu => {
+    const department = menuToDepartment[menu.id];
+
+    // Check department access first
+    if (department && !hasDepartmentAccess(department)) return false;
+
+    // Then check individual permissions
     if (!hasPermission(menu.permission)) return false;
+
     const filteredItems = menu.items.filter(item => hasPermission(item.permission));
     return filteredItems.length > 0;
   }).map(menu => ({

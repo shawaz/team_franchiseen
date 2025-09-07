@@ -60,18 +60,47 @@ export const useMobileWallet = () => {
       setState(prev => ({ ...prev, connectionMethod: method }));
 
       if (method === 'browser') {
-        // Try browser extension first
-        if ((window as any).phantom?.solana) {
-          await (window as any).phantom.solana.connect();
+        // Check if we're on mobile and Phantom is available
+        const phantomSolana = (window as any).phantom?.solana;
+
+        if (phantomSolana?.isPhantom) {
+          try {
+            // Direct connection to Phantom
+            const response = await phantomSolana.connect({ onlyIfTrusted: false });
+            console.log('Connected to Phantom:', response.publicKey.toString());
+          } catch (error: any) {
+            console.error('Direct Phantom connection failed:', error);
+
+            // If direct connection fails on mobile, try app method
+            if (state.isMobile && error.message?.includes('User rejected')) {
+              await connectViaApp();
+              return;
+            }
+            throw error;
+          }
         } else {
-          // Fallback to wallet adapter
+          // Fallback to wallet adapter for desktop or when Phantom not detected
           if (!wallet) {
             const phantomWallet = wallets.find(w => w.adapter.name === 'Phantom');
             if (phantomWallet) {
               select(phantomWallet.adapter.name);
+              // Wait a bit for wallet selection to take effect
+              await new Promise(resolve => setTimeout(resolve, 100));
             }
           }
-          await connect();
+
+          try {
+            await connect();
+          } catch (error: any) {
+            console.error('Wallet adapter connection failed:', error);
+
+            // On mobile, if wallet adapter fails, try app method
+            if (state.isMobile) {
+              await connectViaApp();
+              return;
+            }
+            throw error;
+          }
         }
       } else if (method === 'app') {
         // Use improved app connection
@@ -96,36 +125,65 @@ export const useMobileWallet = () => {
     }
   }, [state.isMobile, state.isPhantomInstalled, wallet, wallets, select, connect]);
 
-  // Improved app connection method
+  // Improved app connection method with proper Phantom deep linking
   const connectViaApp = useCallback(async () => {
     const currentUrl = window.location.href;
-    
+    const dappUrl = window.location.origin;
+
     // Store connection attempt
-    localStorage.setItem('wallet_connection_attempt', JSON.stringify({
+    localStorage.setItem('phantom_connection_attempt', JSON.stringify({
       timestamp: Date.now(),
       url: currentUrl,
+      dappUrl: dappUrl,
       method: 'app'
     }));
 
-    // Method 1: Try universal link that returns to browser
-    const universalLink = `phantom://connect?dapp=${encodeURIComponent(window.location.origin)}&redirect=${encodeURIComponent(currentUrl)}`;
-    
-    // For iOS, try the universal link first
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-      window.location.href = universalLink;
-      return;
-    }
+    // Check if we can detect Phantom app installation
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isAndroid = /Android/.test(userAgent);
 
-    // For Android, use intent URL
-    if (/Android/.test(navigator.userAgent)) {
-      const intentUrl = `intent://connect?dapp=${encodeURIComponent(window.location.origin)}&redirect=${encodeURIComponent(currentUrl)}#Intent;scheme=phantom;package=app.phantom;end`;
-      window.location.href = intentUrl;
-      return;
-    }
+    try {
+      if (isIOS) {
+        // For iOS, use the universal link format that Phantom supports
+        const universalLink = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
 
-    // Fallback: use the web URL but with better parameters
-    const webUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=franchiseen&connect=true`;
-    window.location.href = webUrl;
+        // Try to open the app directly first
+        const appScheme = `phantom://ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+
+        // Create a hidden iframe to test app availability
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = appScheme;
+        document.body.appendChild(iframe);
+
+        // Fallback to universal link after a short delay
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.location.href = universalLink;
+        }, 500);
+
+        return;
+      }
+
+      if (isAndroid) {
+        // For Android, use intent URL with proper fallback
+        const intentUrl = `intent://ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}#Intent;scheme=phantom;package=app.phantom;S.browser_fallback_url=${encodeURIComponent(`https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`)};end`;
+        window.location.href = intentUrl;
+        return;
+      }
+
+      // Fallback for other mobile browsers
+      const webUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+      window.location.href = webUrl;
+
+    } catch (error) {
+      console.error('Error opening Phantom app:', error);
+
+      // Final fallback - direct to Phantom web
+      const fallbackUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+      window.location.href = fallbackUrl;
+    }
   }, []);
 
   // Check for returning connection

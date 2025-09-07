@@ -2,8 +2,6 @@
 
 import {
   Bell,
-  CreditCard,
-  HeartHandshake,
   Power,
   Search,
   Store,
@@ -15,9 +13,6 @@ import {
   Settings,
   PlusSquare,
   Compass,
-  HelpCircle,
-  Shield,
-  Building2,
   Building,
 } from "lucide-react";
 import Image from "next/image";
@@ -34,7 +29,6 @@ import { useQuery, useMutation } from "convex/react";
 import EmailVerificationModal from "./EmailVerificationModal";
 import { api } from "../convex/_generated/api";
 import { useModal } from "@/contexts/ModalContext";
-import { useRouter } from 'next/navigation';
 import CreateBusinessModal from "./business/CreateBusinessModal";
 import { Id } from "../convex/_generated/dataModel";
 import LanguageCurrencyModal from "./LanguageCurrencyModal";
@@ -42,7 +36,6 @@ import SettingsModal from "./modals/SettingsModal";
 import FilterModal, { FilterOptions } from "./modals/FilterModal";
 import { ThemeSwitcher } from "./theme-switcher";
 import { useGlobalCurrency } from "@/contexts/GlobalCurrencyContext";
-import { SearchSkeleton } from "@/components/skeletons/FormSkeleton";
 
 function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
