@@ -38,17 +38,32 @@ const MobileWalletModal: React.FC<MobileWalletModalProps> = ({ isOpen, onClose }
       timestamp: Date.now(),
       url: currentUrl,
       dappUrl: dappUrl,
-      method: 'modal'
+      method: 'modal',
+      action: 'connect'
     }));
 
-    // Use the correct Phantom deep link format
-    const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+    // Use proper deep link to Phantom app (not webview)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
 
-    // For mobile, replace current page to avoid navigation issues
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-      window.location.href = phantomUrl;
+    if (isIOS) {
+      // iOS: Use app scheme for direct connection
+      const appScheme = `phantom://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(dappUrl)}`;
+      window.location.href = appScheme;
+
+      // Fallback to App Store after delay
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href = 'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
+        }
+      }, 2000);
+    } else if (isAndroid) {
+      // Android: Use intent with proper connection scheme
+      const intentUrl = `intent://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(dappUrl)}#Intent;scheme=phantom;package=app.phantom;S.browser_fallback_url=https://play.google.com/store/apps/details?id=app.phantom;end`;
+      window.location.href = intentUrl;
     } else {
-      window.open(phantomUrl, '_blank');
+      // Desktop fallback
+      window.open('https://phantom.app/download', '_blank');
     }
   };
 

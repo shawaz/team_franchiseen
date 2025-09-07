@@ -34,11 +34,11 @@ const WalletQRCode: React.FC<WalletQRCodeProps> = ({
     canvas.height = size;
 
     try {
-      // Create a proper Phantom-compatible deep link
+      // Create a proper Phantom deep link for connection (not webview)
       const dappUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const phantomUrl = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(dappUrl)}`;
+      const phantomUrl = `phantom://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(dappUrl)}`;
 
-      // Use QR Server API for generating QR codes with the Phantom URL
+      // Use QR Server API for generating QR codes with the Phantom connection URL
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(phantomUrl)}&format=png&margin=10`;
 
       const img = new Image();

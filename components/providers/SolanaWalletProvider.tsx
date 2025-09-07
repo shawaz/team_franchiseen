@@ -32,11 +32,11 @@ export default function SolanaWalletProvider({ children }: SolanaWalletProviderP
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }, []);
 
-  // Configure wallets with proper mobile support
+  // Configure wallets with proper mobile deep link support
   const wallets = useMemo(() => {
     const phantomAdapter = new PhantomWalletAdapter();
 
-    // Override the connect method for better mobile support
+    // Override the connect method for mobile deep linking
     if (isMobile) {
       const originalConnect = phantomAdapter.connect.bind(phantomAdapter);
       phantomAdapter.connect = async () => {
@@ -45,22 +45,40 @@ export default function SolanaWalletProvider({ children }: SolanaWalletProviderP
           const isPhantomInstalled = window.phantom?.solana?.isPhantom;
 
           if (!isPhantomInstalled) {
-            // Create proper deep link for mobile
-            const currentUrl = window.location.href;
-            const dappUrl = window.location.origin;
-
-            // Use the correct Phantom deep link format
-            const deepLink = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
-
             // Store connection attempt for when user returns
             localStorage.setItem('phantom_connection_attempt', JSON.stringify({
               timestamp: Date.now(),
-              url: currentUrl,
-              dappUrl: dappUrl
+              url: window.location.href,
+              dappUrl: window.location.origin,
+              action: 'connect'
             }));
 
-            // Redirect to Phantom app
-            window.location.href = deepLink;
+            // Use proper deep link to Phantom app (not webview)
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+
+            if (isIOS) {
+              // iOS: Try app scheme first, fallback to App Store
+              const appScheme = `phantom://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(window.location.origin)}`;
+
+              // Try to open the app
+              window.location.href = appScheme;
+
+              // Fallback to App Store after delay if app doesn't open
+              setTimeout(() => {
+                if (!document.hidden) {
+                  window.location.href = 'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
+                }
+              }, 2000);
+            } else if (isAndroid) {
+              // Android: Use intent with fallback to Play Store
+              const intentUrl = `intent://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(window.location.origin)}#Intent;scheme=phantom;package=app.phantom;S.browser_fallback_url=https://play.google.com/store/apps/details?id=app.phantom;end`;
+              window.location.href = intentUrl;
+            } else {
+              // Desktop or unknown mobile - redirect to download page
+              window.open('https://phantom.app/download', '_blank');
+            }
+
             return;
           }
 
@@ -87,29 +105,64 @@ export default function SolanaWalletProvider({ children }: SolanaWalletProviderP
     }
   }, [isMobile]);
 
-  // Don't auto-connect on mobile to avoid conflicts with deep linking
+  // Smart auto-connect logic - only when appropriate
   const shouldAutoConnect = useMemo(() => {
     if (typeof window === 'undefined') return false;
 
-    // Check if user is returning from Phantom app
+    // Check if user is returning from Phantom app for connection
     const connectionAttempt = localStorage.getItem('phantom_connection_attempt');
-    if (connectionAttempt && isMobile) {
+    if (connectionAttempt) {
       try {
         const attempt = JSON.parse(connectionAttempt);
         const timeDiff = Date.now() - attempt.timestamp;
 
-        // If less than 5 minutes ago, try to auto-connect
-        if (timeDiff < 5 * 60 * 1000) {
-          localStorage.removeItem('phantom_connection_attempt');
+        // If less than 10 minutes ago and it's a connection attempt, try to auto-connect
+        if (timeDiff < 10 * 60 * 1000 && attempt.action === 'connect') {
           return true;
+        } else {
+          // Clean up old attempts
+          localStorage.removeItem('phantom_connection_attempt');
         }
       } catch (e) {
         localStorage.removeItem('phantom_connection_attempt');
       }
     }
 
-    // Auto-connect on desktop if previously connected
-    return !isMobile;
+    // Check if user is returning from transaction flow
+    const transactionContext = localStorage.getItem('phantom_transaction_context');
+    if (transactionContext) {
+      try {
+        const context = JSON.parse(transactionContext);
+        const timeDiff = Date.now() - context.timestamp;
+
+        // If less than 10 minutes ago, try to auto-connect for transaction
+        if (timeDiff < 10 * 60 * 1000) {
+          return true;
+        } else {
+          localStorage.removeItem('phantom_transaction_context');
+        }
+      } catch (e) {
+        localStorage.removeItem('phantom_transaction_context');
+      }
+    }
+
+    // Check if wallet was previously connected (desktop only)
+    if (!isMobile) {
+      const wasConnected = localStorage.getItem('phantom_wallet_connected');
+      if (wasConnected) {
+        try {
+          const connection = JSON.parse(wasConnected);
+          const timeDiff = Date.now() - connection.timestamp;
+
+          // If connected within last 24 hours, auto-connect
+          return timeDiff < 24 * 60 * 60 * 1000;
+        } catch (e) {
+          localStorage.removeItem('phantom_wallet_connected');
+        }
+      }
+    }
+
+    return false;
   }, [isMobile]);
 
   return (

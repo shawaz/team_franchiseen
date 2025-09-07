@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
 
 import { useSolana } from '@/hooks/useSolana';
+import { useTransactionWallet } from '@/hooks/useTransactionWallet';
 
 interface TypeformCreateFranchiseModalProps {
   isOpen: boolean;
@@ -523,6 +524,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
   // In-step Solana payment using SlideButton
   const { getSOLBalance, sendSOL } = useSolana();
+  const { executeTransaction } = useTransactionWallet();
   const [solBalance, setSolBalance] = useState<number>(0);
 
   useEffect(() => {
@@ -544,11 +546,6 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     const sharePrice = calculateSharePrice();
     const totalAmountSOL = selectedShares * sharePrice * 1.2; // platform fee + tax
 
-    if (!connected) {
-      toast.error('Please connect your wallet');
-      return 'error';
-    }
-
     if (!programConnected) {
       toast.error('Blockchain program not available. Please check your connection and try again.');
       return 'error';
@@ -566,7 +563,7 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
     }
 
     // Validate cost per area
-    const costPerArea = parseFloat(formData.locationDetails.costPerArea) || formData.selectedBusiness.costPerArea;
+    const costPerArea = parseFloat(formData.locationDetails.costPerArea) || formData.selectedBusiness!.costPerArea;
     if (!costPerArea || costPerArea <= 0) {
       toast.error('Cost per area must be set by the business owner');
       return 'error';
@@ -579,136 +576,147 @@ const TypeformCreateFranchiseModal: React.FC<TypeformCreateFranchiseModalProps> 
 
     setLoading(true);
     try {
-      // Step 1: Send payment to escrow wallet (company wallet for now, but held in escrow)
-      const escrowWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
-      const pay = await sendSOL(escrowWalletAddress, totalAmountSOL);
-      if (!pay.success || !pay.signature) {
-        toast.error(pay.error || 'Payment failed');
-        return 'error';
-      }
-
-      toast.success('Payment successful! Funds held in escrow. Creating franchise...');
-
-      // Step 2: Create franchise on blockchain
-      const businessSlug = formData.selectedBusiness.slug || formData.selectedBusiness.name.toLowerCase().replace(/\s+/g, '-');
-      const franchiseId = formData.locationDetails.franchiseSlug;
-      const costPerArea = parseFloat(formData.locationDetails.costPerArea) || formData.selectedBusiness.costPerArea || 0;
-
-      let createTx = null;
-      let investTx = null;
-
-      if (createFranchise && investInFranchise) {
-        try {
-          createTx = await createFranchise(
-            businessSlug,
-            franchiseId,
-            formData.location?.address || '',
-            formData.locationDetails.buildingName,
-            parseFloat(formData.locationDetails.sqft),
-            costPerArea,
-            calculateTotalShares()
-          );
-
-          if (!createTx) {
-            toast.error('Failed to create franchise on blockchain');
-            return 'error';
+      // Use the new transaction wallet approach
+      const result = await executeTransaction(
+        async () => {
+          // Step 1: Send payment to escrow wallet (company wallet for now, but held in escrow)
+          const escrowWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || '11111111111111111111111111111112';
+          const pay = await sendSOL(escrowWalletAddress, totalAmountSOL);
+          if (!pay.success || !pay.signature) {
+            throw new Error(pay.error || 'Payment failed');
           }
 
-          toast.success('Franchise created! Creating investment contract...');
+          toast.success('Payment successful! Funds held in escrow. Creating franchise...');
 
-          // Step 3: Invest in the franchise
-          investTx = await investInFranchise(businessSlug, franchiseId, selectedShares);
-        } catch (blockchainError) {
-          console.error('Blockchain operation failed:', blockchainError);
-          toast.error('Blockchain operation failed, but payment was successful. Please contact support.');
-          // Continue with database save even if blockchain fails
-        }
-      } else {
-        console.warn('Blockchain functions not available, skipping blockchain operations');
-        toast.warning('Blockchain features not available, saving to database only');
-      }
+          // Step 2: Create franchise on blockchain
+          const businessSlug = formData.selectedBusiness!.slug || formData.selectedBusiness!.name.toLowerCase().replace(/\s+/g, '-');
+          const franchiseId = formData.locationDetails.franchiseSlug;
+          const costPerArea = parseFloat(formData.locationDetails.costPerArea) || formData.selectedBusiness!.costPerArea || 0;
 
-      toast.success('Investment contract created! Saving to database...');
+          let createTx = null;
+          let investTx = null;
 
-      // Step 4: Save franchise to Convex database
-      let savedFranchiseId = null;
-      try {
-        const franchiseData = await createFranchiseInDB({
-          businessId: formData.selectedBusiness._id,
-          locationAddress: formData.location?.address || '',
-          building: formData.locationDetails.buildingName,
-          carpetArea: parseFloat(formData.locationDetails.sqft),
-          costPerArea: costPerArea,
-          totalInvestment: calculateTotalInvestment(),
-          totalShares: calculateTotalShares(),
-          selectedShares: selectedShares,
-          slug: franchiseId,
-        });
+          if (createFranchise && investInFranchise) {
+            try {
+              createTx = await createFranchise(
+                businessSlug,
+                franchiseId,
+                formData.location?.address || '',
+                formData.locationDetails.buildingName,
+                parseFloat(formData.locationDetails.sqft),
+                costPerArea,
+                calculateTotalShares()
+              );
 
-        savedFranchiseId = franchiseData;
-        console.log('Franchise saved to database:', franchiseData);
-      } catch (error) {
-        console.error('Failed to save franchise to database:', error);
-        toast.error('Failed to save franchise data, but blockchain contracts are created');
-      }
+              if (!createTx) {
+                throw new Error('Failed to create franchise on blockchain');
+              }
 
-      // Step 5: Create escrow record for payment protection
-      if (savedFranchiseId && currentUser) {
-        try {
-          await createEscrowRecord({
-            franchiseId: savedFranchiseId.franchiseId,
-            userId: currentUser._id,
-            businessId: formData.selectedBusiness._id,
+              toast.success('Franchise created! Creating investment contract...');
+
+              // Step 3: Invest in the franchise
+              investTx = await investInFranchise(businessSlug, franchiseId, selectedShares);
+            } catch (blockchainError) {
+              console.error('Blockchain operation failed:', blockchainError);
+              toast.error('Blockchain operation failed, but payment was successful. Please contact support.');
+              // Continue with database save even if blockchain fails
+            }
+          } else {
+            console.warn('Blockchain functions not available, skipping blockchain operations');
+            toast.warning('Blockchain features not available, saving to database only');
+          }
+
+          toast.success('Investment contract created! Saving to database...');
+
+          // Step 4: Save franchise to Convex database
+          let savedFranchiseId = null;
+          try {
+            const franchiseData = await createFranchiseInDB({
+              businessId: formData.selectedBusiness!._id,
+              locationAddress: formData.location?.address || '',
+              building: formData.locationDetails.buildingName,
+              carpetArea: parseFloat(formData.locationDetails.sqft),
+              costPerArea: costPerArea,
+              totalInvestment: calculateTotalInvestment(),
+              totalShares: calculateTotalShares(),
+              selectedShares: selectedShares,
+              slug: franchiseId,
+            });
+
+            savedFranchiseId = franchiseData;
+            console.log('Franchise saved to database:', franchiseData);
+          } catch (error) {
+            console.error('Failed to save franchise to database:', error);
+            toast.error('Failed to save franchise data, but blockchain contracts are created');
+          }
+
+          // Step 5: Create escrow record for payment protection
+          if (savedFranchiseId && currentUser) {
+            try {
+              await createEscrowRecord({
+                franchiseId: savedFranchiseId.franchiseId,
+                userId: currentUser._id,
+                businessId: formData.selectedBusiness!._id,
+                paymentSignature: pay.signature,
+                amount: totalAmountSOL,
+                amountLocal: selectedShares * sharePrice * 1.2,
+                currency: "SOL",
+                shares: selectedShares,
+                userEmail: currentUser.email,
+                userWallet: publicKey?.toString() || '',
+                contractSignature: investTx || undefined,
+                contractAddress: `${businessSlug}-${franchiseId}`,
+              });
+
+              toast.success('Payment secured in escrow! Franchise pending approval.');
+            } catch (escrowError) {
+              console.error('Failed to create escrow record:', escrowError);
+              toast.error('Payment successful but escrow record failed. Please contact support.');
+            }
+          }
+
+          const details = {
             paymentSignature: pay.signature,
-            amount: totalAmountSOL,
-            amountLocal: selectedShares * sharePrice * 1.2,
-            currency: "SOL",
+            createFranchiseSignature: createTx,
+            contractSignature: investTx || '',
+            userEmail: undefined,
+            userWallet: undefined,
+            franchiseId,
+            businessSlug,
             shares: selectedShares,
-            userEmail: currentUser.email,
-            userWallet: publicKey?.toString() || '',
-            contractSignature: investTx || undefined,
+            amountLocal: selectedShares * sharePrice * 1.2,
+            amountSOL: totalAmountSOL,
+            timestamp: new Date().toISOString(),
             contractAddress: `${businessSlug}-${franchiseId}`,
-          });
+          };
 
-          toast.success('Payment secured in escrow! Franchise pending approval.');
-        } catch (escrowError) {
-          console.error('Failed to create escrow record:', escrowError);
-          toast.error('Payment successful but escrow record failed. Please contact support.');
+          try {
+            await fetch('/api/record-sol-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(details),
+            });
+          } catch (error) {
+            console.error('Failed to record payment:', error);
+          }
+
+          setContractDetails(details);
+          setCurrentStep(6);
+
+          return details;
+        },
+        {
+          action: 'franchise_creation',
+          amount: totalAmountSOL,
+          description: `Create franchise: ${formData.locationDetails.buildingName} (${selectedShares} shares)`
         }
-      }
+      );
 
-      const details = {
-        paymentSignature: pay.signature,
-        createFranchiseSignature: createTx,
-        contractSignature: investTx || '',
-        userEmail: undefined,
-        userWallet: undefined,
-        franchiseId,
-        businessSlug,
-        shares: selectedShares,
-        amountLocal: selectedShares * sharePrice * 1.2,
-        amountSOL: totalAmountSOL,
-        timestamp: new Date().toISOString(),
-        contractAddress: `${businessSlug}-${franchiseId}`,
-      };
-
-      try {
-        await fetch('/api/record-sol-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(details),
-        });
-      } catch (error) {
-        console.error('Failed to record payment:', error);
-      }
-
-      setContractDetails(details);
-      setCurrentStep(6);
       toast.success(`Investment successful! You now own ${selectedShares} shares.`);
       return 'success';
     } catch (e) {
       console.error('Payment/contract creation failed:', e);
-      toast.error('Transaction failed. Please try again.');
+      // Error handling is done in executeTransaction
       return 'error';
     } finally {
       setLoading(false);

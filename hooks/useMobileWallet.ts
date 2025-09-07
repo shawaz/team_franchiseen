@@ -125,7 +125,7 @@ export const useMobileWallet = () => {
     }
   }, [state.isMobile, state.isPhantomInstalled, wallet, wallets, select, connect]);
 
-  // Improved app connection method with proper Phantom deep linking
+  // Improved app connection method with proper Phantom deep linking (no webview)
   const connectViaApp = useCallback(async () => {
     const currentUrl = window.location.href;
     const dappUrl = window.location.origin;
@@ -135,7 +135,8 @@ export const useMobileWallet = () => {
       timestamp: Date.now(),
       url: currentUrl,
       dappUrl: dappUrl,
-      method: 'app'
+      method: 'app',
+      action: 'connect'
     }));
 
     // Check if we can detect Phantom app installation
@@ -145,44 +146,37 @@ export const useMobileWallet = () => {
 
     try {
       if (isIOS) {
-        // For iOS, use the universal link format that Phantom supports
-        const universalLink = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+        // For iOS, use proper app scheme for connection (not webview)
+        const appScheme = `phantom://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(dappUrl)}`;
 
-        // Try to open the app directly first
-        const appScheme = `phantom://ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
+        // Try to open the app directly
+        window.location.href = appScheme;
 
-        // Create a hidden iframe to test app availability
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = appScheme;
-        document.body.appendChild(iframe);
-
-        // Fallback to universal link after a short delay
+        // Fallback to App Store after delay if app doesn't open
         setTimeout(() => {
-          document.body.removeChild(iframe);
-          window.location.href = universalLink;
-        }, 500);
+          if (!document.hidden) {
+            window.location.href = 'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
+          }
+        }, 2000);
 
         return;
       }
 
       if (isAndroid) {
-        // For Android, use intent URL with proper fallback
-        const intentUrl = `intent://ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}#Intent;scheme=phantom;package=app.phantom;S.browser_fallback_url=${encodeURIComponent(`https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`)};end`;
+        // For Android, use intent URL with proper connection scheme
+        const intentUrl = `intent://v1/connect?dapp_encryption_public_key=&cluster=devnet&app_url=${encodeURIComponent(dappUrl)}#Intent;scheme=phantom;package=app.phantom;S.browser_fallback_url=https://play.google.com/store/apps/details?id=app.phantom;end`;
         window.location.href = intentUrl;
         return;
       }
 
-      // Fallback for other mobile browsers
-      const webUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
-      window.location.href = webUrl;
+      // Desktop fallback
+      window.open('https://phantom.app/download', '_blank');
 
     } catch (error) {
       console.error('Error opening Phantom app:', error);
 
-      // Final fallback - direct to Phantom web
-      const fallbackUrl = `https://phantom.app/ul/browse/${encodeURIComponent(currentUrl)}?ref=${encodeURIComponent(dappUrl)}`;
-      window.location.href = fallbackUrl;
+      // Final fallback - direct to download page
+      window.open('https://phantom.app/download', '_blank');
     }
   }, []);
 

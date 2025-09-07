@@ -10,6 +10,7 @@ import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { toast } from 'sonner';
 import { useSolana } from '@/hooks/useSolana';
 import { useFranchiseProgram } from '@/hooks/useFranchiseProgram';
+import { useTransactionWallet } from '@/hooks/useTransactionWallet';
 import { calculateAvailableShares, FIXED_AED_PER_SHARE } from '@/lib/franchise-calculations';
 
 interface FranchiseData {
@@ -48,6 +49,7 @@ const SOLPaymentModal = ({ onClose, franchiseData, businessSlug, onPaymentSucces
   const { setVisible } = useWalletModal();
   const { getSOLBalance, sendSOL } = useSolana();
   const { investInFranchise } = useFranchiseProgram();
+  const { executeTransaction } = useTransactionWallet();
 
   // Pricing calculations (in SOL as base currency)
   const costPerShareSOL = franchiseData.costPerShare; // Assuming costPerShare is already in SOL
@@ -101,11 +103,6 @@ const SOLPaymentModal = ({ onClose, franchiseData, businessSlug, onPaymentSucces
   }, [connected, getSOLBalance]);
 
   const handleSOLPayment = async () => {
-    if (!connected || !publicKey) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
     if (balance < totalAmountSOL) {
       toast.error(`Insufficient SOL balance. You need ${totalAmountSOL.toFixed(4)} SOL but have ${balance.toFixed(4)} SOL`);
       return;
@@ -114,77 +111,92 @@ const SOLPaymentModal = ({ onClose, franchiseData, businessSlug, onPaymentSucces
     setIsLoading(true);
 
     try {
-      // Company wallet address (replace with actual address)
-      const companyWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS || 
-        '11111111111111111111111111111112'; // Placeholder
+      // Use the new transaction wallet approach
+      await executeTransaction(
+        async () => {
+          // Company wallet address (replace with actual address)
+          const companyWalletAddress = process.env.NEXT_PUBLIC_COMPANY_WALLET_ADDRESS ||
+            '11111111111111111111111111111112'; // Placeholder
 
-      // Send SOL to company wallet
-      const result = await sendSOL(companyWalletAddress, totalAmountSOL);
+          // Send SOL to company wallet
+          const result = await sendSOL(companyWalletAddress, totalAmountSOL);
 
-      if (result.success && result.signature) {
-        // Payment successful, now create blockchain contract
-        toast.success('Payment successful! Creating blockchain contract...');
+          if (!result.success || !result.signature) {
+            throw new Error(result.error || 'Payment failed');
+          }
 
-        try {
-          // Create investment contract on blockchain
-          if (businessSlug && investInFranchise) {
-            const contractTx = await investInFranchise(
-              businessSlug,
-              franchiseData.franchiseId,
-              selectedShares
-            );
+          // Payment successful, now create blockchain contract
+          toast.success('Payment successful! Creating blockchain contract...');
 
-            if (contractTx) {
-              const contractDetails = {
-                paymentSignature: result.signature,
-                contractSignature: contractTx,
-                userEmail: user?.emailAddresses?.[0]?.emailAddress,
-                userWallet: publicKey.toString(),
-                franchiseId: franchiseData.franchiseId,
+          try {
+            // Create investment contract on blockchain
+            if (businessSlug && investInFranchise) {
+              const contractTx = await investInFranchise(
                 businessSlug,
+                franchiseData.franchiseId,
+                selectedShares
+              );
+
+              if (contractTx) {
+                const contractDetails = {
+                  paymentSignature: result.signature,
+                  contractSignature: contractTx,
+                  userEmail: user?.emailAddresses?.[0]?.emailAddress,
+                  userWallet: publicKey?.toString(),
+                  franchiseId: franchiseData.franchiseId,
+                  businessSlug,
+                  shares: selectedShares,
+                  amountLocal: totalAmountLocal,
+                  amountSOL: totalAmountSOL,
+                  timestamp: new Date().toISOString(),
+                  contractAddress: `${businessSlug}-${franchiseData.franchiseId}`,
+                };
+
+                // Save to database
+                await fetch('/api/record-sol-payment', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(contractDetails)
+                });
+
+                toast.success(`Investment contract created! You own ${selectedShares} shares.`);
+                onPaymentSuccess?.(contractDetails);
+                return contractDetails;
+              }
+            } else {
+              // Fallback: just record payment without blockchain contract
+              const paymentDetails = {
+                transactionSignature: result.signature,
+                userEmail: user?.emailAddresses?.[0]?.emailAddress,
+                userWallet: publicKey?.toString(),
+                franchiseId: franchiseData.franchiseId,
                 shares: selectedShares,
                 amountLocal: totalAmountLocal,
                 amountSOL: totalAmountSOL,
                 timestamp: new Date().toISOString(),
-                contractAddress: `${businessSlug}-${franchiseData.franchiseId}`,
               };
 
-              // Save to database
-              await fetch('/api/record-sol-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(contractDetails)
-              });
-
-              toast.success(`Investment contract created! You own ${selectedShares} shares.`);
-              onPaymentSuccess?.(contractDetails);
+              console.log('Payment successful:', paymentDetails);
+              toast.success(`Payment successful! You purchased ${selectedShares} shares.`);
+              return paymentDetails;
             }
-          } else {
-            // Fallback: just record payment without blockchain contract
-            console.log('Payment successful:', {
-              transactionSignature: result.signature,
-              userEmail: user?.emailAddresses?.[0]?.emailAddress,
-              userWallet: publicKey.toString(),
-              franchiseId: franchiseData.franchiseId,
-              shares: selectedShares,
-              amountLocal: totalAmountLocal,
-              amountSOL: totalAmountSOL,
-              timestamp: new Date().toISOString(),
-            });
-            toast.success(`Payment successful! You purchased ${selectedShares} shares.`);
+          } catch (contractError) {
+            console.error('Contract creation failed:', contractError);
+            toast.error('Payment successful but contract creation failed. Please contact support.');
+            throw contractError;
           }
-        } catch (contractError) {
-          console.error('Contract creation failed:', contractError);
-          toast.error('Payment successful but contract creation failed. Please contact support.');
+        },
+        {
+          action: 'payment',
+          amount: totalAmountSOL,
+          description: `Purchase ${selectedShares} shares in ${franchiseData.name || 'franchise'}`
         }
+      );
 
-        onClose();
-      } else {
-        toast.error(`Payment failed: ${result.error}`);
-      }
+      onClose();
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
+      // Error handling is done in executeTransaction
     } finally {
       setIsLoading(false);
     }
@@ -346,9 +358,11 @@ const SOLPaymentModal = ({ onClose, franchiseData, businessSlug, onPaymentSucces
           <button
             onClick={handleSOLPayment}
             className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!connected || isLoading || selectedShares < 1 || balance < totalAmountSOL}
+            disabled={isLoading || selectedShares < 1 || balance < totalAmountSOL}
           >
-            {isLoading ? 'Processing...' : `Pay ${totalAmountSOL.toFixed(4)} SOL`}
+            {isLoading ? 'Processing...' :
+             !connected ? 'Connect Wallet & Pay' :
+             `Pay ${totalAmountSOL.toFixed(4)} SOL`}
           </button>
         </div>
       </div>

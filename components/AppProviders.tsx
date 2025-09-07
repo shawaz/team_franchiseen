@@ -10,6 +10,7 @@ import { SolOnlyProvider } from "@/contexts/SolOnlyContext";
 import { GlobalCurrencyProvider } from "@/contexts/GlobalCurrencyContext";
 import FullScreenLoader from '@/components/ui/FullScreenLoader';
 import PhantomConnectionHandler from "@/components/wallet/PhantomConnectionHandler";
+import TransactionHandler from "@/components/wallet/TransactionHandler";
 import { Suspense } from 'react';
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,8 @@ export default function AppProviders({ children }: { children: React.ReactNode }
                   </Suspense>
                   {/* Phantom Wallet Connection Handler */}
                   <PhantomConnectionHandler />
+                  {/* Transaction Handler */}
+                  <TransactionHandler />
                   {/* Centralized Modal Manager */}
                   <ModalManager />
                 </ConvexClientProvider>

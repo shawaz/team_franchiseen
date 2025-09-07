@@ -52,30 +52,72 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
   };
 
   const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) value = value[0];
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value !== '' && index < 5) {
-      otpRefs.current[index + 1]?.focus();
+    // Only allow numeric input
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (numericValue.length > 1) {
+      // If multiple digits are entered (e.g., from paste), handle them
+      const digits = numericValue.split('').slice(0, 6);
+      const newOtp = [...otp];
+
+      // Fill from current index onwards
+      for (let i = 0; i < digits.length && (index + i) < 6; i++) {
+        newOtp[index + i] = digits[i];
+      }
+
+      setOtp(newOtp);
+
+      // Focus the next empty field or the last field
+      const nextIndex = Math.min(index + digits.length, 5);
+      setTimeout(() => {
+        otpRefs.current[nextIndex]?.focus();
+      }, 0);
+    } else {
+      // Single digit entry
+      const newOtp = [...otp];
+      newOtp[index] = numericValue;
+      setOtp(newOtp);
+
+      // Move to next field if digit was entered
+      if (numericValue !== '' && index < 5) {
+        setTimeout(() => {
+          otpRefs.current[index + 1]?.focus();
+        }, 0);
+      }
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+      // Move to previous field and clear it
+      const newOtp = [...otp];
+      newOtp[index - 1] = '';
+      setOtp(newOtp);
+      setTimeout(() => {
+        otpRefs.current[index - 1]?.focus();
+      }, 0);
     }
   };
 
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const paste = e.clipboardData.getData('text');
-    if (/^\d{6}$/.test(paste)) {
-      setOtp(paste.split(''));
-      // Focus the last input
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>, index: number) => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+
+    if (paste.length > 0) {
+      const digits = paste.split('').slice(0, 6);
+      const newOtp = [...otp];
+
+      // Fill from current index onwards, but don't exceed array bounds
+      for (let i = 0; i < digits.length && (index + i) < 6; i++) {
+        newOtp[index + i] = digits[i];
+      }
+
+      setOtp(newOtp);
+
+      // Focus the next empty field or the last field
+      const nextIndex = Math.min(index + digits.length, 5);
       setTimeout(() => {
-        otpRefs.current[5]?.focus();
+        otpRefs.current[nextIndex]?.focus();
       }, 0);
-      e.preventDefault();
     }
   };
 
@@ -360,13 +402,16 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({ isOpen,
                       ref={(el) => {
                         otpRefs.current[index] = el;
                       }}
-                      type="text"
-                      maxLength={1}
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
-                      onPaste={handleOtpPaste}
+                      onPaste={(e) => handleOtpPaste(e, index)}
                       className="w-12 h-14 text-center text-2xl font-semibold bg-white dark:bg-stone-700 border-2 border-gray-300 dark:border-stone-600 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary"
+                      autoComplete="one-time-code"
                       required
                     />
                   ))}
