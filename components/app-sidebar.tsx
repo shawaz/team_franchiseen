@@ -2,22 +2,33 @@
 
 import * as React from "react"
 import {
+  Archive,
   AudioWaveform,
+  Banknote,
+  Book,
   BookOpen,
   Bot,
+  Building,
+  Calendar,
+  Car,
   Command,
+  CreditCard,
+  Factory,
   Frame,
   GalleryVerticalEnd,
+  Laptop,
+  LifeBuoy,
   Map,
+  Newspaper,
   PieChart,
   Settings2,
   SquareTerminal,
+  Tv,
+  Users,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +36,9 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import Link from "next/link"
+import Image from "next/image"
+import { NavApp } from "./nav-app"
 
 // This is sample data.
 const data = {
@@ -52,106 +66,255 @@ const data = {
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
+      title: "Administration",
+      url: "/admin",
       icon: SquareTerminal,
-      isActive: true,
+      isActive: Building,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Plan",
+          url: "/admin/plan",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Strategy",
+          url: "/admin/strategy",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "Activities",
+          url: "/admin/activities",
+        },
+        {
+          title: "Channels",
+          url: "/admin/channels",
+        },
+        {
+          title: "Partners",
+          url: "/admin/partners",
+        },
+        {
+          title: "Resources",
+          url: "/admin/resources",
+        },
+        {
+          title: "Relations",
+          url: "/admin/relations",
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
+      title: "Operations",
+      url: "/operations",
+      icon: Factory,
       items: [
         {
-          title: "Genesis",
-          url: "#",
+          title: "Franchise",
+          url: "/operations/franchise",
         },
         {
-          title: "Explorer",
-          url: "#",
+          title: "Properties",
+          url: "/operations/properties",
         },
         {
-          title: "Quantum",
-          url: "#",
+          title: "Departments",
+          url: "/operations/departments",
+        },
+        {
+          title: "Area",
+          url: "/operations/area",
+        },
+        {
+          title: "Branch",
+          url: "/operations/branch",
+        },
+        {
+          title: "Office",
+          url: "/operations/office",
+        },
+        {
+          title: "Brands",
+          url: "/operations/brands",
+        },
+      ],
+    },
+     {
+      title: "Marketing",
+      url: "/marketing",
+      icon: Tv,
+      items: [
+        {
+          title: "Market",
+          url: "/marketing/market",
+        },
+        {
+          title: "Campaign",
+          url: "/marketing/campaign",
+        },
+        {
+          title: "Content",
+          url: "/marketing/content",
         },
       ],
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
+      title: "Finance",
+      url: "/finance",
+      icon: CreditCard,
       items: [
         {
-          title: "Introduction",
-          url: "#",
+          title: "Transactions",
+          url: "/finance/transactions",
         },
         {
-          title: "Get Started",
-          url: "#",
+          title: "Investors",
+          url: "/finance/investors",
         },
         {
-          title: "Tutorials",
-          url: "#",
+          title: "Invoices",
+          url: "/finance/invoices",
+        },
+         {
+          title: "Payee",
+          url: "/finance/payee",
         },
         {
-          title: "Changelog",
-          url: "#",
+          title: "Wallets",
+          url: "/finance/wallets",
+        },
+        {
+          title: "Budgets",
+          url: "/finance/budgets",
+        },
+        {
+          title: "Shareholders",
+          url: "/finance/shareholders",
         },
       ],
     },
     {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
+      title: "People",
+      url: "/people",
+      icon: Users,
       items: [
         {
-          title: "General",
-          url: "#",
+          title: "Attendance",
+          url: "/people/attendance",
+        },
+        {
+          title: "Applications",
+          url: "/people/applications",
+        },
+        {
+          title: "Positions",
+          url: "/people/positions",
         },
         {
           title: "Team",
-          url: "#",
+          url: "/people/team",
         },
         {
-          title: "Billing",
-          url: "#",
+          title: "Employees",
+          url: "/people/employees",
         },
         {
-          title: "Limits",
-          url: "#",
+          title: "Onboarding",
+          url: "/people/onboarding",
+        },
+        {
+          title: "Training",
+          url: "/people/training",
+        },
+        {
+          title: "Offboarding",
+          url: "/people/offboarding",
         },
       ],
     },
+   
+    {
+      title: "Sales",
+      url: "/sales",
+      icon: Banknote,
+      items: [
+        {
+          title: "Leads",
+          url: "/sales/leads",
+        },
+        {
+          title: "Clients",
+          url: "/sales/clients",
+        },
+        {
+          title: "Competitors",
+          url: "/sales/competitors",
+        },
+      ],
+    },
+    {
+      title: "Support",
+      url: "/support",
+      icon: LifeBuoy,
+      items: [
+        {
+          title: "Help Desk",
+          url: "/support/help-desk",
+        },
+        {
+          title: "Tickets",
+          url: "/support/tickets",
+        },
+      ],
+    },
+    {
+      title: "Software",
+      url: "/software",
+      icon: Laptop,
+      items: [
+        {
+          title: "Features",
+          url: "/software/features",
+        },
+        {
+          title: "Bugs",
+          url: "/software/bugs",
+        },
+        {
+          title: "Database",
+          url: "/software/databases",
+        },
+      ],
+    },
+    
   ],
-  projects: [
+  apps: [
     {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
+      name: "Franny",
+      url: "/home",
+      icon: Bot,
     },
     {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
+      name: "News",
+      url: "/home/news",
+      icon: Newspaper,
     },
     {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      name: "Events",
+      url: "/home/events",
+      icon: Calendar,
+    },
+    {
+      name: "Travels",
+      url: "/home/travels",
+      icon: Car,
+    },
+    {
+      name: "Docs",
+      url: "/home/docs",
+      icon: Archive,
+    },
+    {
+      name: "Handbook",
+      url: "/home/handbooks",
+      icon: Book,
     },
   ],
 }
@@ -160,11 +323,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <Link href="/home" className="flex items-center cursor-pointer p-3">
+          <div className="flex items-center cursor-pointer">
+            <Image
+              src="/logo.svg"
+              alt="logo"
+              width={24}
+              height={24}
+              className="z-0"
+            />
+            <span className="text-lg ml-4 font-bold">FRANCHISEEN</span>
+            
+          </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
+        <NavApp apps={data.apps} />
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

@@ -13,15 +13,18 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as agenda from "../agenda.js";
 import type * as businesses from "../businesses.js";
 import type * as categories from "../categories.js";
 import type * as deals from "../deals.js";
 import type * as escrow from "../escrow.js";
 import type * as financialTransactions from "../financialTransactions.js";
 import type * as franchise from "../franchise.js";
+import type * as franchiseOperations from "../franchiseOperations.js";
 import type * as frcTokens from "../frcTokens.js";
 import type * as industries from "../industries.js";
 import type * as myFunctions from "../myFunctions.js";
+import type * as permissions from "../permissions.js";
 import type * as platformTeam from "../platformTeam.js";
 import type * as setup from "../setup.js";
 import type * as shares from "../shares.js";
@@ -39,15 +42,18 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  agenda: typeof agenda;
   businesses: typeof businesses;
   categories: typeof categories;
   deals: typeof deals;
   escrow: typeof escrow;
   financialTransactions: typeof financialTransactions;
   franchise: typeof franchise;
+  franchiseOperations: typeof franchiseOperations;
   frcTokens: typeof frcTokens;
   industries: typeof industries;
   myFunctions: typeof myFunctions;
+  permissions: typeof permissions;
   platformTeam: typeof platformTeam;
   setup: typeof setup;
   shares: typeof shares;

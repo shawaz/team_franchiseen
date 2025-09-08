@@ -32,7 +32,7 @@ export function LoginForm({
   // Redirect if already signed in
   useEffect(() => {
     if (authLoaded && isSignedIn) {
-      router.push('/admin/dashboard');
+      router.push('/home');
     }
   }, [authLoaded, isSignedIn, router]);
 
@@ -46,9 +46,9 @@ export function LoginForm({
     e.preventDefault();
     if (!isLoaded) return;
 
-    // If already signed in, redirect to dashboard
+    // If already signed in, redirect to home
     if (isSignedIn) {
-      router.push('/admin/dashboard');
+      router.push('/home');
       return;
     }
 
@@ -118,9 +118,9 @@ export function LoginForm({
         setSuccess('Login successful! Redirecting...');
         setStep('success');
 
-        // Redirect to admin dashboard after a short delay
+        // Redirect to home page after a short delay
         setTimeout(() => {
-          window.location.href = '/admin/dashboard';
+          window.location.href = '/home';
         }, 1500);
       } else {
         setError('Invalid OTP. Please try again.');
@@ -206,7 +206,7 @@ export function LoginForm({
                 <div className="text-center">
                   <h2 className="text-xl font-semibold">Already Signed In</h2>
                   <p className="text-sm text-muted-foreground mt-2">
-                    You are already authenticated. Redirecting to dashboard...
+                    You are already authenticated. Redirecting to home...
                   </p>
                 </div>
                 <Button
@@ -366,7 +366,7 @@ export function LoginForm({
                     <CheckCircle2 className="h-16 w-16 text-green-600" />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Redirecting to admin dashboard...
+                    Redirecting to home page...
                   </p>
                 </div>
               )}

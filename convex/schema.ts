@@ -430,4 +430,107 @@ export default defineSchema({
     .index("by_wallet", ["walletAddress"])
     .index("by_franchise_user", ["franchiseId", "userId"])
     .index("by_active", ["isActive"]),
+
+  // Agenda Items for Home Page
+  agendaItems: defineTable({
+    title: v.string(),
+    description: v.optional(v.string()),
+    period: v.union(v.literal("today"), v.literal("week"), v.literal("month"), v.literal("quarter")),
+    priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    status: v.union(v.literal("pending"), v.literal("in-progress"), v.literal("completed")),
+    dueDate: v.optional(v.string()),
+    userId: v.string(), // Clerk user ID
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_period", ["period"])
+    .index("by_status", ["status"])
+    .index("by_user_period", ["userId", "period"])
+    .index("by_priority",
+
+  // Franchise Operations - Extended operational data for franchise management
+  franchiseOperations: defineTable({
+    franchiseId: v.id("franchise"),
+    operationalStatus: v.union(
+      v.literal("setup"),
+      v.literal("training"),
+      v.literal("operational"),
+      v.literal("maintenance"),
+      v.literal("suspended")
+    ),
+    complianceScore: v.number(), // 0-100 score
+    lastInspection: v.optional(v.number()),
+    nextInspectionDue: v.optional(v.number()),
+    supportTickets: v.number(),
+    performanceMetrics: v.object({
+      monthlyRevenue: v.number(),
+      monthlyExpenses: v.number(),
+      customerSatisfaction: v.number(), // 0-100 score
+      staffCount: v.number(),
+      operationalEfficiency: v.number(), // 0-100 score
+    }),
+    certifications: v.array(v.object({
+      name: v.string(),
+      issuedDate: v.number(),
+      expiryDate: v.number(),
+      status: v.union(v.literal("active"), v.literal("expired"), v.literal("pending")),
+    })),
+    inspectionHistory: v.array(v.object({
+      date: v.number(),
+      inspector: v.string(),
+      score: v.number(),
+      notes: v.string(),
+      issues: v.array(v.string()),
+    })),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_franchise", ["franchiseId"])
+    .index("by_operational_status", ["operationalStatus"])
+    .index("by_compliance_score", ["complianceScore"])
+    .index("by_next_inspection", ["nextInspectionDue"]),
+
+  // Permissions system for role-based access control
+  permissions: defineTable({
+    userId: v.id("users"),
+    section: v.union(
+      v.literal("operations"),
+      v.literal("finance"),
+      v.literal("admin"),
+      v.literal("people"),
+      v.literal("marketing"),
+      v.literal("sales"),
+      v.literal("support"),
+      v.literal("software")
+    ),
+    actions: v.array(v.string()), // ["read", "write", "delete", "approve", "admin"]
+    franchiseId: v.optional(v.id("franchise")), // For franchise-specific permissions
+    businessId: v.optional(v.id("businesses")), // For business-specific permissions
+    createdAt: v.number(),
+    createdBy: v.id("users"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_section", ["section"])
+    .index("by_user_section", ["userId", "section"])
+    .index("by_franchise", ["franchiseId"])
+    .index("by_business", ["businessId"]),
+
+  // Audit log for tracking administrative actions
+  auditLog: defineTable({
+    userId: v.id("users"),
+    action: v.string(), // "create", "update", "delete", "approve", "reject"
+    section: v.string(), // "franchise", "operations", "finance", etc.
+    entityType: v.string(), // "franchise", "user", "transaction", etc.
+    entityId: v.string(),
+    changes: v.any(), // JSON object of what changed
+    ipAddress: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    timestamp: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_section", ["section"])
+    .index("by_entity", ["entityType", "entityId"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_action", ["action"]), ["priority"]),
 });
