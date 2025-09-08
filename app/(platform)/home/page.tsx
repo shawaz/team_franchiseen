@@ -126,6 +126,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
+
         {/* Welcome Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-gray-900">
@@ -150,6 +151,7 @@ export default function HomePage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            
             {/* Chat Messages */}
             {chatMessages.length > 0 && (
               <div className="bg-white/10 rounded-lg p-4 max-h-60 overflow-y-auto space-y-3">
