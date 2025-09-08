@@ -69,7 +69,7 @@ const data = {
       title: "Administration",
       url: "/admin",
       icon: SquareTerminal,
-      isActive: Building,
+      isActive: true,
       items: [
         {
           title: "Plan",

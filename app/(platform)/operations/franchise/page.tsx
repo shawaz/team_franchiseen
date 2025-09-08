@@ -98,40 +98,42 @@ export default function FranchiseOperationsPage() {
     // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        franchise.building.toLowerCase().includes(searchLower) ||
-        franchise.locationAddress.toLowerCase().includes(searchLower) ||
-        franchise.status.toLowerCase().includes(searchLower);
+      const matchesSearch =
+        (franchise.building || '').toLowerCase().includes(searchLower) ||
+        (franchise.locationAddress || '').toLowerCase().includes(searchLower) ||
+        (franchise.status || '').toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
 
     // Status filter
-    if (filters.status && franchise.status !== filters.status) {
+    if (filters.status && (franchise.status || '') !== filters.status) {
       return false;
     }
 
     // Investment range filter
     if (filters.investmentRange) {
       const range = filters.investmentRange;
-      if (range.min && franchise.totalInvestment < parseInt(range.min)) return false;
-      if (range.max && franchise.totalInvestment > parseInt(range.max)) return false;
+      const investment = franchise.totalInvestment || 0;
+      if (range.min && investment < parseInt(range.min)) return false;
+      if (range.max && investment > parseInt(range.max)) return false;
     }
 
     return true;
   });
 
   const FranchiseCard = ({ franchise }: { franchise: any }) => {
-    const operations = franchiseOperations?.find(op => op.franchiseId === franchise._id);
-    
+    const operations = franchiseOperations?.find(op =>
+      'franchiseId' in op ? op.franchiseId === franchise._id : false
+    );
+
     return (
       <Card className="group relative overflow-hidden bg-white dark:bg-gray-800 hover:shadow-lg transition-all duration-200 cursor-pointer">
         <Link href={`/operations/franchise/${franchise._id}/manage`}>
-          {/* Cover Image */}
           <div className="aspect-video bg-gradient-to-br from-blue-500 to-purple-600 relative overflow-hidden">
             {franchise.coverImage ? (
               <Image
                 src={franchise.coverImage}
-                alt={franchise.building}
+                alt={franchise.building || 'Franchise cover image'}
                 fill
                 className="object-cover"
               />
@@ -140,76 +142,83 @@ export default function FranchiseOperationsPage() {
                 <Building2 className="h-12 w-12 text-white/80" />
               </div>
             )}
-            
-            {/* Status Badge - Top Right */}
+
             <div className="absolute top-3 right-3">
-              <StatusBadge status={franchise.status} />
+              <StatusBadge status={franchise.status || 'pending'} />
             </div>
 
-            {/* Operational Status - Top Left */}
-            {operations && (
+            {operations && 'operationalStatus' in operations ? (
               <div className="absolute top-3 left-3">
-                <StatusBadge status={operations.operationalStatus} size="sm" />
+                <StatusBadge status={operations.operationalStatus as string} size="sm" />
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* Content */}
           <div className="p-4">
-            {/* Header */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                  {franchise.building}
+                  {franchise.building || 'Franchise Name'}
                 </h3>
               </div>
-              
+
               <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Location */}
             <div className="flex items-center gap-2 mb-3">
               <MapPin className="h-4 w-4 text-gray-500" />
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {franchise.locationAddress}
+                {franchise.locationAddress || 'Location not specified'}
               </span>
             </div>
 
-            {/* Metrics */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {formatAmount(franchise.totalInvestment)}
+                  {formatAmount(franchise.totalInvestment || 0)}
                 </div>
                 <div className="text-xs text-gray-500">Investment</div>
               </div>
-              
-              {operations && (
+
+              {operations && 'complianceScore' in operations ? (
                 <div className="text-center">
                   <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {operations.complianceScore}%
+                    {typeof operations.complianceScore === 'number' ? operations.complianceScore : 0}%
                   </div>
                   <div className="text-xs text-gray-500">Compliance</div>
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Performance Indicators */}
-            {operations && (
+            {operations && 'performanceMetrics' in operations && operations.performanceMetrics ? (
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <div className="flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
-                  <span>{formatAmount(operations.performanceMetrics.monthlyRevenue)}/mo</span>
+                  <span>{formatAmount(
+                    operations.performanceMetrics &&
+                    typeof operations.performanceMetrics === 'object' &&
+                    'monthlyRevenue' in operations.performanceMetrics &&
+                    typeof operations.performanceMetrics.monthlyRevenue === 'number'
+                      ? operations.performanceMetrics.monthlyRevenue
+                      : 0
+                  )}/mo</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  <span>{operations.performanceMetrics.staffCount} staff</span>
+                  <span>{
+                    operations.performanceMetrics &&
+                    typeof operations.performanceMetrics === 'object' &&
+                    'staffCount' in operations.performanceMetrics &&
+                    typeof operations.performanceMetrics.staffCount === 'number'
+                      ? operations.performanceMetrics.staffCount
+                      : 0
+                  } staff</span>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </Link>
       </Card>
@@ -305,7 +314,7 @@ export default function FranchiseOperationsPage() {
         {/* Gallery View */}
         {viewMode === 'gallery' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredFranchises.map((franchise) => (
+            {filteredFranchises.map((franchise: any) => (
               <FranchiseCard key={franchise._id} franchise={franchise} />
             ))}
           </div>

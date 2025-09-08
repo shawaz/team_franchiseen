@@ -447,7 +447,7 @@ export default defineSchema({
     .index("by_period", ["period"])
     .index("by_status", ["status"])
     .index("by_user_period", ["userId", "period"])
-    .index("by_priority",
+    .index("by_priority", ["priority"]),
 
   // Franchise Operations - Extended operational data for franchise management
   franchiseOperations: defineTable({
@@ -532,5 +532,5 @@ export default defineSchema({
     .index("by_section", ["section"])
     .index("by_entity", ["entityType", "entityId"])
     .index("by_timestamp", ["timestamp"])
-    .index("by_action", ["action"]), ["priority"]),
+    .index("by_action", ["action"]),
 });

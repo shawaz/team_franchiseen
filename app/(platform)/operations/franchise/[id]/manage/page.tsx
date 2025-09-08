@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, use } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
@@ -37,17 +37,18 @@ import { useRouter } from 'next/navigation';
 import { useGlobalCurrency } from '@/contexts/GlobalCurrencyContext';
 
 interface FranchiseManagePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function FranchiseManagePage({ params }: FranchiseManagePageProps) {
+  const { id } = use(params);
   const router = useRouter();
   const { formatAmount } = useGlobalCurrency();
   const [activeTab, setActiveTab] = useState('overview');
 
-  const franchiseId = params.id as Id<"franchise">;
+  const franchiseId = id as Id<"franchise">;
 
   // Fetch franchise data
   const franchise = useQuery(api.franchise.getById, { franchiseId });
@@ -72,16 +73,24 @@ export default function FranchiseManagePage({ params }: FranchiseManagePageProps
     );
   }
 
-  const performanceMetrics = operations?.performanceMetrics || {
-    monthlyRevenue: 0,
-    monthlyExpenses: 0,
-    customerSatisfaction: 0,
-    staffCount: 0,
-    operationalEfficiency: 0,
-  };
+  const performanceMetrics: {
+    monthlyRevenue: number;
+    monthlyExpenses: number;
+    customerSatisfaction: number;
+    staffCount: number;
+    operationalEfficiency: number;
+  } = (operations && 'performanceMetrics' in operations)
+    ? operations.performanceMetrics as any
+    : {
+        monthlyRevenue: 0,
+        monthlyExpenses: 0,
+        customerSatisfaction: 0,
+        staffCount: 0,
+        operationalEfficiency: 0,
+      };
 
-  const complianceScore = operations?.complianceScore || 0;
-  const operationalStatus = operations?.operationalStatus || 'setup';
+  const complianceScore: number = (operations && 'complianceScore' in operations) ? operations.complianceScore as number : 0;
+  const operationalStatus: string = (operations && 'operationalStatus' in operations) ? operations.operationalStatus as string : 'setup';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

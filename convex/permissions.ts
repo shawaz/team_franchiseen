@@ -287,13 +287,16 @@ export const listAll = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db.query("permissions");
-    
-    if (args.section) {
-      query = query.withIndex("by_section", (q) => q.eq("section", args.section));
-    }
+    let permissions;
 
-    let permissions = await query.collect();
+    if (args.section) {
+      permissions = await ctx.db
+        .query("permissions")
+        .withIndex("by_section", (q) => q.eq("section", args.section!))
+        .collect();
+    } else {
+      permissions = await ctx.db.query("permissions").collect();
+    }
 
     if (args.limit) {
       permissions = permissions.slice(0, args.limit);

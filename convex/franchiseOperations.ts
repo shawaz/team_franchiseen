@@ -90,15 +90,18 @@ export const listWithFranchiseDetails = query({
     complianceScoreMin: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db.query("franchiseOperations");
-    
-    if (args.operationalStatus) {
-      query = query.withIndex("by_operational_status", (q) => 
-        q.eq("operationalStatus", args.operationalStatus as any)
-      );
-    }
+    let operations;
 
-    let operations = await query.collect();
+    if (args.operationalStatus) {
+      operations = await ctx.db
+        .query("franchiseOperations")
+        .withIndex("by_operational_status", (q) =>
+          q.eq("operationalStatus", args.operationalStatus as any)
+        )
+        .collect();
+    } else {
+      operations = await ctx.db.query("franchiseOperations").collect();
+    }
 
     // Filter by compliance score if provided
     if (args.complianceScoreMin !== undefined) {

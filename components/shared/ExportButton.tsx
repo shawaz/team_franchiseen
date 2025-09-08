@@ -29,7 +29,7 @@ interface ExportButtonProps {
   disabled?: boolean;
   loading?: boolean;
   variant?: 'default' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
 }
 
@@ -74,7 +74,7 @@ export default function ExportButton({
   disabled = false,
   loading = false,
   variant = 'outline',
-  size = 'md',
+  size = 'default',
   className,
 }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
